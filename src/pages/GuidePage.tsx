@@ -82,7 +82,7 @@ function LessonContentEditor({
 
       <div className="mt-5">
         <div className="flex items-center justify-between gap-3">
-          <h5 className="font-display text-lg text-[#EAF2F5]">40분 과정안</h5>
+          <h5 className="font-display text-lg text-[#EAF2F5]">45분 과정안</h5>
           <Button
             type="button"
             variant="secondary"
@@ -196,7 +196,7 @@ export function GuidePage() {
   return (
     <div className="mx-auto max-w-5xl px-5 pb-20">
       <PageHeader title="에아몬 교사 사전연수" eyebrow="teacher guide">
-        수업 전에 40분 수업 과정안을 확인하고 필요한 차시 내용을 수정하는 페이지입니다.
+        수업 전에 45분 수업 과정안을 확인하고 필요한 차시 내용을 수정하는 페이지입니다.
       </PageHeader>
 
       <Panel className="mt-6">
@@ -240,11 +240,11 @@ export function GuidePage() {
       <section className="mt-12">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <p className="font-data text-sm uppercase tracking-wider text-[#FFD37A]">40-minute lessons</p>
-            <h2 className="font-display mt-2 text-3xl text-[#EAF2F5]">40분 수업 과정안 {plans.length}개</h2>
+            <p className="font-data text-sm uppercase tracking-wider text-[#FFD37A]">45-minute lessons</p>
+            <h2 className="font-display mt-2 text-3xl text-[#EAF2F5]">45분 수업 과정안 {plans.length}개</h2>
           </div>
           <p className="max-w-md text-sm leading-6 text-[#8AA0B0]">
-            공개 질문카드 1개를 40분 1차시로 운영합니다. 카드마다 신호등 토론·가치수직선·역할극·모의재판 등 서로 다른 활동으로 구성했습니다.
+            공식 9차시를 순서대로 운영합니다. 매 차시는 도입, 사람 딜레마, AI 전환, 가치 코드, 친밀도 흐름으로 구성했습니다.
           </p>
         </div>
 

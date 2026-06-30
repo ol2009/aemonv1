@@ -256,7 +256,7 @@ export function ConversationPage() {
         <div className="mt-5 border-t border-white/10 pt-5">
             {lessonPlan ? (
               <section className="rounded-2xl border border-[#4FE0C0]/25 bg-[#4FE0C0]/5 p-4">
-                <p className="font-data text-xs uppercase tracking-wider text-[#4FE0C0]">40분 수업 지도안</p>
+                <p className="font-data text-xs uppercase tracking-wider text-[#4FE0C0]">45분 수업 지도안</p>
                 <h4 className="font-display mt-1 text-lg text-[#EAF2F5]">{lessonPlan.title}</h4>
                 <p className="mt-2 text-sm leading-6 text-[#B7C7D2]">
                   <span className="text-[#8AA0B0]">학습목표 </span>{lessonPlan.objective}

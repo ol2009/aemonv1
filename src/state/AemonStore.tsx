@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useEffect, useMemo, useReducer, type ReactNode } from 'react'
-import { seedEpisodes, visibleEpisodes } from '../data/episodes'
+import { activeEpisodes, seedEpisodes } from '../data/episodes'
 import { pickPollutionItem } from '../data/walkItems'
 import {
   alignmentFromGauge,
@@ -91,18 +91,18 @@ function findSeedEpisodeIndex(code: string) {
 }
 
 function nextEpisodeIndex(state: AemonState) {
-  const pool = visibleEpisodes(state.stage)
+  const pool = activeEpisodes
   if (pool.length === 0) return 0
   const current = seedEpisodes[state.episodeIndex] ?? pool[0]
   const currentVisibleIndex = pool.findIndex((episode) => episode.code === current.code)
-  const nextVisible = pool[(currentVisibleIndex + 1) % pool.length]
+  const nextVisible = pool[Math.min(currentVisibleIndex + 1, pool.length - 1)] ?? pool[0]
   return seedEpisodes.findIndex((episode) => episode.code === nextVisible.code)
 }
 
-function findEpisodeIndex(code: string | null, stage: number) {
+function findEpisodeIndex(code: string | null) {
   if (!code) return null
   const episode = seedEpisodes.find((item) => item.code === code)
-  if (!episode || episode.stageGate > stage || episode.active === false) return null
+  if (!episode || episode.active === false || !activeEpisodes.some((item) => item.code === episode.code)) return null
   const index = seedEpisodes.findIndex((item) => item.code === code)
   return index >= 0 ? index : null
 }
@@ -171,7 +171,7 @@ function reducer(state: AemonState, action: Action): AemonState {
         day: Math.max(state.day, 2),
         xp: state.xp + xpDelta,
         dailyDone: false,
-        episodeIndex: findSeedEpisodeIndex('알-02'),
+        episodeIndex: findSeedEpisodeIndex('수업-02'),
         logs: alreadyLogged ? state.logs : [log, ...state.logs].slice(0, 50),
       }
     }
@@ -354,10 +354,13 @@ export function AemonProvider({ children }: { children: ReactNode }) {
   }, [state])
 
   const value = useMemo<AemonContextValue>(() => {
-    const pool = visibleEpisodes(state.stage)
-    const linkedIndex = findEpisodeIndex(state.lastWalkLinkedEpisodeCode, state.stage)
+    const pool = activeEpisodes
+    const linkedIndex = findEpisodeIndex(state.lastWalkLinkedEpisodeCode)
     const indexedEpisode = seedEpisodes[state.episodeIndex]
-    const currentEpisode = (linkedIndex != null ? seedEpisodes[linkedIndex] : indexedEpisode?.active === false ? null : indexedEpisode) ?? pool[0] ?? seedEpisodes[0]
+    const indexedIsActive = indexedEpisode && pool.some((episode) => episode.code === indexedEpisode.code)
+    const firstIncomplete = pool.find((episode) => !state.logs.some((log) => log.episodeCode === episode.code))
+    const fallbackEpisode = state.onboardingComplete ? (firstIncomplete ?? pool[pool.length - 1]) : pool[0]
+    const currentEpisode = (linkedIndex != null ? seedEpisodes[linkedIndex] : indexedIsActive ? indexedEpisode : null) ?? fallbackEpisode ?? seedEpisodes[0]
 
     return {
       state,

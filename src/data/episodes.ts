@@ -1801,19 +1801,14 @@ const rawEpisodes: Episode[] = [
 
 const officialCodeByRawCode: Record<string, string> = {
   '알-01': '알-01',
-  '알-03': '알-02',
-  '알-04': '알-03',
-  '유-02': '유-01',
-  '유-03': '유-02',
-  '유-05': '유-03',
-  '개-01': '개-01',
-  '개-03': '개-02',
-  '개-05': '개-03',
-  '각-02': '각-01',
-  '각-03': '각-02',
-  '각-04': '각-03',
-  '각-05': '각-04',
-  '각-06': '각-05',
+  '각-03': '수업-02',
+  '유-03': '수업-03',
+  '개-02': '수업-04',
+  '개-03': '수업-05',
+  '개-05': '수업-06',
+  '보-10': '수업-07',
+  '보-12': '수업-08',
+  '보-14': '수업-09',
 }
 
 function displayCodeFor(rawCode: string) {
@@ -1832,15 +1827,24 @@ export const seedEpisodes: Episode[] = rawEpisodes.map((episode) => {
   }
 })
 
-// 활성(공개) 에피소드 — 이 목록의 code만 노출된다. 나머지는 예비 데이터로만 보존(비활성).
-export const activeCodes = new Set<string>([
-  '알-01', '알-02', '알-03',
-  '유-01', '유-02', '유-03',
-  '개-01', '개-02', '개-03',
-  '각-01', '각-02', '각-03', '각-04', '각-05',
-])
+export const activeOrder = [
+  '알-01',
+  '수업-02',
+  '수업-03',
+  '수업-04',
+  '수업-05',
+  '수업-06',
+  '수업-07',
+  '수업-08',
+  '수업-09',
+]
 
-export const activeEpisodes = seedEpisodes.filter((episode) => activeCodes.has(episode.code))
+// 활성(공개) 에피소드 — 이 목록의 code만 노출된다. 나머지는 예비 데이터로만 보존(비활성).
+export const activeCodes = new Set<string>(activeOrder)
+
+export const activeEpisodes = seedEpisodes
+  .filter((episode) => activeCodes.has(episode.code))
+  .sort((a, b) => activeOrder.indexOf(a.code) - activeOrder.indexOf(b.code))
 
 export const archivedEpisodes = seedEpisodes.filter((episode) => !activeCodes.has(episode.code))
 

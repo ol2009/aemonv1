@@ -1,6 +1,6 @@
 import type { Alignment, Verdict } from './types'
 
-export const XP_THRESHOLDS = [30, 80, 120]
+export const XP_THRESHOLDS = [30, 60, 80]
 export const XP_PER_EPISODE = 10
 export const GAUGE_DELTA = 15
 
@@ -9,7 +9,7 @@ export function nextThreshold(stage: number) {
 }
 
 export function stageStartXp(stage: number) {
-  return [0, 30, 80, 120][stage] ?? 120
+  return [0, 30, 60, 80][stage] ?? 80
 }
 
 export function xpProgress(stage: number, xp: number) {
@@ -36,10 +36,10 @@ export function clampGauge(value: number) {
 }
 
 export function stageLabel(stage: number, alignment: Alignment) {
-  if (stage === 0) return '알'
-  if (stage === 1) return '유아기'
-  if (stage === 2) return '개화기'
-  return alignment === 'evil' ? '각성기 · 불안정' : '각성기'
+  if (stage === 0) return '그림자'
+  if (stage === 1) return '윤곽'
+  if (stage === 2) return '개화'
+  return alignment === 'evil' ? '각성 · 불안정' : '각성'
 }
 
 export function verdictLabel(verdict: Verdict) {

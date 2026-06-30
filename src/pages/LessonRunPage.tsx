@@ -38,6 +38,7 @@ export function LessonRunPage() {
   const lessonPlan = findLessonPlan(currentEpisode.code)
   const material = findLessonMaterial(currentEpisode.code)
   const lessonNo = lessonPlan?.no ?? 1
+  const valueCodeNo = Math.max(1, lessonNo - 1)
   const [codeTitle, setCodeTitle] = useState(material?.valueCodeTitle ?? '')
   const [codeBody, setCodeBody] = useState(material?.valueCodeBody ?? '')
   const [codeSaved, setCodeSaved] = useState(false)
@@ -88,7 +89,7 @@ export function LessonRunPage() {
   })()
 
   const saveCode = () => {
-    upsertValueCode({ no: lessonNo, title: codeTitle, body: codeBody })
+    upsertValueCode({ no: valueCodeNo, title: codeTitle, body: codeBody })
     setCodeSaved(true)
     window.setTimeout(() => setCodeSaved(false), 1300)
   }
@@ -252,7 +253,7 @@ export function LessonRunPage() {
         <section className="mt-6 grid gap-6 lg:grid-cols-[360px_1fr]">
           <Panel>
             <p className="font-data text-xs uppercase tracking-wider text-[#FFD37A]">value code</p>
-            <h1 className="font-display mt-3 text-4xl text-[#EAF2F5]">가치코드 No.{lessonNo}</h1>
+            <h1 className="font-display mt-3 text-4xl text-[#EAF2F5]">가치코드 No.{valueCodeNo}</h1>
             <p className="mt-4 leading-7 text-[#B7C7D2]">오늘 토론을 에아몬이 기억할 행동지침으로 바꿉니다. 선생님이 반 합의 문장으로 다듬어 저장합니다.</p>
           </Panel>
           <Panel>

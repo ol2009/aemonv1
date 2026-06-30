@@ -4,7 +4,7 @@ import { BookOpen, ClipboardList, GraduationCap, Heart, MessageCircle, MessageSq
 import { AemonAvatar } from '../components/AemonAvatar'
 import { StatusBar } from '../components/StatusBar'
 import { Button, Panel } from '../components/ui'
-import { activeEpisodesForStage } from '../data/episodes'
+import { activeEpisodes } from '../data/episodes'
 import { findLessonPlan, lessonPlans } from '../data/lessonPlans'
 import { getMuttering } from '../data/mutterings'
 import { findPollutionItem, pickPollutionItem, pickWalkItem } from '../data/walkItems'
@@ -70,12 +70,10 @@ export function HomePage() {
 
   const lastEpisodeCode = state.logs[0]?.episodeCode
   const muttering = getMuttering(state.stage, state.alignment, state.day + state.gauge + state.stage + state.intimacy, lastEpisodeCode, state.intimacy)
-  const awakeningEpisodes = activeEpisodesForStage(3)
-  const completedAwakeningCodes = new Set(
-    state.logs.filter((log) => awakeningEpisodes.some((episode) => episode.code === log.episodeCode)).map((log) => log.episodeCode),
-  )
-  const awakeningComplete = awakeningEpisodes.length > 0 && completedAwakeningCodes.size >= awakeningEpisodes.length
-  const canGraduate = state.stage >= 3 && awakeningComplete && state.status !== 'graduated'
+  const requiredLessonCodes = activeEpisodes.filter((episode) => episode.code !== '알-01').map((episode) => episode.code)
+  const completedLessonCodes = new Set(state.logs.map((log) => log.episodeCode))
+  const curriculumComplete = requiredLessonCodes.length > 0 && requiredLessonCodes.every((code) => completedLessonCodes.has(code))
+  const canGraduate = state.onboardingComplete && curriculumComplete && state.status !== 'graduated'
   const pollution = findPollutionItem(state.pollutionItemId)
   const level = intimacyLevel(state.intimacy)
   const currentLesson = findLessonPlan(currentEpisode.code)
@@ -153,7 +151,7 @@ export function HomePage() {
           <h2 className="font-display mt-2 text-3xl text-[#FFD37A]">
             {currentLessonNo}차시 / {totalLessons}차시
           </h2>
-          <p className="mt-3 truncate text-lg font-bold text-[#EAF2F5]">{currentEpisode.title}</p>
+          <p className="mt-3 truncate text-lg font-bold text-[#EAF2F5]">{currentLesson?.title ?? currentEpisode.title}</p>
         </Panel>
         <Panel>
           <p className="font-data text-xs uppercase tracking-wider text-[#8AA0B0]">quick menu</p>
