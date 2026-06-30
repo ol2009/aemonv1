@@ -9,6 +9,7 @@ import { GuidePage } from './pages/GuidePage'
 import { HomePage } from './pages/HomePage'
 import { IntroPage } from './pages/IntroPage'
 import { LandingPage } from './pages/LandingPage'
+import { LessonRunPage } from './pages/LessonRunPage'
 import { LoginPage } from './pages/LoginPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { StartPage } from './pages/StartPage'
@@ -25,6 +26,7 @@ export default function App() {
           <Route path="login" element={<LoginPage />} />
           <Route path="intro" element={<IntroPage />} />
           <Route path="home" element={<HomePage />} />
+          <Route path="lesson" element={<LessonRunPage />} />
           <Route path="codes" element={<ValueCodePage />} />
           <Route path="board" element={<BoardPage />} />
           <Route path="talk" element={<ConversationPage />} />

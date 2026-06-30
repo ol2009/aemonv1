@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChevronRight, Database, Pencil, RefreshCcw, Save } from 'lucide-react'
 import { Button, PageHeader, Panel } from '../components/ui'
+import { findLessonMaterial } from '../data/lessonMaterials'
 import { lessonPlans } from '../data/lessonPlans'
 import type { LessonPhase, LessonPlan } from '../data/lessonPlans'
 import {
@@ -277,6 +278,29 @@ export function GuidePage() {
               </summary>
 
               <div className="mt-5 space-y-4 border-t border-white/10 pt-5">
+                {(() => {
+                  const material = findLessonMaterial(plan.episodeCode)
+                  if (!material) return null
+                  return (
+                    <div className="grid gap-4 rounded-2xl border border-white/10 bg-[#07111B]/40 p-4 md:grid-cols-[150px_1fr]">
+                      <img className="aspect-square w-full rounded-2xl object-cover" src={material.imageUrl} alt={`${plan.title} 차시 이미지`} />
+                      <div>
+                        <p className="font-data text-xs uppercase tracking-wider text-[#FFD37A]">lesson card assets</p>
+                        <h4 className="font-display mt-1 text-xl text-[#EAF2F5]">{material.activityTitle}</h4>
+                        <p className="mt-2 text-sm leading-6 text-[#8AA0B0]">{material.activityDescription}</p>
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          <a className="inline-flex min-h-10 items-center justify-center rounded-xl bg-[#FFD37A] px-4 text-sm font-bold text-[#0A1622]" download href={material.cardsPdfUrl}>
+                            카드 PDF
+                          </a>
+                          <a className="inline-flex min-h-10 items-center justify-center rounded-xl border border-white/10 px-4 text-sm font-bold text-[#B7C7D2]" href={material.cardsHtmlUrl} target="_blank" rel="noreferrer">
+                            인쇄 화면
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })()}
+
                 {editingCode === plan.episodeCode && drafts[plan.episodeCode] ? (
                   <LessonContentEditor
                     disabled={!canEdit || isSaving}

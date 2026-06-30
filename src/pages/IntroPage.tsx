@@ -271,14 +271,14 @@ export function IntroPage() {
             <a
               className="inline-flex min-h-16 items-center justify-center gap-2 rounded-2xl border border-[#FFD37A]/30 bg-[#FFD37A]/10 px-5 py-3 text-base font-bold text-[#FFD37A] transition hover:bg-[#FFD37A]/15"
               download
-              href="/aemon-classification-cards.pdf"
+              href="/lesson-cards/lesson-01.pdf"
             >
               <Download size={20} />
               카드 PDF 다운로드
             </a>
             <a
               className="inline-flex min-h-16 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-[#1E3A54] px-5 py-3 text-base font-bold text-[#EAF2F5] transition hover:border-[#4FE0C0]/50"
-              href="/classification-cards.html"
+              href="/lesson-cards/lesson-01.html"
               target="_blank"
               rel="noreferrer"
             >

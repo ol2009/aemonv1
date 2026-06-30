@@ -202,7 +202,7 @@ export function HomePage() {
               프로젝트 시작하기
             </Button>
           ) : null}
-          <Button className="min-h-16 text-xl" disabled={!state.onboardingComplete || state.dailyDone || canGraduate || state.status === 'graduated'} onClick={() => navigate('/talk')}>
+          <Button className="min-h-16 text-xl" disabled={!state.onboardingComplete || state.dailyDone || canGraduate || state.status === 'graduated'} onClick={() => navigate('/lesson')}>
             <MessageCircle size={24} />
             {canGraduate ? '졸업 준비 완료' : state.dailyDone ? '내일 또 만나요' : `${currentLessonNo}차시 시작하기`}
           </Button>
