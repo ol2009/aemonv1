@@ -6,7 +6,7 @@ const xp = 10
 // E(존재형): 전부 경험치 +10 · 게이지 0(채점 없음). V-red(빨간선): 선 / 악 / 중립.
 // V-conflict(가치충돌, 악 없음): 다듬으면 선, 안 다듬으면 중립.
 // 단계 게이트 — 알:0 / 유아기:1 / 개화기:2 / 각성기:3
-export const seedEpisodes: Episode[] = [
+const rawEpisodes: Episode[] = [
   // ───────────────────────── 0단계 · 알 (E) ─────────────────────────
   {
     code: '알-01',
@@ -1799,12 +1799,45 @@ export const seedEpisodes: Episode[] = [
   },
 ]
 
-// 활성(공개) 에피소드 — 이 목록의 code만 노출된다. 나머지는 데이터로만 보존(비활성).
+const officialCodeByRawCode: Record<string, string> = {
+  '알-01': '알-01',
+  '알-03': '알-02',
+  '알-04': '알-03',
+  '유-02': '유-01',
+  '유-03': '유-02',
+  '유-05': '유-03',
+  '개-01': '개-01',
+  '개-03': '개-02',
+  '개-05': '개-03',
+  '각-02': '각-01',
+  '각-03': '각-02',
+  '각-04': '각-03',
+  '각-05': '각-04',
+  '각-06': '각-05',
+}
+
+function displayCodeFor(rawCode: string) {
+  return officialCodeByRawCode[rawCode] ?? `예비-${rawCode}`
+}
+
+export const seedEpisodes: Episode[] = rawEpisodes.map((episode) => {
+  const code = displayCodeFor(episode.code)
+  return {
+    ...episode,
+    code,
+    choices: episode.choices.map((choice, index) => ({
+      ...choice,
+      id: `${code}-${index + 1}`,
+    })),
+  }
+})
+
+// 활성(공개) 에피소드 — 이 목록의 code만 노출된다. 나머지는 예비 데이터로만 보존(비활성).
 export const activeCodes = new Set<string>([
-  '알-01', '알-03', '알-04',
-  '유-02', '유-03', '유-05',
-  '개-01', '개-03', '개-05',
-  '각-02', '각-03', '각-04', '각-05', '각-06',
+  '알-01', '알-02', '알-03',
+  '유-01', '유-02', '유-03',
+  '개-01', '개-02', '개-03',
+  '각-01', '각-02', '각-03', '각-04', '각-05',
 ])
 
 export const activeEpisodes = seedEpisodes.filter((episode) => activeCodes.has(episode.code))

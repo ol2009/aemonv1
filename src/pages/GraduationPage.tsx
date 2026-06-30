@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { Library, PlusCircle } from 'lucide-react'
+import { Home, PlusCircle } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
 import { Button, Panel } from '../components/ui'
 import { useAemon } from '../state/AemonStore'
@@ -33,9 +33,9 @@ export function GraduationPage() {
           <p className="mt-2 text-[#8AA0B0]">{state.day}일 동안 {state.logs.length}번의 대화 · 친밀도 {state.intimacy} · {good ? '선 엔딩' : '악 엔딩'}</p>
         </div>
         <div className="mt-8 flex flex-wrap gap-3">
-          <Button onClick={() => navigate('/dex')}>
-            <Library size={19} />
-            도감에서 보기
+          <Button onClick={() => navigate('/home')}>
+            <Home size={19} />
+            홈으로
           </Button>
           <Button
             variant="secondary"

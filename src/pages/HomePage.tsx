@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { useEffect, useRef, useState } from 'react'
-import { Library, MessageCircle, RotateCcw, Settings, GraduationCap, Waves, Brush, X, AlertCircle, Heart } from 'lucide-react'
+import { MessageCircle, RotateCcw, Settings, GraduationCap, Waves, Brush, X, AlertCircle, Heart } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
 import { StatusBar } from '../components/StatusBar'
 import { Button, Panel } from '../components/ui'
@@ -197,10 +197,6 @@ export function HomePage() {
               데이터의 바다로 보내기
             </Button>
           ) : null}
-          <Button variant="secondary" onClick={() => navigate('/dex')}>
-            <Library size={19} />
-            도감
-          </Button>
           <Button variant="ghost" onClick={() => navigate('/settings')}>
             <Settings size={19} />
             교사 설정

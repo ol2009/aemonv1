@@ -5,12 +5,12 @@ import { AemonAvatar } from '../components/AemonAvatar'
 import { StatusBar } from '../components/StatusBar'
 import { Button, Panel } from '../components/ui'
 import { nextThreshold } from '../domain/progression'
-import { cardGuides, episodeTypeGuide, findLessonPlan, rebuttalMethods } from '../data/lessonPlans'
+import { findLessonPlan } from '../data/lessonPlans'
 import { judgeWithTeacherKey, PROVIDER_LABEL, type AiJudgeResult } from '../lib/ai'
 import type { EpisodeChoice, Verdict } from '../domain/types'
 import { useAemon } from '../state/AemonStore'
 
-type Step = 'hook' | 'answer' | 'rebut' | 'verdict'
+type Step = 'hook' | 'answer' | 'verdict'
 
 function resultStyle(verdict: Verdict) {
   if (verdict === 'good') return 'border-[#4FE0C0]/35 bg-[#4FE0C0]/10 text-[#4FE0C0]'
@@ -41,7 +41,6 @@ export function ConversationPage() {
   const [aiLoading, setAiLoading] = useState(false)
   const [aiError, setAiError] = useState<string | null>(null)
 
-  const guide = cardGuides[currentEpisode.code]
   const lessonPlan = findLessonPlan(currentEpisode.code)
   const isNameEpisode = currentEpisode.code === '알-01'
 
@@ -86,7 +85,7 @@ export function ConversationPage() {
         classAnswer: answer,
       })
       setAiResult(result)
-      setStep('rebut')
+      setStep('verdict')
     } catch (error) {
       setAiError(error instanceof Error ? error.message : 'AI 호출에 실패했어요.')
     } finally {
@@ -130,7 +129,7 @@ export function ConversationPage() {
 
         <Panel className="min-h-[560px]">
           <div className="rounded-[26px] border border-white/10 bg-[#1E3A54]/70 p-7">
-            <p className="font-hand text-4xl leading-tight text-[#EAF2F5]">"{step === 'rebut' || step === 'verdict' ? activeChoice?.rebutText : currentEpisode.hookText}"</p>
+            <p className="font-hand text-4xl leading-tight text-[#EAF2F5]">"{step === 'verdict' ? activeChoice?.rebutText : currentEpisode.hookText}"</p>
           </div>
 
           {step === 'hook' ? (
@@ -158,7 +157,7 @@ export function ConversationPage() {
                   onKeyDown={(event) => {
                     if (event.key === 'Enter' && nameChoice) {
                       setSelected(nameChoice)
-                      setStep('rebut')
+                      setStep('verdict')
                     }
                   }}
                 />
@@ -167,7 +166,7 @@ export function ConversationPage() {
                   onClick={() => {
                     if (!nameChoice) return
                     setSelected(nameChoice)
-                    setStep('rebut')
+                    setStep('verdict')
                   }}
                 >
                   이름 알려주기
@@ -185,7 +184,7 @@ export function ConversationPage() {
                   className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-5 text-left text-lg font-semibold leading-7 text-[#EAF2F5] transition hover:border-[#FFD37A]/50 hover:bg-[#1E3A54]"
                   onClick={() => {
                     setSelected(choice)
-                    setStep('rebut')
+                    setStep('verdict')
                   }}
                   type="button"
                 >
@@ -217,15 +216,6 @@ export function ConversationPage() {
             </div>
           ) : null}
 
-          {step === 'rebut' ? (
-            <div className="mt-8 flex flex-wrap justify-end gap-3">
-              <Button variant="secondary" onClick={() => { setAiResult(null); setAiError(null); setStep('answer') }}>
-                다시 답하기
-              </Button>
-              <Button onClick={() => setStep('verdict')}>결과 보기</Button>
-            </div>
-          ) : null}
-
           {step === 'verdict' && activeChoice ? (
             <div className="mt-8">
               <div className={`rounded-2xl border p-5 ${resultStyle(finalVerdict)}`}>
@@ -243,7 +233,10 @@ export function ConversationPage() {
                   <p className="max-w-xl text-lg font-semibold">{activeChoice.reason}</p>
                 </div>
               </div>
-              <div className="mt-5 flex justify-end">
+              <div className="mt-5 flex flex-wrap justify-end gap-3">
+                <Button variant="secondary" onClick={() => { setAiResult(null); setAiError(null); setSelected(null); setStep('answer') }}>
+                  다시 답하기
+                </Button>
                 <Button onClick={finish}>오늘 대화 마치기</Button>
               </div>
             </div>
@@ -257,58 +250,13 @@ export function ConversationPage() {
             <MessageSquareQuote size={20} className="text-[#FFD37A]" />
             교사용 진행 도움말
             <span className="font-data text-xs text-[#8AA0B0]">· {currentEpisode.code}</span>
-            {lessonPlan ? (
-              <span className="rounded-full bg-[#4FE0C0]/15 px-2 py-0.5 font-data text-xs text-[#4FE0C0]">40분 지도안 있음</span>
-            ) : null}
           </span>
-          <span className="font-data text-xs text-[#8AA0B0]">{lessonPlan ? '수업 1차시용' : '데일리 토론용'}</span>
         </summary>
 
-        <div className="mt-5 grid gap-5 border-t border-white/10 pt-5 md:grid-cols-2">
-          <div className="space-y-5">
-            <section>
-              <p className="font-data text-xs uppercase tracking-wider text-[#4FE0C0]">결과 기준</p>
-              <p className="mt-2 text-sm leading-6 text-[#B7C7D2]">{episodeTypeGuide[currentEpisode.type]}</p>
-            </section>
-
-            {guide ? (
-              <section>
-                <p className="font-data text-xs uppercase tracking-wider text-[#4FE0C0]">토론 발문</p>
-                <ol className="mt-2 space-y-2">
-                  {guide.prompts.map((prompt, index) => (
-                    <li key={index} className="flex gap-2 text-sm leading-6 text-[#EAF2F5]">
-                      <span className="font-display text-[#FFD37A]">{index + 1}.</span>
-                      <span>{prompt}</span>
-                    </li>
-                  ))}
-                </ol>
-              </section>
-            ) : null}
-
-            {guide ? (
-              <section>
-                <p className="font-data text-xs uppercase tracking-wider text-[#4FE0C0]">진행 팁</p>
-                <p className="mt-2 text-sm leading-6 text-[#B7C7D2]">{guide.tip}</p>
-              </section>
-            ) : null}
-          </div>
-
-          <div className="space-y-5">
-            <section className="rounded-2xl border border-white/5 bg-[#07111B]/40 p-4">
-              <p className="font-data text-xs uppercase tracking-wider text-[#FFD37A]">에아몬 되받기 4수법</p>
-              <ul className="mt-2 space-y-1.5">
-                {rebuttalMethods.map((method, index) => (
-                  <li key={index} className="flex gap-2 text-sm leading-6 text-[#B7C7D2]">
-                    <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-[#FFD37A]" />
-                    <span>{method}</span>
-                  </li>
-                ))}
-              </ul>
-            </section>
-
+        <div className="mt-5 border-t border-white/10 pt-5">
             {lessonPlan ? (
               <section className="rounded-2xl border border-[#4FE0C0]/25 bg-[#4FE0C0]/5 p-4">
-                <p className="font-data text-xs uppercase tracking-wider text-[#4FE0C0]">40분 수업 지도안 (수업 {lessonPlan.no} · {lessonPlan.grade})</p>
+                <p className="font-data text-xs uppercase tracking-wider text-[#4FE0C0]">40분 수업 지도안</p>
                 <h4 className="font-display mt-1 text-lg text-[#EAF2F5]">{lessonPlan.title}</h4>
                 <p className="mt-2 text-sm leading-6 text-[#B7C7D2]">
                   <span className="text-[#8AA0B0]">학습목표 </span>{lessonPlan.objective}
@@ -321,29 +269,16 @@ export function ConversationPage() {
                 {lessonPlan.standards.length > 0 ? (
                   <details className="mt-2 rounded-xl border border-white/5 bg-[#07111B]/40 px-3 py-2 [&_summary::-webkit-details-marker]:hidden">
                     <summary className="cursor-pointer select-none text-sm text-[#8AA0B0]">
-                      관련 성취기준 (학년군별 적용) · 펼치기
+                      관련 성취기준 · 펼치기
                     </summary>
-                    <p className="mt-2 text-xs text-[#8AA0B0]">운영 학년군에 맞는 성취기준을 골라 적용하세요.</p>
-                    <div className="mt-2 space-y-3">
-                      {[
-                        ['3~4학년군으로 운영 시', lessonPlan.standards.filter((standard) => standard.startsWith('[4'))],
-                        ['5~6학년군으로 운영 시', lessonPlan.standards.filter((standard) => standard.startsWith('[6'))],
-                      ].map(([label, items]) =>
-                        (items as string[]).length > 0 ? (
-                          <div key={label as string}>
-                            <p className="font-data text-xs text-[#FFD37A]">{label as string}</p>
-                            <ul className="mt-1 space-y-1">
-                              {(items as string[]).map((standard, standardIndex) => (
-                                <li key={standardIndex} className="flex gap-2 text-sm leading-6 text-[#B7C7D2]">
-                                  <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-[#4FE0C0]" />
-                                  <span>{standard}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        ) : null,
-                      )}
-                    </div>
+                    <ul className="mt-2 space-y-1">
+                      {lessonPlan.standards.map((standard, standardIndex) => (
+                        <li key={standardIndex} className="flex gap-2 text-sm leading-6 text-[#B7C7D2]">
+                          <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-[#4FE0C0]" />
+                          <span>{standard}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </details>
                 ) : null}
                 <ol className="mt-3 space-y-3">
@@ -369,7 +304,6 @@ export function ConversationPage() {
                 </Button>
               </section>
             ) : null}
-          </div>
         </div>
       </details>
     </div>

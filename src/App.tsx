@@ -2,7 +2,6 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { AppFrame } from './components/AppFrame'
 import { AemonProvider } from './state/AemonStore'
 import { ConversationPage } from './pages/ConversationPage'
-import { DexPage } from './pages/DexPage'
 import { EvolutionPage } from './pages/EvolutionPage'
 import { GraduationPage } from './pages/GraduationPage'
 import { GuidePage } from './pages/GuidePage'
@@ -25,7 +24,7 @@ export default function App() {
           <Route path="talk" element={<ConversationPage />} />
           <Route path="evolution" element={<EvolutionPage />} />
           <Route path="graduation" element={<GraduationPage />} />
-          <Route path="dex" element={<DexPage />} />
+          <Route path="dex" element={<Navigate to="/home" replace />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

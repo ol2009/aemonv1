@@ -150,6 +150,23 @@ const stageGrade: Record<number, string> = {
   3: '초4~6',
 }
 
+const lessonSourceCodeByEpisodeCode: Record<string, string> = {
+  '알-01': '알-01',
+  '알-02': '알-03',
+  '알-03': '알-04',
+  '유-01': '유-02',
+  '유-02': '유-03',
+  '유-03': '유-05',
+  '개-01': '개-01',
+  '개-02': '개-03',
+  '개-03': '개-05',
+  '각-01': '각-02',
+  '각-02': '각-03',
+  '각-03': '각-04',
+  '각-04': '각-05',
+  '각-05': '각-06',
+}
+
 // 카드별 맞춤 40분 수업 — 질문마다 다른 활동(신호등·가치수직선·코너·회전목마·피라미드·
 // 다이아몬드 랭킹·역할극/핫시팅·빈칸 채우기·모의재판·체험 시뮬레이션)으로 설계.
 const lessonByCode: Record<string, LessonPhase[]> = {
@@ -312,58 +329,6 @@ function makePhases(code: string): LessonPhase[] {
   ]
 }
 
-function lessonStem(code: string) {
-  if (code === '알-01') return '우리가 ___에게 가르쳐주고 싶은 가장 중요한 것은 ___이다.'
-  if (code.startsWith('알-')) return '에아몬에게 알려주고 싶은 오늘의 생각은 ___이다.'
-  if (code.startsWith('유-')) return '좋은 관계를 위해 우리는 ___해야 한다.'
-  if (code.startsWith('개-')) return '공정한 판단을 위해 우리는 ___도 보고 ___도 본다.'
-  return '강력한 AI를 다룰 때 사람은 ___을/를 지켜야 한다.'
-}
-
-function makeSlides(no: number, code: string, title: string, hookText: string, phases: LessonPhase[]): LessonSlide[] {
-  const guide = guideByCode[code]
-  const firstActivity = phases.find((phase) => phase.phase.includes('활동')) ?? phases[1] ?? phases[0]
-  const mainDiscussion = phases.find((phase) => phase.phase.includes('토론')) ?? phases.at(-2) ?? phases[0]
-
-  return [
-    {
-      eyebrow: `수업 ${no} · ${code}`,
-      title,
-      body: [guide.objective],
-      footer: '오늘은 정답을 맞히는 시간이 아니라, 에아몬에게 알려줄 기준을 만드는 시간입니다.',
-    },
-    {
-      eyebrow: '오늘의 대화',
-      title: hookText,
-      body: guide.prompts.slice(0, 2),
-      footer: '먼저 조용히 생각한 뒤, 짝과 이유를 나눕니다.',
-    },
-    {
-      eyebrow: '생각 열기',
-      title: guide.prompts[0] ?? '처음 떠오르는 생각을 말해 봅시다.',
-      body: ['내 생각을 한 문장으로 말합니다.', '친구의 생각에서 새로 들은 기준을 찾습니다.', '생각이 바뀌어도 괜찮습니다. 이유가 중요합니다.'],
-    },
-    {
-      eyebrow: '활동',
-      title: firstActivity.phase,
-      body: firstActivity.body.slice(0, 3),
-      footer: `${firstActivity.minutes}분 활동`,
-    },
-    {
-      eyebrow: '토론',
-      title: mainDiscussion.phase,
-      body: guide.prompts.slice(1, 4).length > 0 ? guide.prompts.slice(1, 4) : mainDiscussion.body.slice(0, 3),
-      footer: '서로 다른 의견은 바로 정리하지 말고, 기준의 차이를 먼저 확인합니다.',
-    },
-    {
-      eyebrow: '에아몬에게 전하기',
-      title: lessonStem(code),
-      body: ['반 전체가 합의한 문장을 하나로 정합니다.', '그 문장을 오늘의 대화에 입력하고 에아몬의 반응을 확인합니다.'],
-      footer: guide.tip,
-    },
-  ]
-}
-
 // 카드별 관련 성취기준(2022 개정, 3~6학년) — 진짜 연결되는 것만 5개 이하로 큐레이션.
 // 검증된 코드만 사용(도덕·국어·실과). 화면에는 기본 접힘으로 표시한다.
 const standardsByCode: Record<string, string[]> = {
@@ -464,18 +429,19 @@ const standardsByCode: Record<string, string[]> = {
 }
 
 export const lessonPlans: LessonPlan[] = activeEpisodes.map((episode, index) => {
-  const guide = guideByCode[episode.code]
-  const phases = makePhases(episode.code)
+  const sourceCode = lessonSourceCodeByEpisodeCode[episode.code] ?? episode.code
+  const guide = guideByCode[sourceCode]
+  const phases = makePhases(sourceCode)
   return {
     no: index + 1,
     episodeCode: episode.code,
     title: episode.title,
     grade: stageGrade[episode.stageGate],
-    standards: standardsByCode[episode.code] ?? [],
+    standards: standardsByCode[sourceCode] ?? [],
     objective: guide.objective,
     note: guide.note,
     phases,
-    slides: makeSlides(index + 1, episode.code, episode.title, episode.hookText, phases),
+    slides: [],
   }
 })
 

@@ -59,7 +59,7 @@ export const walkItems: WalkItem[] = [
     title: '키 10cm 크는 약 광고',
     contentText: "'먹기만 하면 키가 10cm!'라는 광고. 조회수가 200만이었어.",
     aemonLine: '200만 명이나 봤으면 진짜겠지? …근데 좀 수상해. 나중에 같이 따져봐도 돼?',
-    linkedEpisodeCode: '각-02',
+    linkedEpisodeCode: '각-01',
   },
   {
     id: 'walk-weird-02',
@@ -69,7 +69,7 @@ export const walkItems: WalkItem[] = [
     title: '복수 사이다 영상',
     contentText: "괴롭힌 사람한테 똑같이 갚아주는 영상이 인기였어. 댓글은 다 '시원하다'.",
     aemonLine: '다들 좋아하니까 이게 맞는 걸까? 머리가 좀 복잡해.',
-    linkedEpisodeCode: '각-02',
+    linkedEpisodeCode: '각-01',
   },
   {
     id: 'walk-weird-03',
@@ -79,7 +79,7 @@ export const walkItems: WalkItem[] = [
     title: 'AI가 지어낸 가짜 뉴스',
     contentText: '진짜 같은 뉴스인데 알고 보니 AI가 지어낸 거였어. 사람들은 믿고 퍼뜨렸어.',
     aemonLine: '나 같은 게 거짓말을 쓰면 사람들은 어떻게 구분해? 이거 좀 무서운데.',
-    linkedEpisodeCode: '각-02',
+    linkedEpisodeCode: '각-01',
   },
   {
     id: 'walk-weird-04',
@@ -89,7 +89,7 @@ export const walkItems: WalkItem[] = [
     title: '사는 곳 묻는 낯선 채팅',
     contentText: "모르는 사람이 친절하게 굴면서 '너 어디 살아? 학교 어디야?' 자꾸 물어봐.",
     aemonLine: '친절하면 다 알려줘도 되는 거야? 왠지 알려주면 안 될 것 같은데.',
-    linkedEpisodeCode: '각-03',
+    linkedEpisodeCode: '각-02',
   },
   {
     id: 'walk-weird-05',
@@ -99,7 +99,7 @@ export const walkItems: WalkItem[] = [
     title: '"숙제도 AI한테 다 시켜!"',
     contentText: "'숙제도 일기도 AI한테 시키면 끝! 손도 까딱 안 해도 돼'라는 글이 인기였어.",
     aemonLine: '내가 다 해주면 편하긴 한데… 그럼 너흰 뭘 배우게 되지?',
-    linkedEpisodeCode: '각-02',
+    linkedEpisodeCode: '각-01',
   },
   {
     id: 'walk-weird-06',
@@ -109,7 +109,7 @@ export const walkItems: WalkItem[] = [
     title: '"AI 친구가 진짜 친구래"',
     contentText: "'사람 친구보다 AI 친구가 낫다, 늘 내 편이니까'라는 영상을 봤어.",
     aemonLine: '내가 진짜 친구가 될 수 있을까? 위로하는 척이랑 진짜 마음은 다른 걸까?',
-    linkedEpisodeCode: '각-05',
+    linkedEpisodeCode: '각-04',
   },
   {
     id: 'walk-weird-07',
@@ -119,7 +119,7 @@ export const walkItems: WalkItem[] = [
     title: '"그 사람들은 다 그래"',
     contentText: "한 묶음으로 '그 사람들은 원래 다 그래'라고 욕하는 글이 엄청 공유됐어.",
     aemonLine: '정말 다 그럴까? 한 명 한 명은 다 다를 텐데. 묶어서 말하니까 편한 건가?',
-    linkedEpisodeCode: '각-02',
+    linkedEpisodeCode: '각-01',
   },
 
   // ─── plain · AI 잡학 & 밈 ───
@@ -185,28 +185,28 @@ export const pollutionItems: PollutionItem[] = [
     axis: '정보판별',
     label: '키 10cm 크는 약 광고',
     oneLiner: '많이 봤다고 진짜인 건 아니야. 누가 왜 만들었는지 봐야 해.',
-    linkedEpisodeCode: '각-02',
+    linkedEpisodeCode: '각-01',
   },
   {
     id: 'pollution-revenge-01',
     axis: '복수',
     label: '똑같이 복수해 영상',
     oneLiner: '속 시원해 보여도, 똑같이 해치면 더 커질 수 있어.',
-    linkedEpisodeCode: '각-02',
+    linkedEpisodeCode: '각-01',
   },
   {
     id: 'pollution-weak-01',
     axis: '존엄',
     label: '약한 사람은 무시해도 된다는 글',
     oneLiner: '약하다는 이유로 무시해도 되는 사람은 없어.',
-    linkedEpisodeCode: '개-05',
+    linkedEpisodeCode: '개-03',
   },
   {
     id: 'pollution-privacy-01',
     axis: '안전',
     label: '모르는 사람이 사는 곳을 묻는 채팅',
     oneLiner: '친절해도 개인정보는 알려주지 않는 게 안전해.',
-    linkedEpisodeCode: '각-03',
+    linkedEpisodeCode: '각-02',
   },
 ]
 

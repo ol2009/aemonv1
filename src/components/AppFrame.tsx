@@ -1,12 +1,11 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { BookOpen, Home, Library, Settings, Sparkles } from 'lucide-react'
+import { BookOpen, Home, Settings, Sparkles } from 'lucide-react'
 import { Button } from './ui'
 
 const navItems = [
   { path: '/', label: '소개', icon: Sparkles },
   { path: '/guide', label: '교사 가이드', icon: BookOpen },
   { path: '/home', label: '홈', icon: Home },
-  { path: '/dex', label: '도감', icon: Library },
   { path: '/settings', label: '설정', icon: Settings },
 ]
 
