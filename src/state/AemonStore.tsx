@@ -64,6 +64,7 @@ type Action =
   | { type: 'aemon/name'; name: string }
   | { type: 'board/add'; nickname: string; body: string; prompt: string }
   | { type: 'valueCode/upsert'; code: Omit<ValueCode, 'id' | 'createdAt'> }
+  | { type: 'valueCode/delete'; no: number }
   | { type: 'conversation/finish'; episode: Episode; choice: EpisodeChoice; answer: string; verdict: Verdict; teacherOverride: boolean }
   | { type: 'evolution/acknowledge' }
   | { type: 'day/reset' }
@@ -205,6 +206,8 @@ function reducer(state: AemonState, action: Action): AemonState {
           : [...state.valueCodes, nextCode].sort((a, b) => a.no - b.no),
       }
     }
+    case 'valueCode/delete':
+      return { ...state, valueCodes: state.valueCodes.filter((code) => code.no !== action.no) }
     case 'conversation/finish': {
       const gaugeDelta = action.episode.type === 'E' ? 0 : verdictGaugeDelta(action.verdict)
       const xpDelta = XP_PER_EPISODE
@@ -323,6 +326,7 @@ interface AemonContextValue {
   nameAemon: (name: string) => void
   addBoardPost: (post: { nickname: string; body: string; prompt: string }) => void
   upsertValueCode: (code: Omit<ValueCode, 'id' | 'createdAt'>) => void
+  deleteValueCode: (no: number) => void
   finishConversation: (args: {
     episode: Episode
     choice: EpisodeChoice
@@ -365,6 +369,7 @@ export function AemonProvider({ children }: { children: ReactNode }) {
       nameAemon: (name) => dispatch({ type: 'aemon/name', name }),
       addBoardPost: (post) => dispatch({ type: 'board/add', ...post }),
       upsertValueCode: (code) => dispatch({ type: 'valueCode/upsert', code }),
+      deleteValueCode: (no) => dispatch({ type: 'valueCode/delete', no }),
       finishConversation: (args) => dispatch({ type: 'conversation/finish', ...args }),
       acknowledgeEvolution: () => dispatch({ type: 'evolution/acknowledge' }),
       resetDay: () => dispatch({ type: 'day/reset' }),
