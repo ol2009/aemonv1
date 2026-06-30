@@ -2,6 +2,7 @@ create table if not exists classes (
   id uuid primary key default gen_random_uuid(),
   teacher_id uuid,
   name text not null,
+  intro text not null default '',
   mode text not null check (mode in ('ai', 'basic')),
   created_at timestamptz not null default now()
 );
@@ -46,6 +47,25 @@ create table if not exists lesson_contents (
   phases_json jsonb not null default '[]'::jsonb,
   slides_json jsonb not null default '[]'::jsonb,
   updated_at timestamptz not null default now()
+);
+
+create table if not exists value_codes (
+  id uuid primary key default gen_random_uuid(),
+  class_id uuid references classes(id) on delete cascade,
+  no int not null check (no > 0),
+  title text not null,
+  body text not null,
+  created_at timestamptz not null default now(),
+  unique (class_id, no)
+);
+
+create table if not exists class_board_posts (
+  id uuid primary key default gen_random_uuid(),
+  class_id uuid references classes(id) on delete cascade,
+  nickname text not null,
+  body text not null,
+  prompt text not null,
+  created_at timestamptz not null default now()
 );
 
 create table if not exists walk_items (
@@ -101,6 +121,8 @@ create table if not exists dex (
 );
 
 alter table lesson_contents enable row level security;
+alter table value_codes enable row level security;
+alter table class_board_posts enable row level security;
 
 drop policy if exists "lesson contents public read" on lesson_contents;
 create policy "lesson contents public read"
@@ -127,3 +149,28 @@ create policy "lesson contents authenticated delete"
   on lesson_contents for delete
   to authenticated
   using (true);
+
+drop policy if exists "value codes public read" on value_codes;
+create policy "value codes public read"
+  on value_codes for select
+  using (true);
+
+drop policy if exists "value codes authenticated write" on value_codes;
+create policy "value codes authenticated write"
+  on value_codes for all
+  to authenticated
+  using (true)
+  with check (true);
+
+drop policy if exists "class board public read" on class_board_posts;
+create policy "class board public read"
+  on class_board_posts for select
+  using (true);
+
+drop policy if exists "class board public insert" on class_board_posts;
+create policy "class board public insert"
+  on class_board_posts for insert
+  with check (
+    length(trim(nickname)) between 1 and 16
+    and length(trim(body)) between 1 and 280
+  );

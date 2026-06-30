@@ -84,9 +84,27 @@ export interface CleanLog {
   createdAt: string
 }
 
+export interface ClassBoardPost {
+  id: string
+  nickname: string
+  body: string
+  prompt: string
+  createdAt: string
+}
+
+export interface ValueCode {
+  id: string
+  no: number
+  title: string
+  body: string
+  createdAt: string
+}
+
 export interface AemonState {
   className: string
+  classIntro: string
   aemonName: string
+  onboardingComplete: boolean
   mode: ConversationMode
   apiKey: string
   aiProvider: AiProvider
@@ -111,5 +129,7 @@ export interface AemonState {
   logs: EpisodeLog[]
   walkLogs: WalkLog[]
   cleanLogs: CleanLog[]
+  boardPosts: ClassBoardPost[]
+  valueCodes: ValueCode[]
   dex: DexEntry[]
 }

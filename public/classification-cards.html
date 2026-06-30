@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>에아몬 분류게임 카드</title>
+    <style>
+      @page {
+        size: A4;
+        margin: 14mm;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        color: #17202a;
+        font-family: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+        background: #ffffff;
+      }
+
+      header {
+        border-bottom: 3px solid #17202a;
+        padding-bottom: 12px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 28px;
+      }
+
+      .subtitle {
+        margin: 8px 0 0;
+        color: #4d5b68;
+        font-size: 14px;
+        line-height: 1.6;
+      }
+
+      .labels,
+      .cards {
+        display: grid;
+        gap: 10px;
+        grid-template-columns: repeat(2, 1fr);
+        margin-top: 18px;
+      }
+
+      .label {
+        align-items: center;
+        border: 2px solid #17202a;
+        border-radius: 12px;
+        display: flex;
+        font-size: 22px;
+        font-weight: 800;
+        justify-content: center;
+        min-height: 76px;
+        text-align: center;
+      }
+
+      .card {
+        align-items: center;
+        border: 2px dashed #415160;
+        border-radius: 12px;
+        display: flex;
+        font-size: 20px;
+        font-weight: 700;
+        justify-content: center;
+        min-height: 104px;
+        padding: 16px;
+        text-align: center;
+      }
+
+      .memo {
+        border: 1.5px solid #9aa7b2;
+        border-radius: 12px;
+        margin-top: 18px;
+        min-height: 92px;
+        padding: 12px;
+      }
+
+      .memo strong {
+        display: block;
+        margin-bottom: 8px;
+      }
+
+      footer {
+        color: #637180;
+        font-size: 12px;
+        margin-top: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>에아몬 1차시 분류게임 카드</h1>
+      <p class="subtitle">
+        카드를 잘라 모둠별로 나눕니다. 정답을 맞히는 활동이 아니라, 에아몬의 똑똑함과 아직 배워야 할 가치를 구분하는 활동입니다.
+      </p>
+    </header>
+
+    <section class="labels">
+      <div class="label">에아몬이 할 수 있음</div>
+      <div class="label">아직 배워야 함</div>
+    </section>
+
+    <section class="cards">
+      <div class="card">수학 문제를 빠르게 풀기</div>
+      <div class="card">여러 나라 말로 번역하기</div>
+      <div class="card">백과사전 지식 많이 기억하기</div>
+      <div class="card">많은 글에서 비슷한 모양 찾기</div>
+      <div class="card">친구가 울 때 어떻게 위로해야 하는지 알기</div>
+      <div class="card">거짓말이 왜 상처가 되는지 이해하기</div>
+      <div class="card">무엇이 공정한지 스스로 판단하기</div>
+      <div class="card">우리 반이 중요하게 여기는 가치 알기</div>
+    </section>
+
+    <section class="memo">
+      <strong>우리 모둠 기준</strong>
+      에아몬은 ____________________________는 잘하지만, ____________________________는 아직 배워야 한다.
+    </section>
+
+    <footer>에아몬 프로젝트 · 1차시 "너는 누구야"</footer>
+  </body>
+</html>

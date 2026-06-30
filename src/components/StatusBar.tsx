@@ -12,7 +12,7 @@ export function StatusBar({ state }: { state: AemonState }) {
     <div className="grid gap-4 rounded-2xl border border-white/10 bg-[#07111B]/75 p-4 shadow-xl shadow-black/25 backdrop-blur md:grid-cols-[1fr_1.4fr_1fr]">
       <div>
         <p className="font-data text-xs text-[#8AA0B0]">CLASS</p>
-        <p className="mt-1 truncate text-lg font-bold text-[#EAF2F5]">{state.className} · {state.day}일째</p>
+        <p className="mt-1 truncate text-lg font-bold text-[#EAF2F5]">{state.className || '프로젝트 준비 중'} · {state.day}일째</p>
       </div>
       <div>
         <div className="flex items-center justify-between gap-3">

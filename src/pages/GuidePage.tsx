@@ -340,7 +340,7 @@ export function GuidePage() {
       </section>
 
       <div className="mt-8 text-center">
-        <Button onClick={() => navigate('/intro')}>우리 반 에아몬 시작하기</Button>
+        <Button onClick={() => navigate('/start')}>우리 반 에아몬 시작하기</Button>
       </div>
     </div>
   )

@@ -9,13 +9,28 @@ import {
   verdictGaugeDelta,
   XP_PER_EPISODE,
 } from '../domain/progression'
-import type { AemonState, AiProvider, ConversationMode, DexEntry, Episode, EpisodeChoice, EpisodeLog, PollutionItem, Verdict, WalkItem } from '../domain/types'
+import type {
+  AemonState,
+  AiProvider,
+  ClassBoardPost,
+  ConversationMode,
+  DexEntry,
+  Episode,
+  EpisodeChoice,
+  EpisodeLog,
+  PollutionItem,
+  ValueCode,
+  Verdict,
+  WalkItem,
+} from '../domain/types'
 
 const STORAGE_KEY = 'aemon.mvp.state.v1'
 
 const initialState: AemonState = {
-  className: '햇살초 3학년 2반',
+  className: '',
+  classIntro: '',
   aemonName: '',
+  onboardingComplete: false,
   mode: 'basic',
   apiKey: '',
   aiProvider: 'gemini',
@@ -37,12 +52,18 @@ const initialState: AemonState = {
   logs: [],
   walkLogs: [],
   cleanLogs: [],
+  boardPosts: [],
+  valueCodes: [],
   dex: [],
 }
 
 type Action =
   | { type: 'settings/update'; className: string; mode: ConversationMode; apiKey: string; aiProvider: AiProvider; reminderTime: string }
+  | { type: 'project/profile'; className: string; classIntro: string }
+  | { type: 'project/onboardingComplete'; className: string; classIntro: string; aemonName: string }
   | { type: 'aemon/name'; name: string }
+  | { type: 'board/add'; nickname: string; body: string; prompt: string }
+  | { type: 'valueCode/upsert'; code: Omit<ValueCode, 'id' | 'createdAt'> }
   | { type: 'conversation/finish'; episode: Episode; choice: EpisodeChoice; answer: string; verdict: Verdict; teacherOverride: boolean }
   | { type: 'evolution/acknowledge' }
   | { type: 'day/reset' }
@@ -61,6 +82,11 @@ function loadState() {
   } catch {
     return initialState
   }
+}
+
+function findSeedEpisodeIndex(code: string) {
+  const index = seedEpisodes.findIndex((episode) => episode.code === code)
+  return index >= 0 ? index : 0
 }
 
 function nextEpisodeIndex(state: AemonState) {
@@ -107,14 +133,78 @@ function reducer(state: AemonState, action: Action): AemonState {
     case 'settings/update':
       return {
         ...state,
-        className: action.className.trim() || initialState.className,
+        className: action.className.trim(),
         mode: action.mode,
         apiKey: action.apiKey,
         aiProvider: action.aiProvider,
         reminderTime: action.reminderTime || '09:00',
       }
+    case 'project/profile':
+      return {
+        ...state,
+        className: action.className.trim(),
+        classIntro: action.classIntro.trim().slice(0, 180),
+      }
+    case 'project/onboardingComplete': {
+      const alreadyLogged = state.logs.some((log) => log.episodeCode === '알-01')
+      const xpDelta = alreadyLogged ? 0 : XP_PER_EPISODE
+      const log: EpisodeLog = {
+        id: crypto.randomUUID(),
+        episodeCode: '알-01',
+        mode: state.mode,
+        answer: `이름: ${action.aemonName.trim() || '에아몬'} · ${action.classIntro.trim() || '학급 소개 없음'}`,
+        verdict: 'gray',
+        xpDelta,
+        gaugeDelta: 0,
+        teacherOverride: false,
+        createdAt: new Date().toISOString(),
+      }
+
+      return {
+        ...state,
+        className: action.className.trim(),
+        classIntro: action.classIntro.trim().slice(0, 180),
+        aemonName: action.aemonName.trim().slice(0, 12) || state.aemonName || '에아몬',
+        onboardingComplete: true,
+        status: 'alive',
+        day: Math.max(state.day, 2),
+        xp: state.xp + xpDelta,
+        dailyDone: false,
+        episodeIndex: findSeedEpisodeIndex('알-02'),
+        logs: alreadyLogged ? state.logs : [log, ...state.logs].slice(0, 50),
+      }
+    }
     case 'aemon/name':
       return { ...state, aemonName: action.name.trim().slice(0, 12) }
+    case 'board/add': {
+      const post: ClassBoardPost = {
+        id: crypto.randomUUID(),
+        nickname: action.nickname.trim().slice(0, 16),
+        body: action.body.trim().slice(0, 280),
+        prompt: action.prompt,
+        createdAt: new Date().toISOString(),
+      }
+
+      if (!post.nickname || !post.body) return state
+      return { ...state, boardPosts: [post, ...state.boardPosts].slice(0, 120) }
+    }
+    case 'valueCode/upsert': {
+      const nextCode: ValueCode = {
+        ...action.code,
+        id: state.valueCodes.find((code) => code.no === action.code.no)?.id ?? crypto.randomUUID(),
+        title: action.code.title.trim().slice(0, 50),
+        body: action.code.body.trim().slice(0, 240),
+        createdAt: new Date().toISOString(),
+      }
+      if (!nextCode.title || !nextCode.body) return state
+      const exists = state.valueCodes.some((code) => code.no === nextCode.no)
+      return {
+        ...state,
+        valueCodes: exists
+          ? state.valueCodes.map((code) => (code.no === nextCode.no ? nextCode : code))
+          : [...state.valueCodes, nextCode].sort((a, b) => a.no - b.no),
+      }
+    }
     case 'conversation/finish': {
       const gaugeDelta = action.episode.type === 'E' ? 0 : verdictGaugeDelta(action.verdict)
       const xpDelta = XP_PER_EPISODE
@@ -211,7 +301,6 @@ function reducer(state: AemonState, action: Action): AemonState {
     case 'cycle/new':
       return {
         ...initialState,
-        className: state.className,
         mode: state.mode,
         apiKey: state.apiKey,
         reminderTime: state.reminderTime,
@@ -229,7 +318,11 @@ interface AemonContextValue {
   currentEpisode: Episode
   visibleEpisodeCount: number
   updateSettings: (settings: { className: string; mode: ConversationMode; apiKey: string; aiProvider: AiProvider; reminderTime: string }) => void
+  updateClassProfile: (profile: { className: string; classIntro: string }) => void
+  completeOnboarding: (profile: { className: string; classIntro: string; aemonName: string }) => void
   nameAemon: (name: string) => void
+  addBoardPost: (post: { nickname: string; body: string; prompt: string }) => void
+  upsertValueCode: (code: Omit<ValueCode, 'id' | 'createdAt'>) => void
   finishConversation: (args: {
     episode: Episode
     choice: EpisodeChoice
@@ -267,7 +360,11 @@ export function AemonProvider({ children }: { children: ReactNode }) {
       currentEpisode,
       visibleEpisodeCount: pool.length,
       updateSettings: (settings) => dispatch({ type: 'settings/update', ...settings }),
+      updateClassProfile: (profile) => dispatch({ type: 'project/profile', ...profile }),
+      completeOnboarding: (profile) => dispatch({ type: 'project/onboardingComplete', ...profile }),
       nameAemon: (name) => dispatch({ type: 'aemon/name', name }),
+      addBoardPost: (post) => dispatch({ type: 'board/add', ...post }),
+      upsertValueCode: (code) => dispatch({ type: 'valueCode/upsert', code }),
       finishConversation: (args) => dispatch({ type: 'conversation/finish', ...args }),
       acknowledgeEvolution: () => dispatch({ type: 'evolution/acknowledge' }),
       resetDay: () => dispatch({ type: 'day/reset' }),

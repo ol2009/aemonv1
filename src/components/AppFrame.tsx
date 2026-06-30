@@ -1,18 +1,18 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { BookOpen, Home, Settings, Sparkles } from 'lucide-react'
+import { BookOpen, ClipboardList, Home, MessageSquareText, Sparkles } from 'lucide-react'
 import { Button } from './ui'
 
 const navItems = [
-  { path: '/', label: '소개', icon: Sparkles },
-  { path: '/guide', label: '교사 가이드', icon: BookOpen },
-  { path: '/home', label: '홈', icon: Home },
-  { path: '/settings', label: '설정', icon: Settings },
+  { path: '/home', label: '대시보드', icon: Home },
+  { path: '/codes', label: '가치코드', icon: ClipboardList },
+  { path: '/board', label: '학습게시판', icon: MessageSquareText },
+  { path: '/guide', label: '교사자료실', icon: BookOpen },
 ]
 
 export function AppFrame() {
   const navigate = useNavigate()
   const location = useLocation()
-  const isImmersive = ['/intro', '/evolution', '/graduation', '/talk'].includes(location.pathname)
+  const isImmersive = ['/start', '/intro', '/evolution', '/graduation', '/talk'].includes(location.pathname)
 
   return (
     <div className="data-sea relative min-h-screen overflow-hidden">
@@ -42,7 +42,7 @@ export function AppFrame() {
                 )
               })}
             </nav>
-            <Button className="hidden md:inline-flex" onClick={() => navigate('/intro')}>
+            <Button className="hidden md:inline-flex" onClick={() => navigate('/start')}>
               <Sparkles size={18} />
               시작하기
             </Button>

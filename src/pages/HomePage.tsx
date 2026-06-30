@@ -1,10 +1,11 @@
 import { useNavigate } from 'react-router-dom'
 import { useEffect, useRef, useState } from 'react'
-import { MessageCircle, RotateCcw, Settings, GraduationCap, Waves, Brush, X, AlertCircle, Heart } from 'lucide-react'
+import { BookOpen, ClipboardList, GraduationCap, Heart, MessageCircle, MessageSquareText, PlayCircle, RotateCcw, Settings, Waves, Brush, X, AlertCircle } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
 import { StatusBar } from '../components/StatusBar'
 import { Button, Panel } from '../components/ui'
 import { activeEpisodesForStage } from '../data/episodes'
+import { findLessonPlan, lessonPlans } from '../data/lessonPlans'
 import { getMuttering } from '../data/mutterings'
 import { findPollutionItem, pickPollutionItem, pickWalkItem } from '../data/walkItems'
 import { intimacyLevel } from '../domain/progression'
@@ -55,7 +56,7 @@ const cleanChoicesByItem: Record<string, CleanChoice[]> = {
 
 export function HomePage() {
   const navigate = useNavigate()
-  const { state, resetDay, graduate, completeWalk, cleanPollution, showPollution } = useAemon()
+  const { state, currentEpisode, resetDay, graduate, completeWalk, cleanPollution, showPollution } = useAemon()
   const [walkPhase, setWalkPhase] = useState<WalkPhase>('idle')
   const [walkItem, setWalkItem] = useState<WalkItem | null>(null)
   const [petOpen, setPetOpen] = useState(false)
@@ -77,6 +78,9 @@ export function HomePage() {
   const canGraduate = state.stage >= 3 && awakeningComplete && state.status !== 'graduated'
   const pollution = findPollutionItem(state.pollutionItemId)
   const level = intimacyLevel(state.intimacy)
+  const currentLesson = findLessonPlan(currentEpisode.code)
+  const currentLessonNo = currentLesson?.no ?? Math.min(lessonPlans.length, state.logs.length + 1)
+  const totalLessons = lessonPlans.length
 
   useEffect(() => () => {
     if (swimTimer.current) window.clearTimeout(swimTimer.current)
@@ -138,6 +142,37 @@ export function HomePage() {
   return (
     <div className="mx-auto flex min-h-[calc(100vh-96px)] max-w-7xl flex-col px-5 pb-10">
       <StatusBar state={state} />
+      <section className="mt-5 grid gap-4 lg:grid-cols-[1.1fr_0.95fr_0.95fr]">
+        <Panel>
+          <p className="font-data text-xs uppercase tracking-wider text-[#8AA0B0]">class</p>
+          <h1 className="font-display mt-2 text-3xl text-[#EAF2F5]">{state.className || '아직 반 이름 없음'}</h1>
+          <p className="mt-3 line-clamp-2 min-h-12 leading-6 text-[#8AA0B0]">{state.classIntro || '프로젝트 시작에서 우리 반 소개를 입력합니다.'}</p>
+        </Panel>
+        <Panel>
+          <p className="font-data text-xs uppercase tracking-wider text-[#8AA0B0]">current lesson</p>
+          <h2 className="font-display mt-2 text-3xl text-[#FFD37A]">
+            {currentLessonNo}차시 / {totalLessons}차시
+          </h2>
+          <p className="mt-3 truncate text-lg font-bold text-[#EAF2F5]">{currentEpisode.title}</p>
+        </Panel>
+        <Panel>
+          <p className="font-data text-xs uppercase tracking-wider text-[#8AA0B0]">quick menu</p>
+          <div className="mt-4 grid grid-cols-3 gap-2">
+            <button className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-3 text-sm font-bold text-[#B7C7D2] hover:border-[#FFD37A]/50" onClick={() => navigate('/codes')} type="button">
+              <ClipboardList className="mx-auto mb-1 text-[#FFD37A]" size={20} />
+              가치코드
+            </button>
+            <button className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-3 text-sm font-bold text-[#B7C7D2] hover:border-[#4FE0C0]/50" onClick={() => navigate('/board')} type="button">
+              <MessageSquareText className="mx-auto mb-1 text-[#4FE0C0]" size={20} />
+              게시판
+            </button>
+            <button className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-3 text-sm font-bold text-[#B7C7D2] hover:border-[#FFD37A]/50" onClick={() => navigate('/guide')} type="button">
+              <BookOpen className="mx-auto mb-1 text-[#FFD37A]" size={20} />
+              자료실
+            </button>
+          </div>
+        </Panel>
+      </section>
       <section className="grid flex-1 items-center gap-8 py-10 lg:grid-cols-[1fr_360px]">
         <div className="text-center">
           <div className="relative mx-auto w-fit">
@@ -161,24 +196,28 @@ export function HomePage() {
           </div>
         </div>
         <aside className="grid gap-4">
-          <Button className="min-h-16 text-xl" disabled={state.dailyDone || canGraduate || state.status === 'graduated'} onClick={() => navigate('/talk')}>
+          {!state.onboardingComplete ? (
+            <Button className="min-h-16 text-xl" onClick={() => navigate('/start')}>
+              <PlayCircle size={24} />
+              프로젝트 시작하기
+            </Button>
+          ) : null}
+          <Button className="min-h-16 text-xl" disabled={!state.onboardingComplete || state.dailyDone || canGraduate || state.status === 'graduated'} onClick={() => navigate('/talk')}>
             <MessageCircle size={24} />
-            {canGraduate ? '졸업 준비 완료' : state.dailyDone ? '내일 또 만나요' : '오늘의 대화'}
+            {canGraduate ? '졸업 준비 완료' : state.dailyDone ? '내일 또 만나요' : `${currentLessonNo}차시 시작하기`}
           </Button>
           <Button variant="secondary" className="min-h-14" disabled={walkPhase !== 'idle' || state.status === 'graduated'} onClick={startWalk}>
             <Waves size={20} />
-            놀아주기 · 바다 산책
+            산책 · 데이터의 바다
           </Button>
           <Button variant="secondary" className="min-h-14" disabled={state.status === 'graduated'} onClick={() => setPetOpen(true)}>
             <Heart size={20} />
             쓰다듬어주기
           </Button>
-          {state.isPolluted ? (
-            <Button variant="danger" className="min-h-14" onClick={startClean}>
-              <Brush size={20} />
-              정화하기
-            </Button>
-          ) : null}
+          <Button variant={state.isPolluted ? 'danger' : 'secondary'} className="min-h-14" disabled={!state.isPolluted || state.status === 'graduated'} onClick={startClean}>
+            <Brush size={20} />
+            {state.isPolluted ? '씻기 · 정화하기' : '씻기 · 오염 없음'}
+          </Button>
           {state.dailyDone ? (
             <Button variant="secondary" onClick={resetDay}>
               <RotateCcw size={19} />
