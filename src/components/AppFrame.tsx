@@ -1,6 +1,7 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { BookOpen, ClipboardList, Home, MessageSquareText, Sparkles } from 'lucide-react'
+import { BookOpen, ClipboardList, Home, LogIn, LogOut, MessageSquareText, Sparkles } from 'lucide-react'
 import { Button } from './ui'
+import { signOut, useSupabaseUser } from '../lib/useSupabaseUser'
 
 const navItems = [
   { path: '/home', label: '대시보드', icon: Home },
@@ -12,7 +13,16 @@ const navItems = [
 export function AppFrame() {
   const navigate = useNavigate()
   const location = useLocation()
+  const { user, isConfigured } = useSupabaseUser()
   const isImmersive = ['/start', '/intro', '/evolution', '/graduation', '/talk'].includes(location.pathname)
+
+  const handleAuthClick = async () => {
+    if (user) {
+      await signOut()
+      return
+    }
+    navigate('/login')
+  }
 
   return (
     <div className="data-sea relative min-h-screen overflow-hidden">
@@ -42,10 +52,21 @@ export function AppFrame() {
                 )
               })}
             </nav>
-            <Button className="hidden md:inline-flex" onClick={() => navigate('/start')}>
-              <Sparkles size={18} />
-              시작하기
-            </Button>
+            <div className="hidden items-center gap-2 md:flex">
+              {user ? (
+                <span className="max-w-40 truncate rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-[#B7C7D2]">
+                  {user.email}
+                </span>
+              ) : null}
+              <Button variant={user ? 'secondary' : 'ghost'} className="min-h-10 px-3" disabled={!isConfigured && !user} onClick={handleAuthClick}>
+                {user ? <LogOut size={18} /> : <LogIn size={18} />}
+                {user ? '로그아웃' : '로그인'}
+              </Button>
+              <Button className="min-h-10 px-3" onClick={() => navigate('/start')}>
+                <Sparkles size={18} />
+                시작하기
+              </Button>
+            </div>
           </header>
         ) : null}
         <main>

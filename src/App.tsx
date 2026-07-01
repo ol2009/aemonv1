@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { AppFrame } from './components/AppFrame'
 import { AemonProvider } from './state/AemonStore'
+import { AuthCallbackPage } from './pages/AuthCallbackPage'
 import { BoardPage } from './pages/BoardPage'
 import { ConversationPage } from './pages/ConversationPage'
 import { EvolutionPage } from './pages/EvolutionPage'
@@ -24,6 +25,7 @@ export default function App() {
           <Route path="start" element={<StartPage />} />
           <Route path="guide" element={<GuidePage />} />
           <Route path="login" element={<LoginPage />} />
+          <Route path="auth/callback" element={<AuthCallbackPage />} />
           <Route path="intro" element={<IntroPage />} />
           <Route path="home" element={<HomePage />} />
           <Route path="lesson" element={<LessonRunPage />} />

@@ -34,15 +34,23 @@ export function useSupabaseUser() {
   return { user, isLoading, isConfigured: isSupabaseConfigured }
 }
 
-export async function signInWithGoogle(redirectPath = '/guide') {
+function authCallbackUrl(nextPath: string) {
+  const url = new URL('/auth/callback', window.location.origin)
+  url.searchParams.set('next', nextPath)
+  return url.toString()
+}
+
+export async function signInWithGoogle(nextPath = '/guide') {
   if (!isSupabaseConfigured || !supabase) {
     throw new Error('Supabase 환경변수가 설정되어 있지 않습니다.')
   }
 
-  const redirectTo = `${window.location.origin}${redirectPath}`
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo },
+    options: {
+      redirectTo: authCallbackUrl(nextPath),
+      scopes: 'email profile',
+    },
   })
 
   if (error) throw error
