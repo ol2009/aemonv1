@@ -13,17 +13,18 @@ interface ClassificationCard {
   text: string
   kind: 'knowledge' | 'value'
   symbol: string
+  imageUrl: string
 }
 
 const classificationCards: ClassificationCard[] = [
-  { id: 'math', text: '어려운 수학 문제 풀기', kind: 'knowledge', symbol: '∑' },
-  { id: 'language', text: '100개 나라 말 하기', kind: 'knowledge', symbol: 'Aa' },
-  { id: 'history', text: '역사 인물 다 외우기', kind: 'knowledge', symbol: '∞' },
-  { id: 'spelling', text: '많은 글에서 맞춤법 틀린 부분 찾기', kind: 'knowledge', symbol: '✓' },
-  { id: 'crying', text: '우는 친구 위로하기', kind: 'value', symbol: '♡' },
-  { id: 'lie', text: '거짓말이 왜 나쁜지 알기', kind: 'value', symbol: '!' },
-  { id: 'fair', text: '누구를 먼저 도와야 할지 정하기', kind: 'value', symbol: '⚖' },
-  { id: 'classValue', text: '우리 반이 중요하게 여기는 가치 알기', kind: 'value', symbol: '◇' },
+  { id: 'math', text: '어려운 수학 문제 풀기', kind: 'knowledge', symbol: '∑', imageUrl: '/lesson-card-art/lesson-01-math.jpg' },
+  { id: 'language', text: '100개 나라 말 하기', kind: 'knowledge', symbol: 'Aa', imageUrl: '/lesson-card-art/lesson-01-language.jpg' },
+  { id: 'history', text: '역사 인물 다 외우기', kind: 'knowledge', symbol: '∞', imageUrl: '/lesson-card-art/lesson-01-history.jpg' },
+  { id: 'spelling', text: '많은 글에서 맞춤법 틀린 부분 찾기', kind: 'knowledge', symbol: '✓', imageUrl: '/lesson-card-art/lesson-01-spelling.jpg' },
+  { id: 'crying', text: '우는 친구 위로하기', kind: 'value', symbol: '♡', imageUrl: '/lesson-card-art/lesson-01-crying.jpg' },
+  { id: 'lie', text: '거짓말이 왜 나쁜지 알기', kind: 'value', symbol: '!', imageUrl: '/lesson-card-art/lesson-01-lie.jpg' },
+  { id: 'fair', text: '누구를 먼저 도와야 할지 정하기', kind: 'value', symbol: '⚖', imageUrl: '/lesson-card-art/lesson-01-fair.jpg' },
+  { id: 'classValue', text: '우리 반이 중요하게 여기는 가치 알기', kind: 'value', symbol: '◇', imageUrl: '/lesson-card-art/lesson-01-class-value.jpg' },
 ]
 
 const cardIcons = {
@@ -113,19 +114,21 @@ function ClassificationTarotCard({
       }
 
   return (
-    <article className={`relative min-h-60 overflow-hidden rounded-[18px] border ${tone.border} bg-gradient-to-br ${tone.bg} p-4 ${tone.glow}`}>
-      <div className="absolute inset-3 rounded-[14px] border border-white/10" />
-      <div className="absolute left-1/2 top-4 h-2 w-2 -translate-x-1/2 rounded-full bg-white/40" />
-      <div className="absolute bottom-4 left-1/2 h-2 w-2 -translate-x-1/2 rounded-full bg-white/40" />
-      <div className="relative flex h-full min-h-52 flex-col items-center justify-between text-center">
+    <article className={`relative min-h-[26rem] overflow-hidden rounded-[22px] border ${tone.border} bg-gradient-to-br ${tone.bg} p-4 ${tone.glow}`}>
+      <img className="absolute inset-0 h-full w-full object-cover" src={card.imageUrl} alt="" />
+      <div className="absolute inset-0 bg-gradient-to-t from-[#06111A]/95 via-[#06111A]/15 to-black/5" />
+      <div className="absolute inset-3 rounded-[16px] border border-white/15" />
+      <div className="relative flex h-full min-h-[24rem] flex-col items-center justify-between text-center">
         <div className="flex w-full items-center justify-between font-data text-xs text-[#8AA0B0]">
           <span>{card.kind === 'knowledge' ? 'DATA' : 'VALUE'}</span>
           <span>{card.symbol}</span>
         </div>
-        <div className="my-4 flex h-20 w-20 items-center justify-center rounded-full border border-white/15 bg-white/8">
-          <Icon className={tone.accent} size={34} />
+        <div className="mt-auto w-full rounded-2xl border border-white/15 bg-[#06111A]/80 p-4 shadow-[0_18px_40px_rgba(0,0,0,.32)] backdrop-blur-sm">
+          <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/10">
+            <Icon className={tone.accent} size={22} />
+          </div>
+          <h3 className="font-display text-2xl leading-tight text-[#EAF2F5]">{card.text}</h3>
         </div>
-        <h3 className="font-display text-2xl leading-tight text-[#EAF2F5]">{card.text}</h3>
         {onMove ? (
           <div className="mt-4 grid w-full grid-cols-2 gap-2">
             <button className="rounded-xl bg-[#FFD37A] px-3 py-2 text-sm font-black text-[#0A1622]" onClick={() => onMove('can')} type="button">
@@ -445,8 +448,10 @@ export function IntroPage() {
                       return (
                         <article key={card.id} className="rounded-2xl border border-white/10 bg-[#07111B]/55 p-4">
                           <div className="flex items-start gap-3">
-                            <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${isCan ? 'bg-[#FFD37A]/10 text-[#FFD37A]' : 'bg-[#4FE0C0]/10 text-[#4FE0C0]'}`}>
-                              <Icon size={22} />
+                            <div className={`relative h-16 w-12 shrink-0 overflow-hidden rounded-xl border ${isCan ? 'border-[#FFD37A]/35' : 'border-[#4FE0C0]/35'}`}>
+                              <img className="absolute inset-0 h-full w-full object-cover" src={card.imageUrl} alt="" />
+                              <div className="absolute inset-0 bg-black/15" />
+                              <Icon className={`absolute bottom-1 right-1 ${isCan ? 'text-[#FFD37A]' : 'text-[#4FE0C0]'}`} size={16} />
                             </div>
                             <div className="min-w-0 flex-1">
                               <p className="text-base font-black leading-6 text-[#EAF2F5]">{card.text}</p>
