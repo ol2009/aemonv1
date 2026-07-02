@@ -5,42 +5,82 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>1차시 · 너는 누구야 카드</title>
     <style>
-      @page { size: A4; margin: 12mm; }
+      @page { size: A4; margin: 8mm; }
       * { box-sizing: border-box; }
-      body { margin: 0; color: #17202a; font-family: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif; background: #fff; }
-      header { display: grid; grid-template-columns: 128px 1fr; gap: 16px; align-items: center; border-bottom: 3px solid #17202a; padding-bottom: 12px; }
-      img { width: 128px; height: 128px; object-fit: cover; border-radius: 22px; }
-      h1 { margin: 0; font-size: 24px; line-height: 1.25; }
-      .activity { margin: 8px 0 0; color: #415160; font-size: 16px; font-weight: 800; }
-      .hint { margin: 8px 0 0; color: #657282; font-size: 12px; line-height: 1.55; }
-      .cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 16px; }
-      .card { align-items: center; border: 2px dashed #415160; border-radius: 14px; display: flex; font-size: 19px; font-weight: 800; justify-content: center; min-height: 112px; padding: 16px; text-align: center; line-height: 1.35; }
-      .memo { border: 1.5px solid #9aa7b2; border-radius: 14px; margin-top: 16px; min-height: 96px; padding: 12px; font-size: 14px; line-height: 1.7; }
-      .memo strong { display: block; margin-bottom: 8px; }
-      footer { color: #637180; font-size: 12px; margin-top: 12px; }
+      body { margin: 0; color: #17202a; font-family: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif; background: #f6f3ea; }
+      header { align-items: end; border-bottom: 2px solid #17202a; display: flex; justify-content: space-between; gap: 10mm; padding-bottom: 3mm; }
+      h1 { margin: 0; font-size: 18pt; line-height: 1.15; }
+      .activity { margin: 1mm 0 0; color: #415160; font-size: 10pt; font-weight: 800; }
+      .hint { color: #657282; font-size: 8pt; font-weight: 700; line-height: 1.45; margin: 0; text-align: right; }
+      .cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4mm; margin-top: 5mm; }
+      .tarot { background: radial-gradient(circle at 50% 22%, rgba(255, 211, 122, .2), transparent 26%), linear-gradient(145deg, #243047, #102237 54%, #07111b); border: 1.8mm solid #17202a; border-radius: 7mm; box-shadow: inset 0 0 0 1mm rgba(255,255,255,.12); color: #eaf2f5; min-height: 57mm; overflow: hidden; padding: 5mm; position: relative; text-align: center; }
+      .tarot.value { background: radial-gradient(circle at 50% 22%, rgba(79, 224, 192, .22), transparent 26%), linear-gradient(145deg, #173f48, #102237 54%, #07111b); }
+      .tarot::before { border: .35mm solid rgba(255,255,255,.28); border-radius: 5mm; bottom: 3mm; content: ""; left: 3mm; position: absolute; right: 3mm; top: 3mm; }
+      .topline { display: flex; font-size: 8pt; font-weight: 900; justify-content: space-between; letter-spacing: .08em; position: relative; z-index: 1; }
+      .sigil { align-items: center; background: rgba(255,255,255,.08); border: .4mm solid rgba(255,255,255,.25); border-radius: 999px; display: flex; font-size: 24pt; font-weight: 900; height: 18mm; justify-content: center; margin: 4mm auto 3mm; position: relative; width: 18mm; z-index: 1; }
+      .card-text { font-size: 15pt; font-weight: 900; line-height: 1.22; margin: 0 auto; max-width: 58mm; min-height: 20mm; position: relative; z-index: 1; }
+      .question { color: #b7c7d2; font-size: 8pt; font-weight: 800; margin-top: 3mm; position: relative; z-index: 1; }
+      .cut { color: #637180; font-size: 8pt; margin-top: 3mm; text-align: center; }
     </style>
   </head>
   <body>
     <header>
-      <img src="../lesson-art/lesson-01.png" alt="" />
       <div>
         <h1>1차시 · 너는 누구야</h1>
         <p class="activity">분류게임 · 에아몬이 할 수 있는 것과 부족한 것</p>
-        <p class="hint">카드를 잘라 모둠별로 나눕니다. 애매한 카드는 가운데 두고 이유를 말합니다. 정답보다 기준을 만드는 것이 목표입니다.</p>
       </div>
+      <p class="hint">잘라서 모둠별로 분류합니다.<br />정답보다 이유와 기준을 말하게 합니다.</p>
     </header>
     <section class="cards">
-      <div class="card">어려운 수학 문제 풀기</div>
-      <div class="card">100개 나라 말 하기</div>
-      <div class="card">역사 인물 다 외우기</div>
-      <div class="card">우는 친구 위로하기</div>
-      <div class="card">거짓말이 왜 나쁜지 알기</div>
-      <div class="card">누구를 먼저 도와야 할지 정하기</div>
+      <article class="tarot ">
+        <div class="topline"><span>DATA</span><span>01</span></div>
+        <div class="sigil">∑</div>
+        <p class="card-text">어려운 수학 문제 풀기</p>
+        <p class="question">에아몬이 지금 할 수 있을까?</p>
+      </article>
+      <article class="tarot ">
+        <div class="topline"><span>DATA</span><span>02</span></div>
+        <div class="sigil">Aa</div>
+        <p class="card-text">100개 나라 말 하기</p>
+        <p class="question">에아몬이 지금 할 수 있을까?</p>
+      </article>
+      <article class="tarot ">
+        <div class="topline"><span>DATA</span><span>03</span></div>
+        <div class="sigil">∞</div>
+        <p class="card-text">역사 인물 다 외우기</p>
+        <p class="question">에아몬이 지금 할 수 있을까?</p>
+      </article>
+      <article class="tarot ">
+        <div class="topline"><span>DATA</span><span>04</span></div>
+        <div class="sigil">✓</div>
+        <p class="card-text">많은 글에서 맞춤법 틀린 부분 찾기</p>
+        <p class="question">에아몬이 지금 할 수 있을까?</p>
+      </article>
+      <article class="tarot value">
+        <div class="topline"><span>VALUE</span><span>05</span></div>
+        <div class="sigil">♡</div>
+        <p class="card-text">우는 친구 위로하기</p>
+        <p class="question">에아몬이 지금 할 수 있을까?</p>
+      </article>
+      <article class="tarot value">
+        <div class="topline"><span>VALUE</span><span>06</span></div>
+        <div class="sigil">!</div>
+        <p class="card-text">거짓말이 왜 나쁜지 알기</p>
+        <p class="question">에아몬이 지금 할 수 있을까?</p>
+      </article>
+      <article class="tarot value">
+        <div class="topline"><span>VALUE</span><span>07</span></div>
+        <div class="sigil">⚖</div>
+        <p class="card-text">누구를 먼저 도와야 할지 정하기</p>
+        <p class="question">에아몬이 지금 할 수 있을까?</p>
+      </article>
+      <article class="tarot value">
+        <div class="topline"><span>VALUE</span><span>08</span></div>
+        <div class="sigil">◇</div>
+        <p class="card-text">우리 반이 중요하게 여기는 가치 알기</p>
+        <p class="question">에아몬이 지금 할 수 있을까?</p>
+      </article>
     </section>
-    <section class="memo">
-      <strong>우리 모둠 기준</strong>
-      우리는 ____________________________라고 생각한다. 왜냐하면 ____________________________이기 때문이다.
-    </section>
-    <footer>에아몬 프로젝트 · 1차시 · 너는 누구야</footer>
+    <p class="cut">에아몬 프로젝트 · 1차시 분류 카드</p>
   </body>
 </html>

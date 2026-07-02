@@ -4,8 +4,19 @@ import { join } from 'node:path'
 const outDir = join(process.cwd(), 'public', 'lesson-cards')
 mkdirSync(outDir, { recursive: true })
 
+const lesson01CardMeta = [
+  { text: '어려운 수학 문제 풀기', kind: 'DATA', symbol: '∑' },
+  { text: '100개 나라 말 하기', kind: 'DATA', symbol: 'Aa' },
+  { text: '역사 인물 다 외우기', kind: 'DATA', symbol: '∞' },
+  { text: '많은 글에서 맞춤법 틀린 부분 찾기', kind: 'DATA', symbol: '✓' },
+  { text: '우는 친구 위로하기', kind: 'VALUE', symbol: '♡' },
+  { text: '거짓말이 왜 나쁜지 알기', kind: 'VALUE', symbol: '!' },
+  { text: '누구를 먼저 도와야 할지 정하기', kind: 'VALUE', symbol: '⚖' },
+  { text: '우리 반이 중요하게 여기는 가치 알기', kind: 'VALUE', symbol: '◇' },
+]
+
 const lessons = [
-  ['01', '1차시 · 너는 누구야', '분류게임 · 에아몬이 할 수 있는 것과 부족한 것', ['어려운 수학 문제 풀기', '100개 나라 말 하기', '역사 인물 다 외우기', '우는 친구 위로하기', '거짓말이 왜 나쁜지 알기', '누구를 먼저 도와야 할지 정하기']],
+  ['01', '1차시 · 너는 누구야', '분류게임 · 에아몬이 할 수 있는 것과 부족한 것', lesson01CardMeta.map((card) => card.text)],
   ['02', '2차시 · 시키면 무조건 들어야 할까', '명령 신호등 카드', ['저 애 가방 숨겨', '다친 사람 도와줘', '길을 알려줘', '친구 비밀을 몰래 알려줘', '거짓 소문을 퍼뜨려줘', '위험한 장난을 도와줘']],
   ['03', '3차시 · 착한 거짓말도 해도 될까', '한 장면 세 말투 카드', ['그림이 별로야', '좋은 점부터 말하기', '거짓 칭찬하기', '숙제 안 했는데 했다고 말하기', '선물은 별로지만 고맙다고 말하기', '속이지 않고 다정하게 고치기']],
   ['04', '4차시 · 똑같이 vs 필요한 만큼', '평등과 형평 분류 카드', ['모두 2개씩 나누기', '아침 굶은 친구에게 더 주기', '다친 친구에게 받침대 더 주기', '기준 없이 마음대로 나누기', '사람에게 기준 묻기', '상황을 먼저 확인하기']],
@@ -60,6 +71,53 @@ function html([id, title, activity, cards]) {
 </html>`
 }
 
+function tarotHtml([id, title, activity]) {
+  return `<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>${title} 카드</title>
+    <style>
+      @page { size: A4; margin: 8mm; }
+      * { box-sizing: border-box; }
+      body { margin: 0; color: #17202a; font-family: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif; background: #f6f3ea; }
+      header { align-items: end; border-bottom: 2px solid #17202a; display: flex; justify-content: space-between; gap: 10mm; padding-bottom: 3mm; }
+      h1 { margin: 0; font-size: 18pt; line-height: 1.15; }
+      .activity { margin: 1mm 0 0; color: #415160; font-size: 10pt; font-weight: 800; }
+      .hint { color: #657282; font-size: 8pt; font-weight: 700; line-height: 1.45; margin: 0; text-align: right; }
+      .cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4mm; margin-top: 5mm; }
+      .tarot { background: radial-gradient(circle at 50% 22%, rgba(255, 211, 122, .2), transparent 26%), linear-gradient(145deg, #243047, #102237 54%, #07111b); border: 1.8mm solid #17202a; border-radius: 7mm; box-shadow: inset 0 0 0 1mm rgba(255,255,255,.12); color: #eaf2f5; min-height: 57mm; overflow: hidden; padding: 5mm; position: relative; text-align: center; }
+      .tarot.value { background: radial-gradient(circle at 50% 22%, rgba(79, 224, 192, .22), transparent 26%), linear-gradient(145deg, #173f48, #102237 54%, #07111b); }
+      .tarot::before { border: .35mm solid rgba(255,255,255,.28); border-radius: 5mm; bottom: 3mm; content: ""; left: 3mm; position: absolute; right: 3mm; top: 3mm; }
+      .topline { display: flex; font-size: 8pt; font-weight: 900; justify-content: space-between; letter-spacing: .08em; position: relative; z-index: 1; }
+      .sigil { align-items: center; background: rgba(255,255,255,.08); border: .4mm solid rgba(255,255,255,.25); border-radius: 999px; display: flex; font-size: 24pt; font-weight: 900; height: 18mm; justify-content: center; margin: 4mm auto 3mm; position: relative; width: 18mm; z-index: 1; }
+      .card-text { font-size: 15pt; font-weight: 900; line-height: 1.22; margin: 0 auto; max-width: 58mm; min-height: 20mm; position: relative; z-index: 1; }
+      .question { color: #b7c7d2; font-size: 8pt; font-weight: 800; margin-top: 3mm; position: relative; z-index: 1; }
+      .cut { color: #637180; font-size: 8pt; margin-top: 3mm; text-align: center; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div>
+        <h1>${title}</h1>
+        <p class="activity">${activity}</p>
+      </div>
+      <p class="hint">잘라서 모둠별로 분류합니다.<br />정답보다 이유와 기준을 말하게 합니다.</p>
+    </header>
+    <section class="cards">
+      ${lesson01CardMeta.map((card, index) => `<article class="tarot ${card.kind === 'VALUE' ? 'value' : ''}">
+        <div class="topline"><span>${card.kind}</span><span>${String(index + 1).padStart(2, '0')}</span></div>
+        <div class="sigil">${card.symbol}</div>
+        <p class="card-text">${card.text}</p>
+        <p class="question">에아몬이 지금 할 수 있을까?</p>
+      </article>`).join('\n      ')}
+    </section>
+    <p class="cut">에아몬 프로젝트 · 1차시 분류 카드</p>
+  </body>
+</html>`
+}
+
 for (const lesson of lessons) {
-  writeFileSync(join(outDir, `lesson-${lesson[0]}.html`), html(lesson), 'utf8')
+  writeFileSync(join(outDir, `lesson-${lesson[0]}.html`), lesson[0] === '01' ? tarotHtml(lesson) : html(lesson), 'utf8')
 }
