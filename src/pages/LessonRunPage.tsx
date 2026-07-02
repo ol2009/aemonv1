@@ -38,7 +38,7 @@ export function LessonRunPage() {
   const lessonPlan = findLessonPlan(currentEpisode.code)
   const material = findLessonMaterial(currentEpisode.code)
   const lessonNo = lessonPlan?.no ?? 1
-  const valueCodeNo = Math.max(1, lessonNo - 1)
+  const valueCodeNo = lessonNo
   const [codeTitle, setCodeTitle] = useState(material?.valueCodeTitle ?? '')
   const [codeBody, setCodeBody] = useState(material?.valueCodeBody ?? '')
   const [codeSaved, setCodeSaved] = useState(false)

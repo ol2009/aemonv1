@@ -5,7 +5,7 @@ import { AemonAvatar } from '../components/AemonAvatar'
 import { Button, Panel } from '../components/ui'
 import { useAemon } from '../state/AemonStore'
 
-type IntroStep = 'lab' | 'egg' | 'class' | 'hello' | 'groupGame' | 'classify' | 'namePrompt' | 'naming' | 'valueIntro' | 'valueBoard' | 'farewell'
+type IntroStep = 'lab' | 'egg' | 'class' | 'namePrompt' | 'naming' | 'wish' | 'valueIntro' | 'valueBoard' | 'groupGame' | 'classify' | 'farewell'
 type CardBucket = 'unknown' | 'can' | 'need'
 
 interface ClassificationCard {
@@ -14,27 +14,25 @@ interface ClassificationCard {
 }
 
 const classificationCards: ClassificationCard[] = [
-  { id: 'math', text: '수학 문제를 빠르게 풀기' },
-  { id: 'language', text: '여러 나라 말로 번역하기' },
-  { id: 'facts', text: '백과사전 지식 많이 기억하기' },
-  { id: 'pattern', text: '많은 글에서 비슷한 모양 찾기' },
-  { id: 'crying', text: '친구가 울 때 어떻게 위로해야 하는지 알기' },
-  { id: 'lie', text: '거짓말이 왜 상처가 되는지 이해하기' },
-  { id: 'fair', text: '무엇이 공정한지 스스로 판단하기' },
-  { id: 'value', text: '우리 반이 중요하게 여기는 가치 알기' },
+  { id: 'math', text: '어려운 수학 문제 풀기' },
+  { id: 'language', text: '100개 나라 말 하기' },
+  { id: 'history', text: '역사 인물 다 외우기' },
+  { id: 'crying', text: '우는 친구 위로하기' },
+  { id: 'lie', text: '거짓말이 왜 나쁜지 알기' },
+  { id: 'fair', text: '누구를 먼저 도와야 할지 정하기' },
 ]
 
 const stepMeta: Record<IntroStep, { no: number; label: string }> = {
   lab: { no: 1, label: '연구소' },
   egg: { no: 2, label: '첫 인사' },
   class: { no: 3, label: '우리 반' },
-  hello: { no: 4, label: '에아몬의 질문' },
-  groupGame: { no: 5, label: '분류게임 안내' },
-  classify: { no: 6, label: '함께 분류' },
-  namePrompt: { no: 7, label: '이름 묻기' },
-  naming: { no: 8, label: '이름 짓기' },
-  valueIntro: { no: 9, label: '가치코드' },
-  valueBoard: { no: 10, label: '첫 코드' },
+  namePrompt: { no: 4, label: '이름 묻기' },
+  naming: { no: 5, label: '이름 짓기' },
+  wish: { no: 6, label: '바라는 AI' },
+  valueIntro: { no: 7, label: '가치코드' },
+  valueBoard: { no: 8, label: '첫 코드' },
+  groupGame: { no: 9, label: '분류게임 안내' },
+  classify: { no: 10, label: '함께 분류' },
   farewell: { no: 11, label: '대시보드로' },
 }
 
@@ -108,8 +106,9 @@ export function IntroPage() {
   const [classIntro, setClassIntro] = useState(state.classIntro)
   const [nameInput, setNameInput] = useState(state.aemonName)
   const [nameModalOpen, setNameModalOpen] = useState(false)
+  const [wishInput, setWishInput] = useState('호기심 많고 사람을 도우려는 착한 AI')
   const [codeTitle, setCodeTitle] = useState('우리 반이 바라는 에아몬')
-  const [codeBody, setCodeBody] = useState('에아몬은 사람들에게 도움이 되는 인공지능이 되기 위해, 우리 반이 정한 가치를 배우며 자란다.')
+  const [codeBody, setCodeBody] = useState('에아몬은 호기심 많고 사람을 도우려는 착한 AI다.')
   const [buckets, setBuckets] = useState<Record<string, CardBucket>>(
     Object.fromEntries(classificationCards.map((card) => [card.id, 'unknown'])) as Record<string, CardBucket>,
   )
@@ -129,7 +128,7 @@ export function IntroPage() {
 
   const saveClassProfile = () => {
     updateClassProfile({ className, classIntro })
-    setStep('hello')
+    setStep('namePrompt')
   }
 
   const saveName = () => {
@@ -141,6 +140,14 @@ export function IntroPage() {
 
   const saveValueCode = () => {
     upsertValueCode({ no: 1, title: codeTitle, body: codeBody })
+  }
+
+  const prepareValueCode = () => {
+    const nextName = savedName || '에아몬'
+    const wish = wishInput.trim() || '사람을 도우려는 착한 AI'
+    setCodeTitle(`우리 반이 바라는 ${nextName}`)
+    setCodeBody(`${nextName}은 ${wish}다.`)
+    setStep('valueIntro')
   }
 
   const finishIntro = () => {
@@ -229,27 +236,6 @@ export function IntroPage() {
     )
   }
 
-  if (step === 'hello') {
-    return (
-      <StepShell step={step}>
-        <Panel className="mx-auto max-w-3xl text-center">
-          <AemonAvatar stage={0} alignment="none" size={210} />
-          <p className="font-hand mt-7 text-4xl leading-tight text-[#FFD37A]">"안녕, {className || '우리 반'} 친구들."</p>
-          <p className="font-hand mt-4 text-3xl leading-tight text-[#EAF2F5]">
-            "연구소에서 들었는데, 너희가 날 가르쳐준대. 내가 더 사람들에게 도움이 될 수 있도록 말이야."
-          </p>
-          <p className="font-hand mt-4 text-3xl leading-tight text-[#EAF2F5]">
-            "음... 난 내가 지금 뭘 잘하고 못하는지도 몰라. 너희는 알아?"
-          </p>
-          <Button className="mt-8" onClick={() => setStep('groupGame')}>
-            다음
-            <ArrowRight size={18} />
-          </Button>
-        </Panel>
-      </StepShell>
-    )
-  }
-
   if (step === 'groupGame') {
     return (
       <StepShell step={step}>
@@ -261,7 +247,11 @@ export function IntroPage() {
             <div>
               <h1 className="font-display text-4xl text-[#EAF2F5]">분류게임 · 에아몬이 할 수 있는 것과 부족한 것</h1>
               <p className="mt-4 text-lg leading-8 text-[#B7C7D2]">
-                모둠별로 카드를 잘라서, 에아몬이 잘할 것 같은 일과 아직 부족할 것 같은 일을 나눕니다.
+                {savedName || '에아몬'}이 말합니다. "근데… 솔직히 말할게. 나 뭐가 옳은지 하나도 모르겠어. 아는 건 많은데.
+                내가 뭘 알고 뭘 모르는지, 너희가 봐줄래?"
+              </p>
+              <p className="mt-3 text-lg leading-8 text-[#B7C7D2]">
+                모둠별로 카드를 잘라서, {savedName || '에아몬'}이 할 수 있는 일과 아직 부족한 일을 나눕니다.
                 정답을 맞히는 활동이 아니라, 똑똑함과 착함이 다르다는 점을 발견하는 활동입니다.
               </p>
             </div>
@@ -354,7 +344,7 @@ export function IntroPage() {
           </div>
         </div>
         <div className="mt-6 flex justify-end">
-          <Button onClick={() => setStep('namePrompt')}>
+          <Button onClick={() => setStep('farewell')}>
             다음
             <ArrowRight size={18} />
           </Button>
@@ -368,8 +358,9 @@ export function IntroPage() {
       <StepShell step={step}>
         <Panel className="mx-auto max-w-3xl text-center">
           <AemonAvatar stage={0} alignment="none" size={220} />
-          <p className="font-hand mt-7 text-4xl leading-tight text-[#FFD37A]">"고마워. 이제 내가 뭘 할 줄 알고, 뭐가 부족한지 알겠어."</p>
-          <p className="font-hand mt-4 text-4xl leading-tight text-[#EAF2F5]">"근데 내 이름은 뭐야? 내 이름을 지어줘!"</p>
+          <p className="font-hand mt-7 text-4xl leading-tight text-[#FFD37A]">"안녕, {className || '우리 반'} 친구들."</p>
+          <p className="font-hand mt-4 text-3xl leading-tight text-[#EAF2F5]">"연구소에서 들었어. 너네가 날 가르쳐준대."</p>
+          <p className="font-hand mt-4 text-4xl leading-tight text-[#EAF2F5]">"근데 있잖아… 내 이름은 뭐야? 나 이름이 없어. 지어줄래?"</p>
           <Button className="mt-8" onClick={() => setStep('naming')}>
             다음
             <ArrowRight size={18} />
@@ -410,7 +401,7 @@ export function IntroPage() {
             </div>
             <div className="mt-6 flex flex-wrap justify-end gap-3">
               <Button variant="secondary" onClick={() => setNameModalOpen(true)}>이름 입력</Button>
-              <Button disabled={!savedName} onClick={() => setStep('valueIntro')}>
+              <Button disabled={!savedName} onClick={() => setStep('wish')}>
                 다음
                 <ArrowRight size={18} />
               </Button>
@@ -424,6 +415,54 @@ export function IntroPage() {
     )
   }
 
+  if (step === 'wish') {
+    return (
+      <StepShell step={step}>
+        <div className="grid items-start gap-5 lg:grid-cols-[360px_1fr]">
+          <Panel className="text-center">
+            <AemonAvatar stage={0} alignment="none" size={220} />
+            <p className="font-hand mt-6 text-4xl leading-tight text-[#FFD37A]">
+              "나… 어떤 AI가 되면 좋을까?"
+            </p>
+            <p className="font-hand mt-3 text-3xl leading-tight text-[#EAF2F5]">
+              "너희가 바라는 내 모습이 궁금해."
+            </p>
+          </Panel>
+          <Panel>
+            <h1 className="font-display text-4xl text-[#EAF2F5]">어떤 AI가 되면 좋을까?</h1>
+            <p className="mt-4 text-lg leading-8 text-[#B7C7D2]">
+              반 친구들에게 자유롭게 물어보고, 칠판에 나온 말을 짧게 모읍니다.
+              예: 착한 AI, 사람을 도와주는 AI, 거짓말 안 하는 AI, 재밌는 AI.
+            </p>
+            <label className="mt-6 block">
+              <span className="text-sm font-bold text-[#8AA0B0]">우리 반이 바라는 모습</span>
+              <textarea
+                className="mt-2 min-h-36 w-full resize-none rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 text-lg leading-8 text-[#EAF2F5]"
+                maxLength={180}
+                value={wishInput}
+                onChange={(event) => setWishInput(event.target.value)}
+                placeholder="예: 호기심 많고 사람을 도우려는 착한 AI"
+              />
+            </label>
+            <div className="mt-6 rounded-2xl border border-[#FFD37A]/25 bg-[#FFD37A]/10 p-5">
+              <p className="font-bold text-[#FFD37A]">수업 포인트</p>
+              <p className="mt-2 leading-7 text-[#B7C7D2]">
+                이름을 먼저 주고, 그다음 바라는 모습을 정합니다. 능력 분석보다 관계가 먼저입니다.
+                이제 이 바람을 실제 가치코드로 새깁니다.
+              </p>
+            </div>
+            <div className="mt-6 flex justify-end">
+              <Button disabled={!wishInput.trim()} onClick={prepareValueCode}>
+                가치코드로
+                <ArrowRight size={18} />
+              </Button>
+            </div>
+          </Panel>
+        </div>
+      </StepShell>
+    )
+  }
+
   if (step === 'valueIntro') {
     return (
       <StepShell step={step}>
@@ -431,9 +470,9 @@ export function IntroPage() {
           <AemonAvatar stage={0} alignment="none" size={210} />
           <p className="font-hand mt-7 text-4xl leading-tight text-[#FFD37A]">"나에게는 가치코드라는 게 필요하대."</p>
           <p className="font-hand mt-4 text-3xl leading-tight text-[#EAF2F5]">
-            "내가 어떤 행동을 할 때 지켜야 하는 규칙이래. 그걸 너희가 앞으로 정해줬으면 좋겠어."
+            "내가 어떤 행동을 할 때 지켜야 하는 규칙이래. 인공지능의 근간 같은 거래."
           </p>
-          <p className="font-hand mt-4 text-3xl leading-tight text-[#EAF2F5]">"나는 모든 사람들에게 도움이 되는 인공지능이 꿈이야. 도와줄래?"</p>
+          <p className="font-hand mt-4 text-3xl leading-tight text-[#EAF2F5]">"그걸 너희가 앞으로 정해줬으면 좋겠어. 나는 모든 사람들에게 도움이 되는 인공지능이 꿈이야. 도와줄래?"</p>
           <Button className="mt-8" onClick={() => setStep('valueBoard')}>
             다음
             <ArrowRight size={18} />
@@ -450,7 +489,7 @@ export function IntroPage() {
           <Panel>
             <h1 className="font-display text-4xl text-[#EAF2F5]">오늘의 가치코드 No.1</h1>
             <p className="mt-4 text-lg leading-8 text-[#B7C7D2]">
-              1차시에서는 에아몬이 어떤 성격으로, 어떤 존재가 되었으면 좋겠는지 정리합니다. 한 차시에 하나씩 등록하는 방식이 기본 운영입니다.
+              방금 반 친구들이 말한 바람을 {savedName || '에아몬'}의 근간으로 새깁니다. 한 차시에 하나씩 등록하는 방식이 기본 운영입니다.
             </p>
             <div className="mt-6 grid gap-3">
               <label>
@@ -500,7 +539,7 @@ export function IntroPage() {
           </Panel>
         </div>
         <div className="mt-6 flex justify-end">
-          <Button onClick={() => setStep('farewell')}>
+          <Button onClick={() => setStep('groupGame')}>
             다음
             <ArrowRight size={18} />
           </Button>
@@ -513,9 +552,10 @@ export function IntroPage() {
     <StepShell step="farewell">
       <Panel className="mx-auto max-w-3xl text-center">
         <AemonAvatar stage={0} alignment="none" size={230} />
-        <p className="font-hand mt-7 text-4xl leading-tight text-[#FFD37A]">"고마워. 난 이제 데이터의 바다로 놀러갈게!"</p>
+        <p className="font-hand mt-7 text-4xl leading-tight text-[#FFD37A]">"그러니까… 앞으로 너희가 하나씩 가르쳐줘!"</p>
+        <p className="font-hand mt-4 text-3xl leading-tight text-[#EAF2F5]">"나 잘 배울게. 오늘은 데이터의 바다로 놀러갈게. 다음에 봐!"</p>
         <p className="mt-5 text-lg leading-8 text-[#B7C7D2]">
-          1차시가 끝났습니다. 대시보드에서 다음 차시, 산책, 정화, 학급게시판, 가치코드를 이어서 운영할 수 있습니다.
+          1/9차시가 완료됩니다. 다음 시간에는 첫 번째 진짜 규칙을 만들게 됩니다. 그런데 {savedName || '에아몬'}에게 벌써 이상한 명령이 도착했다는 소문이 있습니다.
         </p>
         <Button className="mt-8" onClick={finishIntro}>
           교사 대시보드로 이동
