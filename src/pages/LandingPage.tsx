@@ -24,7 +24,7 @@ export function LandingPage() {
               <Sparkles size={20} />
               우리 반 에아몬 만나기
             </Button>
-            <Button variant="secondary" onClick={() => navigate('/guide')}>
+            <Button variant="secondary" onClick={() => navigate('/training')}>
               교사 가이드 보기
             </Button>
           </div>

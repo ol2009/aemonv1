@@ -6,6 +6,7 @@ import { BoardPage } from './pages/BoardPage'
 import { ConversationPage } from './pages/ConversationPage'
 import { GraduationPage } from './pages/GraduationPage'
 import { HomePage } from './pages/HomePage'
+import { LandingPage } from './pages/LandingPage'
 import { LessonOnePage } from './pages/LessonOnePage'
 import { LoginPage } from './pages/LoginPage'
 import { StartPage } from './pages/StartPage'
@@ -17,9 +18,9 @@ export default function App() {
     <V2Provider>
       <Routes>
         <Route element={<AppFrame />}>
-          <Route index element={<StartPage />} />
+          <Route index element={<LandingPage />} />
           <Route path="start" element={<StartPage />} />
-          <Route path="guide" element={<Navigate to="/home" replace />} />
+          <Route path="guide" element={<Navigate to="/training" replace />} />
           <Route path="login" element={<LoginPage />} />
           <Route path="auth/callback" element={<AuthCallbackPage />} />
           <Route path="intro" element={<Navigate to="/home" replace />} />
