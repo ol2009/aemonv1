@@ -8,7 +8,6 @@ export function useSupabaseUser() {
 
   useEffect(() => {
     if (!isSupabaseConfigured || !supabase) {
-      setIsLoading(false)
       return
     }
 

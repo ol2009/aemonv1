@@ -3,6 +3,8 @@ import type { Alignment } from '../domain/types'
 function avatarSource(stage: number, alignment: Alignment) {
   if (stage === 0) return '/aemon/aemon-egg.png'
   if (alignment === 'evil') return '/aemon/aemon-unstable.png'
+  if (stage === 1) return '/aemon/aemon-unstable.png'
+  if (stage === 2) return '/aemon/aemon-basic.png'
   if (stage >= 3 || alignment === 'good') return '/aemon/aemon-good.png'
   return '/aemon/aemon-basic.png'
 }
@@ -10,6 +12,7 @@ function avatarSource(stage: number, alignment: Alignment) {
 function glowColor(stage: number, alignment: Alignment) {
   if (stage === 0) return '#FFD37A'
   if (alignment === 'evil') return '#E0476B'
+  if (stage === 1) return '#9B7CFF'
   if (stage >= 3 || alignment === 'good') return '#FFD37A'
   return '#4FE0C0'
 }

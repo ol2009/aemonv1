@@ -2,175 +2,124 @@ create table if not exists classes (
   id uuid primary key default gen_random_uuid(),
   teacher_id uuid,
   name text not null,
-  intro text not null default '',
-  mode text not null check (mode in ('ai', 'basic')),
+  code text not null unique,
+  current_lesson int not null default 1 check (current_lesson between 1 and 7),
+  aemon_name text not null default '',
   created_at timestamptz not null default now()
 );
 
-create table if not exists aemons (
+create table if not exists students (
   id uuid primary key default gen_random_uuid(),
   class_id uuid not null references classes(id) on delete cascade,
-  stage int not null default 0 check (stage between 0 and 3),
-  xp int not null default 0,
-  gauge int not null default 0,
-  intimacy int not null default 0,
-  alignment text not null default 'none' check (alignment in ('none', 'good', 'evil')),
-  status text not null default 'egg' check (status in ('egg', 'alive', 'graduated')),
-  is_polluted boolean not null default false,
-  pollution_item_id text,
-  egg_image_url text,
-  stage_images_json jsonb not null default '{}'::jsonb,
+  nickname text not null,
   created_at timestamptz not null default now(),
-  graduated_at timestamptz
+  unique (class_id, nickname)
 );
 
-create table if not exists episodes_master (
-  code text primary key,
-  title text not null,
-  type text not null check (type in ('E', 'V_red', 'V_conflict')),
-  axis text not null,
-  stage_gate int not null default 0,
-  hook_text text not null,
-  choices_json jsonb not null default '[]'::jsonb,
-  rubric_json jsonb not null default '{}'::jsonb,
-  active boolean not null default true,
-  is_seed boolean not null default true
-);
-
-create table if not exists lesson_contents (
-  episode_code text primary key,
-  title text not null,
-  grade text not null default '초3~4',
-  standards_json jsonb not null default '[]'::jsonb,
-  objective text not null,
-  note text,
-  phases_json jsonb not null default '[]'::jsonb,
-  slides_json jsonb not null default '[]'::jsonb,
-  updated_at timestamptz not null default now()
-);
-
-create table if not exists value_codes (
+create table if not exists name_candidates (
   id uuid primary key default gen_random_uuid(),
-  class_id uuid references classes(id) on delete cascade,
-  no int not null check (no > 0),
-  title text not null,
-  body text not null,
+  class_id uuid not null references classes(id) on delete cascade,
+  student_id uuid references students(id) on delete set null,
+  nickname text not null,
+  name text not null,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists name_votes (
+  class_id uuid not null references classes(id) on delete cascade,
+  student_id uuid not null references students(id) on delete cascade,
+  candidate_id uuid not null references name_candidates(id) on delete cascade,
   created_at timestamptz not null default now(),
-  unique (class_id, no)
+  primary key (class_id, student_id)
 );
 
-create table if not exists class_board_posts (
+create table if not exists wishes (
   id uuid primary key default gen_random_uuid(),
-  class_id uuid references classes(id) on delete cascade,
+  class_id uuid not null references classes(id) on delete cascade,
+  student_id uuid references students(id) on delete set null,
   nickname text not null,
   body text not null,
-  prompt text not null,
   created_at timestamptz not null default now()
 );
 
-create table if not exists walk_items (
-  id text primary key,
-  type text not null check (type in ('good', 'weird', 'plain')),
-  content_text text not null,
-  image_url text,
-  linked_episode_code text references episodes_master(code)
-);
-
-create table if not exists pollution_items (
-  id text primary key,
-  axis text not null,
-  label text not null,
-  one_liner text not null,
-  linked_episode_code text references episodes_master(code)
-);
-
-create table if not exists episode_logs (
-  id uuid primary key default gen_random_uuid(),
-  aemon_id uuid not null references aemons(id) on delete cascade,
-  episode_code text not null references episodes_master(code),
-  mode text not null check (mode in ('ai', 'basic')),
-  student_input_summary text,
-  verdict text not null check (verdict in ('good', 'evil', 'gray', 'none')),
-  xp_delta int not null default 0,
-  gauge_delta int not null default 0,
-  teacher_override boolean not null default false,
-  created_at timestamptz not null default now()
-);
-
-create table if not exists walk_logs (
-  id uuid primary key default gen_random_uuid(),
-  aemon_id uuid not null references aemons(id) on delete cascade,
-  item_id text not null references walk_items(id),
-  created_at timestamptz not null default now()
-);
-
-create table if not exists clean_logs (
-  id uuid primary key default gen_random_uuid(),
-  aemon_id uuid not null references aemons(id) on delete cascade,
-  item_id text not null references pollution_items(id),
-  created_at timestamptz not null default now()
-);
-
-create table if not exists dex (
+create table if not exists codes (
   id uuid primary key default gen_random_uuid(),
   class_id uuid not null references classes(id) on delete cascade,
-  aemon_snapshot jsonb not null,
-  final_image_url text,
-  ending text not null check (ending in ('good', 'evil')),
-  graduated_at timestamptz not null default now()
+  student_id uuid references students(id) on delete set null,
+  nickname text not null,
+  body text not null,
+  reason text not null,
+  value_card text not null default '',
+  revision_of_no int,
+  status text not null default 'pending' check (status in ('pending', 'adopted', 'rejected')),
+  adopted_no int,
+  created_at timestamptz not null default now(),
+  adopted_at timestamptz
 );
 
-alter table lesson_contents enable row level security;
-alter table value_codes enable row level security;
-alter table class_board_posts enable row level security;
+create table if not exists code_votes (
+  class_id uuid not null references classes(id) on delete cascade,
+  student_id uuid not null references students(id) on delete cascade,
+  code_id uuid not null references codes(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (class_id, student_id)
+);
 
-drop policy if exists "lesson contents public read" on lesson_contents;
-create policy "lesson contents public read"
-  on lesson_contents for select
-  using (true);
+create table if not exists chat_logs (
+  id uuid primary key default gen_random_uuid(),
+  class_id uuid not null references classes(id) on delete cascade,
+  question text not null,
+  answer text not null,
+  mode text not null check (mode in ('canned', 'live')),
+  prompt_snapshot text not null default '',
+  created_at timestamptz not null default now()
+);
 
-drop policy if exists "lesson contents public write prototype" on lesson_contents;
+create index if not exists classes_code_idx on classes(code);
+create index if not exists codes_class_status_idx on codes(class_id, status);
+create index if not exists chat_logs_class_created_idx on chat_logs(class_id, created_at desc);
 
-drop policy if exists "lesson contents authenticated insert" on lesson_contents;
-create policy "lesson contents authenticated insert"
-  on lesson_contents for insert
-  to authenticated
-  with check (true);
+alter table classes enable row level security;
+alter table students enable row level security;
+alter table name_candidates enable row level security;
+alter table name_votes enable row level security;
+alter table wishes enable row level security;
+alter table codes enable row level security;
+alter table code_votes enable row level security;
+alter table chat_logs enable row level security;
 
-drop policy if exists "lesson contents authenticated update" on lesson_contents;
-create policy "lesson contents authenticated update"
-  on lesson_contents for update
-  to authenticated
-  using (true)
-  with check (true);
+drop policy if exists "classes public read by code" on classes;
+create policy "classes public read by code" on classes for select using (true);
 
-drop policy if exists "lesson contents authenticated delete" on lesson_contents;
-create policy "lesson contents authenticated delete"
-  on lesson_contents for delete
-  to authenticated
-  using (true);
+drop policy if exists "classes authenticated write" on classes;
+create policy "classes authenticated write" on classes for all to authenticated using (true) with check (true);
 
-drop policy if exists "value codes public read" on value_codes;
-create policy "value codes public read"
-  on value_codes for select
-  using (true);
+drop policy if exists "students public read" on students;
+create policy "students public read" on students for select using (true);
 
-drop policy if exists "value codes authenticated write" on value_codes;
-create policy "value codes authenticated write"
-  on value_codes for all
-  to authenticated
-  using (true)
-  with check (true);
+drop policy if exists "students public insert" on students;
+create policy "students public insert" on students for insert with check (length(trim(nickname)) between 1 and 16);
 
-drop policy if exists "class board public read" on class_board_posts;
-create policy "class board public read"
-  on class_board_posts for select
-  using (true);
+drop policy if exists "name candidates public" on name_candidates;
+create policy "name candidates public" on name_candidates for all using (true) with check (length(trim(name)) between 1 and 12);
 
-drop policy if exists "class board public insert" on class_board_posts;
-create policy "class board public insert"
-  on class_board_posts for insert
-  with check (
-    length(trim(nickname)) between 1 and 16
-    and length(trim(body)) between 1 and 280
-  );
+drop policy if exists "name votes public" on name_votes;
+create policy "name votes public" on name_votes for all using (true) with check (true);
+
+drop policy if exists "wishes public" on wishes;
+create policy "wishes public" on wishes for all using (true) with check (length(trim(body)) between 1 and 160);
+
+drop policy if exists "codes public read" on codes;
+create policy "codes public read" on codes for select using (true);
+
+drop policy if exists "codes public insert" on codes;
+create policy "codes public insert" on codes for insert with check (length(trim(body)) between 1 and 180 and length(trim(reason)) between 1 and 180);
+
+drop policy if exists "codes authenticated update" on codes;
+create policy "codes authenticated update" on codes for update to authenticated using (true) with check (true);
+
+drop policy if exists "code votes public" on code_votes;
+create policy "code votes public" on code_votes for all using (true) with check (true);
+
+drop policy if exists "chat logs authenticated" on chat_logs;
+create policy "chat logs authenticated" on chat_logs for all to authenticated using (true) with check (true);

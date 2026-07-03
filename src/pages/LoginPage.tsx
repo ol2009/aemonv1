@@ -13,7 +13,7 @@ export function LoginPage() {
   const login = async () => {
     setMessage('')
     try {
-      await signInWithGoogle('/guide')
+      await signInWithGoogle('/home')
     } catch (error) {
       setMessage((error as Error).message)
     }
@@ -49,7 +49,7 @@ export function LoginPage() {
           {user ? (
             <Button onClick={() => navigate('/guide')}>
               <LogIn size={19} />
-              교사 가이드로 이동
+              교사 화면으로 이동
             </Button>
           ) : (
             <Button disabled={!isConfigured || isLoading} onClick={login}>

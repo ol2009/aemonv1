@@ -1,20 +1,21 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { BookOpen, ClipboardList, Home, LogIn, LogOut, MessageSquareText, Sparkles } from 'lucide-react'
+import { ClipboardList, Crown, Home, LogIn, LogOut, MessageSquare, MessageSquareText, Sparkles } from 'lucide-react'
 import { Button } from './ui'
 import { signOut, useSupabaseUser } from '../lib/useSupabaseUser'
 
 const navItems = [
-  { path: '/home', label: '대시보드', icon: Home },
+  { path: '/home', label: '교사 화면', icon: Home },
   { path: '/codes', label: '가치코드', icon: ClipboardList },
-  { path: '/board', label: '학습게시판', icon: MessageSquareText },
-  { path: '/guide', label: '교사자료실', icon: BookOpen },
+  { path: '/board', label: '학생 화면', icon: MessageSquareText },
+  { path: '/talk', label: '챗봇', icon: MessageSquare },
+  { path: '/graduation', label: '임명식', icon: Crown },
 ]
 
 export function AppFrame() {
   const navigate = useNavigate()
   const location = useLocation()
   const { user, isConfigured } = useSupabaseUser()
-  const isImmersive = ['/start', '/intro', '/evolution', '/graduation', '/talk'].includes(location.pathname)
+  const isImmersive = false
 
   const handleAuthClick = async () => {
     if (user) {
@@ -64,7 +65,7 @@ export function AppFrame() {
               </Button>
               <Button className="min-h-10 px-3" onClick={() => navigate('/start')}>
                 <Sparkles size={18} />
-                시작하기
+                학급 시작
               </Button>
             </div>
           </header>

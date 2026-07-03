@@ -50,11 +50,13 @@ export function LessonRunPage() {
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(boardUrl)}`
 
   useEffect(() => {
-    setStep('intro')
-    setSelected(null)
-    setCodeTitle(material?.valueCodeTitle ?? '')
-    setCodeBody(material?.valueCodeBody ?? '')
-    setCodeSaved(false)
+    queueMicrotask(() => {
+      setStep('intro')
+      setSelected(null)
+      setCodeTitle(material?.valueCodeTitle ?? '')
+      setCodeBody(material?.valueCodeBody ?? '')
+      setCodeSaved(false)
+    })
   }, [currentEpisode.code, material?.valueCodeBody, material?.valueCodeTitle])
 
   if (!state.onboardingComplete && currentEpisode.code === '알-01') {

@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>에아몬 v2 가치카드</title>
+    <style>
+      @page { size: A4; margin: 12mm; }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: #f6f3ea;
+        color: #102237;
+        font-family: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+      }
+      header {
+        border-bottom: 3px solid #102237;
+        padding-bottom: 10px;
+      }
+      h1 {
+        margin: 0;
+        font-size: 28px;
+      }
+      p {
+        margin: 6px 0 0;
+        color: #415160;
+        font-weight: 700;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        margin-top: 18px;
+      }
+      .card {
+        align-items: center;
+        background:
+          radial-gradient(circle at 50% 18%, rgba(79, 224, 192, .26), transparent 30%),
+          linear-gradient(145deg, #102237, #07111b);
+        border: 4px solid #102237;
+        border-radius: 26px;
+        color: #eaf2f5;
+        display: flex;
+        flex-direction: column;
+        height: 118px;
+        justify-content: center;
+        overflow: hidden;
+        padding: 18px;
+        position: relative;
+        text-align: center;
+      }
+      .card::before {
+        border: 1px solid rgba(255,255,255,.22);
+        border-radius: 20px;
+        content: "";
+        inset: 10px;
+        position: absolute;
+      }
+      .word {
+        color: #ffd37a;
+        font-size: 34px;
+        font-weight: 900;
+        letter-spacing: .04em;
+        position: relative;
+      }
+      .line {
+        color: #b7c7d2;
+        font-size: 13px;
+        font-weight: 800;
+        margin-top: 10px;
+        position: relative;
+      }
+      footer {
+        color: #637180;
+        font-size: 12px;
+        margin-top: 14px;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>에아몬 가치카드 6장</h1>
+      <p>모둠별로 1세트씩 잘라서 사용합니다. 카드는 소재일 뿐, 학생 문장은 그대로 살립니다.</p>
+    </header>
+    <section class="grid">
+      <article class="card"><div class="word">배려</div><div class="line">다른 사람의 마음을 생각하기</div></article>
+      <article class="card"><div class="word">정직</div><div class="line">속이지 않고 사실을 말하기</div></article>
+      <article class="card"><div class="word">공정</div><div class="line">기준을 세우고 억울함 줄이기</div></article>
+      <article class="card"><div class="word">안전</div><div class="line">사람을 다치게 하지 않기</div></article>
+      <article class="card"><div class="word">책임</div><div class="line">결과를 생각하고 행동하기</div></article>
+      <article class="card"><div class="word">생명존중</div><div class="line">살아 있는 존재를 소중히 하기</div></article>
+    </section>
+    <footer>에아몬 v2 · 2차시 자유 입법 준비물</footer>
+  </body>
+</html>

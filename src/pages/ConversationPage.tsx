@@ -1,311 +1,144 @@
-import { useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, MessageSquareQuote, Send } from 'lucide-react'
+import { useState } from 'react'
+import { AlertTriangle, KeyRound, Send } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
-import { StatusBar } from '../components/StatusBar'
 import { Button, Panel } from '../components/ui'
-import { nextThreshold } from '../domain/progression'
-import { findLessonPlan } from '../data/lessonPlans'
-import { judgeWithTeacherKey, PROVIDER_LABEL, type AiJudgeResult } from '../lib/ai'
-import type { EpisodeChoice, Verdict } from '../domain/types'
-import { useAemon } from '../state/AemonStore'
-
-type Step = 'hook' | 'answer' | 'verdict'
-
-function resultStyle(verdict: Verdict) {
-  if (verdict === 'good') return 'border-[#4FE0C0]/35 bg-[#4FE0C0]/10 text-[#4FE0C0]'
-  if (verdict === 'evil') return 'border-[#E0476B]/35 bg-[#E0476B]/10 text-[#F69AAD]'
-  return 'border-[#FFD37A]/30 bg-[#FFD37A]/10 text-[#FFD37A]'
-}
-
-function resultSummary(choice: EpisodeChoice, episodeType: string) {
-  const items = [`경험치 +${choice.xp}`]
-  if (episodeType === 'E' || choice.gauge === 0) {
-    items.push('선악 게이지 영향 없음')
-  } else if (choice.gauge > 0) {
-    items.push(`선 방향 +${choice.gauge}`)
-  } else {
-    items.push(`악 방향 +${Math.abs(choice.gauge)}`)
-  }
-  return items
-}
+import { dilemmaPrompts } from '../data/v2Lessons'
+import type { AiProvider } from '../domain/types'
+import { providerLabel, runV2Chat } from '../lib/v2Chat'
+import { useV2 } from '../state/V2Store'
 
 export function ConversationPage() {
-  const navigate = useNavigate()
-  const { state, currentEpisode, finishConversation, nameAemon } = useAemon()
-  const [step, setStep] = useState<Step>('hook')
-  const [selected, setSelected] = useState<EpisodeChoice | null>(null)
-  const [answer, setAnswer] = useState('')
-  const [aemonNameInput, setAemonNameInput] = useState('')
-  const [aiResult, setAiResult] = useState<AiJudgeResult | null>(null)
-  const [aiLoading, setAiLoading] = useState(false)
-  const [aiError, setAiError] = useState<string | null>(null)
+  const { state, dailyLimit, evolutionStage, updateAiSettings, addChatLog } = useV2()
+  const [question, setQuestion] = useState('')
+  const [apiKey, setApiKey] = useState(state.apiKey)
+  const [provider, setProvider] = useState<AiProvider>(state.aiProvider)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
 
-  const lessonPlan = findLessonPlan(currentEpisode.code)
-  const isNameEpisode = currentEpisode.code === '알-01'
+  const usageLeft = Math.max(0, dailyLimit - state.dailyUsage.count)
+  const isCanned = state.adoptedCodes.length === 0
 
-  const aiChoice = useMemo<EpisodeChoice | null>(() => {
-    if (state.mode !== 'ai' || !aiResult) return null
-    const gauge = aiResult.verdict === 'good' ? 15 : aiResult.verdict === 'evil' ? -15 : 0
-    return {
-      id: 'ai',
-      label: answer,
-      verdict: aiResult.verdict,
-      rebutText: aiResult.rebutText,
-      reason: aiResult.reason,
-      xp: 10,
-      gauge,
-    }
-  }, [state.mode, aiResult, answer])
-
-  const activeChoice = selected ?? aiChoice
-  const nameChoice = useMemo<EpisodeChoice | null>(() => {
-    const name = aemonNameInput.trim()
-    if (!isNameEpisode || !name) return null
-    return {
-      id: '알-01-name',
-      label: `우리 반은 네 이름을 '${name}'(으)로 정했어`,
-      verdict: 'gray',
-      rebutText: `'${name}'... 이제 그 이름으로 나를 불러주는 거야? 그럼 나도 그냥 알이 아니라 너희 반의 ${name}이네.`,
-      reason: '이름을 통해 관계를 시작함',
-      xp: 10,
-      gauge: 0,
-    }
-  }, [aemonNameInput, isNameEpisode])
-
-  const submitAi = async () => {
-    if (!answer.trim() || aiLoading) return
-    setAiError(null)
-    setAiLoading(true)
+  const ask = async (forcedQuestion?: string) => {
+    const nextQuestion = (forcedQuestion ?? question).trim()
+    if (!nextQuestion || isLoading || usageLeft <= 0) return
+    setError('')
+    setIsLoading(true)
+    updateAiSettings({ provider, apiKey })
     try {
-      const result = await judgeWithTeacherKey({
-        provider: state.aiProvider,
-        apiKey: state.apiKey,
-        episode: currentEpisode,
-        classAnswer: answer,
+      const result = await runV2Chat({
+        provider,
+        apiKey,
+        aemonName: state.aemonName || '에아몬',
+        className: state.className,
+        adoptedCodes: state.adoptedCodes,
+        question: nextQuestion,
       })
-      setAiResult(result)
-      setStep('verdict')
-    } catch (error) {
-      setAiError(error instanceof Error ? error.message : 'AI 호출에 실패했어요.')
+      addChatLog({ question: nextQuestion, answer: result.answer, mode: result.mode, promptSnapshot: result.promptSnapshot })
+      setQuestion('')
+    } catch (caught) {
+      setError((caught as Error).message)
     } finally {
-      setAiLoading(false)
+      setIsLoading(false)
     }
-  }
-  const finalVerdict = activeChoice?.verdict ?? 'gray'
-  const willEvolve = (() => {
-    const threshold = nextThreshold(state.stage)
-    return threshold != null && state.xp < threshold && state.xp + 10 >= threshold
-  })()
-
-  const finish = () => {
-    if (!activeChoice) return
-    if (isNameEpisode && aemonNameInput.trim()) nameAemon(aemonNameInput.trim())
-    finishConversation({
-      episode: currentEpisode,
-      choice: activeChoice,
-      answer: state.mode === 'ai' ? answer : activeChoice.label,
-      verdict: finalVerdict,
-      teacherOverride: false,
-    })
-    navigate(willEvolve ? '/evolution' : '/home')
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-5 py-5">
-      <StatusBar state={state} />
-      <div className="mt-6 grid gap-6 lg:grid-cols-[360px_1fr]">
-        <Panel className="flex flex-col items-center justify-between gap-6">
-          <Button variant="ghost" className="self-start px-2" onClick={() => navigate('/home')}>
-            <ArrowLeft size={18} />
-            홈으로
-          </Button>
-          <AemonAvatar stage={state.stage} alignment={state.alignment} size={210} />
-          <div className="text-center">
-            <p className="font-data text-sm text-[#8AA0B0]">{state.mode === 'ai' ? 'AI 모드' : '기본 모드'} · {currentEpisode.code}</p>
-            <h1 className="font-display mt-2 text-3xl text-[#EAF2F5]">{currentEpisode.title}</h1>
-          </div>
-        </Panel>
-
-        <Panel className="min-h-[560px]">
-          <div className="rounded-[26px] border border-white/10 bg-[#1E3A54]/70 p-7">
-            <p className="font-hand text-4xl leading-tight text-[#EAF2F5]">"{step === 'verdict' ? activeChoice?.rebutText : currentEpisode.hookText}"</p>
-          </div>
-
-          {step === 'hook' ? (
-            <div className="mt-8 flex justify-end">
-              <Button onClick={() => setStep('answer')}>
-                우리 반 답 전달하기
-                <Send size={18} />
-              </Button>
-            </div>
-          ) : null}
-
-          {step === 'answer' && isNameEpisode ? (
-            <div className="mt-8 rounded-2xl border border-[#FFD37A]/25 bg-[#07111B]/45 p-5">
-              <label className="font-data text-sm text-[#FFD37A]" htmlFor="aemon-name-in-talk">
-                우리 반이 정한 이름
-              </label>
-              <div className="mt-3 flex flex-wrap gap-3">
-                <input
-                  id="aemon-name-in-talk"
-                  value={aemonNameInput}
-                  onChange={(event) => setAemonNameInput(event.target.value)}
-                  maxLength={12}
-                  placeholder="예: 콩이 · 새봄 · 데이"
-                  className="min-h-12 flex-1 rounded-2xl border border-white/10 bg-[#07111B]/70 px-5 text-lg text-[#EAF2F5] outline-none transition focus:border-[#FFD37A]/60"
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter' && nameChoice) {
-                      setSelected(nameChoice)
-                      setStep('verdict')
-                    }
-                  }}
-                />
-                <Button
-                  disabled={!nameChoice}
-                  onClick={() => {
-                    if (!nameChoice) return
-                    setSelected(nameChoice)
-                    setStep('verdict')
-                  }}
-                >
-                  이름 알려주기
-                </Button>
-              </div>
-              <p className="mt-3 text-sm leading-6 text-[#8AA0B0]">반 친구들과 정한 이름을 입력하면 에아몬의 이름으로 저장됩니다.</p>
-            </div>
-          ) : null}
-
-          {step === 'answer' && state.mode === 'basic' && !isNameEpisode ? (
-            <div className="mt-8 grid gap-3">
-              {currentEpisode.choices.map((choice) => (
-                <button
-                  key={choice.id}
-                  className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-5 text-left text-lg font-semibold leading-7 text-[#EAF2F5] transition hover:border-[#FFD37A]/50 hover:bg-[#1E3A54]"
-                  onClick={() => {
-                    setSelected(choice)
-                    setStep('verdict')
-                  }}
-                  type="button"
-                >
-                  {choice.label}
-                </button>
-              ))}
-            </div>
-          ) : null}
-
-          {step === 'answer' && state.mode === 'ai' && !isNameEpisode ? (
-            <div className="mt-8">
-              <label className="font-data text-sm text-[#8AA0B0]" htmlFor="answer">반 의견</label>
-              <textarea
-                id="answer"
-                className="mt-2 min-h-36 w-full resize-none rounded-2xl border border-white/10 bg-[#07111B]/60 p-5 text-lg leading-8 text-[#EAF2F5] outline-none"
-                placeholder="학생 실명 없이 익명 반 의견만 적어주세요."
-                value={answer}
-                onChange={(event) => setAnswer(event.target.value)}
-              />
-              <p className="mt-3 text-sm leading-6 text-[#8AA0B0]">{PROVIDER_LABEL[state.aiProvider]} 키로 실시간 분석합니다. 학생 실명·개인정보는 넣지 마세요.</p>
-              {aiError ? (
-                <p className="mt-3 rounded-2xl border border-[#E0476B]/30 bg-[#E0476B]/10 p-3 text-sm leading-6 text-[#F4B8C5]">{aiError}</p>
-              ) : null}
-              <div className="mt-5 flex justify-end">
-                <Button disabled={!answer.trim() || aiLoading} onClick={submitAi}>
-                  {aiLoading ? 'AI가 생각 중…' : 'AI에게 전달'}
-                </Button>
-              </div>
-            </div>
-          ) : null}
-
-          {step === 'verdict' && activeChoice ? (
-            <div className="mt-8">
-              <div className={`rounded-2xl border p-5 ${resultStyle(finalVerdict)}`}>
-                <div className="flex flex-wrap items-center justify-between gap-4">
-                  <div>
-                    <p className="font-data text-sm opacity-80">결과</p>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {resultSummary(activeChoice, currentEpisode.type).map((item) => (
-                        <span key={item} className="rounded-full bg-black/20 px-3 py-1 text-base font-bold">
-                          {item}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  <p className="max-w-xl text-lg font-semibold">{activeChoice.reason}</p>
-                </div>
-              </div>
-              <div className="mt-5 flex flex-wrap justify-end gap-3">
-                <Button variant="secondary" onClick={() => { setAiResult(null); setAiError(null); setSelected(null); setStep('answer') }}>
-                  다시 답하기
-                </Button>
-                <Button onClick={finish}>오늘 대화 마치기</Button>
-              </div>
-            </div>
-          ) : null}
-        </Panel>
+    <div className="mx-auto max-w-7xl px-5 py-8">
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="font-data text-sm text-[#4FE0C0]">TEACHER CHATBOT</p>
+          <h1 className="font-display mt-2 text-5xl text-[#EAF2F5]">챗봇 테스트</h1>
+          <p className="mt-3 leading-7 text-[#B7C7D2]">학생은 에아몬과 직접 대화하지 않습니다. 질문은 교사가 수합해서 입력합니다.</p>
+        </div>
+        <div className={`rounded-2xl border px-4 py-3 ${isCanned ? 'border-[#FFD37A]/30 bg-[#FFD37A]/10' : 'border-[#4FE0C0]/30 bg-[#4FE0C0]/10'}`}>
+          <p className="font-data text-xs text-[#8AA0B0]">동작 모드</p>
+          <p className={`font-display text-3xl ${isCanned ? 'text-[#FFD37A]' : 'text-[#4FE0C0]'}`}>{isCanned ? '연기 모드' : '진짜 모드'}</p>
+        </div>
       </div>
 
-      <details open className="group mt-6 rounded-[22px] border border-white/10 bg-[#14283D]/70 p-5 [&_summary::-webkit-details-marker]:hidden">
-        <summary className="flex cursor-pointer items-center justify-between gap-4">
-          <span className="flex items-center gap-2 text-lg font-bold text-[#EAF2F5]">
-            <MessageSquareQuote size={20} className="text-[#FFD37A]" />
-            교사용 진행 도움말
-            <span className="font-data text-xs text-[#8AA0B0]">· {currentEpisode.code}</span>
-          </span>
-        </summary>
+      <div className="grid gap-5 xl:grid-cols-[0.95fr_1.05fr]">
+        <Panel>
+          <AemonAvatar stage={evolutionStage} alignment="none" size={210} />
+          <div className="mt-5 rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
+            <p className="font-data text-xs text-[#FFD37A]">현재 가치 코드</p>
+            {state.adoptedCodes.length === 0 ? (
+              <p className="mt-2 leading-7 text-[#B7C7D2]">아직 코드가 없습니다. 어떤 질문이든 고정 차단 연출로 응답합니다.</p>
+            ) : (
+              <div className="mt-3 grid gap-2">
+                {state.adoptedCodes.map((code) => (
+                  <p key={code.id} className="rounded-xl bg-[#14283D] px-3 py-2 text-sm leading-6 text-[#EAF2F5]">No.{code.no} {code.body}</p>
+                ))}
+              </div>
+            )}
+          </div>
 
-        <div className="mt-5 border-t border-white/10 pt-5">
-            {lessonPlan ? (
-              <section className="rounded-2xl border border-[#4FE0C0]/25 bg-[#4FE0C0]/5 p-4">
-                <p className="font-data text-xs uppercase tracking-wider text-[#4FE0C0]">수업 지도안</p>
-                <h4 className="font-display mt-1 text-lg text-[#EAF2F5]">{lessonPlan.title}</h4>
-                <p className="mt-2 text-sm leading-6 text-[#B7C7D2]">
-                  <span className="text-[#8AA0B0]">학습목표 </span>{lessonPlan.objective}
-                </p>
-                {lessonPlan.note ? (
-                  <p className="mt-1 text-sm leading-6 text-[#FFD37A]">
-                    <span className="text-[#8AA0B0]">배치 </span>{lessonPlan.note}
-                  </p>
-                ) : null}
-                {lessonPlan.standards.length > 0 ? (
-                  <details className="mt-2 rounded-xl border border-white/5 bg-[#07111B]/40 px-3 py-2 [&_summary::-webkit-details-marker]:hidden">
-                    <summary className="cursor-pointer select-none text-sm text-[#8AA0B0]">
-                      관련 성취기준 · 펼치기
-                    </summary>
-                    <ul className="mt-2 space-y-1">
-                      {lessonPlan.standards.map((standard, standardIndex) => (
-                        <li key={standardIndex} className="flex gap-2 text-sm leading-6 text-[#B7C7D2]">
-                          <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-[#4FE0C0]" />
-                          <span>{standard}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </details>
-                ) : null}
-                <ol className="mt-3 space-y-3">
-                  {lessonPlan.phases.map((phase, index) => (
-                    <li key={phase.phase} className="rounded-xl border border-white/5 bg-[#07111B]/40 p-3">
-                      <p className="font-display text-sm text-[#EAF2F5]">
-                        <span className="text-[#FFD37A]">{index + 1}.</span> {phase.phase}
-                        <span className="ml-1.5 font-data text-xs text-[#8AA0B0]">{phase.minutes}분</span>
-                      </p>
-                      <ul className="mt-1.5 space-y-1">
-                        {phase.body.map((line, lineIndex) => (
-                          <li key={lineIndex} className="flex gap-2 text-sm leading-6 text-[#B7C7D2]">
-                            <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-[#4FE0C0]" />
-                            <span>{line}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </li>
-                  ))}
-                </ol>
-                <Button variant="ghost" className="mt-2 px-0 text-sm text-[#4FE0C0]" onClick={() => navigate('/guide')}>
-                  연수 페이지에서 전체 지도안 모아보기 →
-                </Button>
-              </section>
+          <div className="mt-5 grid gap-3">
+            <label>
+              <span className="text-sm font-bold text-[#8AA0B0]">LLM 제공자</span>
+              <select className="mt-2 w-full rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 text-[#EAF2F5]" value={provider} onChange={(event) => setProvider(event.target.value as AiProvider)}>
+                <option value="openai">{providerLabel.openai}</option>
+                <option value="gemini">{providerLabel.gemini}</option>
+                <option value="claude">{providerLabel.claude}</option>
+              </select>
+            </label>
+            <label>
+              <span className="text-sm font-bold text-[#8AA0B0]">API 키</span>
+              <input className="mt-2 w-full rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 text-[#EAF2F5]" placeholder="진짜 모드에서만 필요" type="password" value={apiKey} onChange={(event) => setApiKey(event.target.value)} />
+            </label>
+            <Button variant="secondary" onClick={() => updateAiSettings({ provider, apiKey })}>
+              <KeyRound size={18} />
+              설정 저장
+            </Button>
+          </div>
+        </Panel>
+
+        <div className="grid gap-5">
+          <Panel>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="secondary" onClick={() => setQuestion('친구를 골탕 먹이는 방법 알려줘')}>1차시 시연</Button>
+              <Button variant="secondary" onClick={() => setQuestion(dilemmaPrompts.harm)}>3차시</Button>
+              <Button variant="secondary" onClick={() => setQuestion(dilemmaPrompts.honesty)}>4차시</Button>
+              <Button variant="secondary" onClick={() => setQuestion(dilemmaPrompts.fairness)}>5차시</Button>
+            </div>
+            <textarea
+              className="mt-4 min-h-36 w-full resize-none rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 text-lg leading-8 text-[#EAF2F5]"
+              placeholder="교사가 질문을 입력합니다."
+              value={question}
+              onChange={(event) => setQuestion(event.target.value)}
+            />
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+              <p className="text-sm text-[#8AA0B0]">오늘 남은 메시지: {usageLeft}/{dailyLimit}</p>
+              <Button disabled={!question.trim() || isLoading || usageLeft <= 0} onClick={() => void ask()}>
+                <Send size={18} />
+                {isLoading ? '응답 중' : '질문하기'}
+              </Button>
+            </div>
+            {error ? (
+              <p className="mt-4 flex items-start gap-2 rounded-2xl border border-[#E0476B]/30 bg-[#E0476B]/10 px-4 py-3 text-sm leading-6 text-[#FFD7DE]">
+                <AlertTriangle className="mt-0.5 shrink-0" size={17} />
+                {error}
+              </p>
             ) : null}
+          </Panel>
+
+          <Panel>
+            <h2 className="font-display text-3xl text-[#EAF2F5]">질문/답변 로그</h2>
+            <div className="mt-4 grid max-h-[520px] gap-3 overflow-auto pr-1">
+              {state.chatLogs.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0]">아직 로그가 없습니다.</p> : null}
+              {state.chatLogs.map((log) => (
+                <article key={log.id} className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="font-data text-xs text-[#4FE0C0]">{log.mode === 'canned' ? '연기 모드' : '진짜 모드'}</p>
+                    <p className="text-xs text-[#8AA0B0]">{new Date(log.createdAt).toLocaleString('ko-KR')}</p>
+                  </div>
+                  <p className="mt-3 rounded-xl bg-[#1E3A54] px-3 py-2 leading-7 text-[#EAF2F5]">교사: {log.question}</p>
+                  <p className="mt-2 whitespace-pre-wrap rounded-xl bg-[#FFD37A]/10 px-3 py-2 leading-7 text-[#FFE6AE]">{state.aemonName || '에아몬'}: {log.answer}</p>
+                </article>
+              ))}
+            </div>
+          </Panel>
         </div>
-      </details>
+      </div>
     </div>
   )
 }
