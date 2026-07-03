@@ -12,6 +12,7 @@ export interface NameCandidate {
   id: string
   nickname: string
   name: string
+  reason: string
   votes: string[]
   createdAt: string
 }
@@ -79,6 +80,12 @@ export interface V2State {
     count: number
   }
   studentSession: StudentSession | null
+  remote: {
+    enabled: boolean
+    ok: boolean
+    message: string
+    lastSyncedAt: string | null
+  }
 }
 
 const todayKey = () => new Date().toISOString().slice(0, 10)
@@ -104,18 +111,22 @@ const initialState: V2State = {
   chatLogs: [],
   dailyUsage: { date: todayKey(), count: 0 },
   studentSession: null,
+  remote: { enabled: false, ok: false, message: 'Supabase 동기화 대기 중', lastSyncedAt: null },
 }
 
 type Action =
   | { type: 'class/create'; className: string; teacherEmail?: string }
+  | { type: 'class/merge'; payload: Partial<V2State> }
   | { type: 'class/joinStudent'; classCode: string; nickname: string }
   | { type: 'class/leaveStudent' }
   | { type: 'lesson/set'; lessonNo: number }
   | { type: 'settings/updateAi'; provider: AiProvider; apiKey: string }
-  | { type: 'name/add'; nickname: string; name: string }
+  | { type: 'remote/status'; ok: boolean; message: string }
+  | { type: 'name/add'; nickname: string; name: string; reason?: string }
   | { type: 'name/vote'; nickname: string; candidateId: string }
   | { type: 'name/confirm'; name: string }
   | { type: 'wish/add'; nickname: string; body: string }
+  | { type: 'wish/delete'; wishId: string }
   | { type: 'proposal/add'; nickname: string; body: string; reason: string; valueCard: string; revisionOfNo: number | null }
   | { type: 'proposal/vote'; nickname: string; proposalId: string }
   | { type: 'proposal/adopt'; proposalId: string }
@@ -125,7 +136,12 @@ type Action =
 
 function normalizeLoaded(raw: unknown): V2State {
   if (!raw || typeof raw !== 'object') return initialState
-  return { ...initialState, ...(raw as Partial<V2State>) }
+  const loaded = { ...initialState, ...(raw as Partial<V2State>) }
+  return {
+    ...loaded,
+    remote: { ...initialState.remote, ...(loaded.remote ?? {}) },
+    nameCandidates: loaded.nameCandidates.map((candidate) => ({ ...candidate, reason: candidate.reason ?? '' })),
+  }
 }
 
 function loadState() {
@@ -151,6 +167,15 @@ function voteOnce<T extends { votes: string[]; status?: ProposalStatus }>(items:
   })
 }
 
+function toggleVote<T extends { votes: string[] }>(items: T[], nickname: string, selectedId: string, getId: (item: T) => string) {
+  if (!nickname) return items
+  return items.map((item) => {
+    if (getId(item) !== selectedId) return item
+    const already = item.votes.includes(nickname)
+    return { ...item, votes: already ? item.votes.filter((vote) => vote !== nickname) : [...item.votes, nickname] }
+  })
+}
+
 function reducer(state: V2State, action: Action): V2State {
   switch (action.type) {
     case 'class/create': {
@@ -166,6 +191,20 @@ function reducer(state: V2State, action: Action): V2State {
         aiProvider: state.aiProvider,
       }
     }
+    case 'class/merge':
+      return {
+        ...state,
+        ...action.payload,
+        remote: {
+          ...state.remote,
+          ...(action.payload.remote ?? {}),
+          enabled: action.payload.remote?.enabled ?? state.remote.enabled,
+          lastSyncedAt: new Date().toISOString(),
+        },
+        apiKey: state.apiKey,
+        aiProvider: state.aiProvider,
+        studentSession: state.studentSession,
+      }
     case 'class/joinStudent': {
       const nickname = clamp(action.nickname, 16)
       if (!nickname || action.classCode.trim() !== state.classCode) return state
@@ -177,15 +216,18 @@ function reducer(state: V2State, action: Action): V2State {
       return { ...state, currentLesson: Math.min(7, Math.max(1, action.lessonNo)) }
     case 'settings/updateAi':
       return { ...state, aiProvider: action.provider, apiKey: action.apiKey }
+    case 'remote/status':
+      return { ...state, remote: { ...state.remote, enabled: true, ok: action.ok, message: action.message, lastSyncedAt: new Date().toISOString() } }
     case 'name/add': {
       const name = clamp(action.name, 12)
+      const reason = clamp(action.reason ?? '', 80)
       const nickname = clamp(action.nickname, 16)
       if (!name || !nickname) return state
-      const candidate: NameCandidate = { id: crypto.randomUUID(), nickname, name, votes: [], createdAt: new Date().toISOString() }
+      const candidate: NameCandidate = { id: crypto.randomUUID(), nickname, name, reason, votes: [], createdAt: new Date().toISOString() }
       return { ...state, nameCandidates: [candidate, ...state.nameCandidates].slice(0, 80) }
     }
     case 'name/vote':
-      return { ...state, nameCandidates: voteOnce(state.nameCandidates, clamp(action.nickname, 16), action.candidateId, (item) => item.id) }
+      return { ...state, nameCandidates: toggleVote(state.nameCandidates, clamp(action.nickname, 16), action.candidateId, (item) => item.id) }
     case 'name/confirm':
       return { ...state, aemonName: clamp(action.name, 12) || state.aemonName }
     case 'wish/add': {
@@ -196,6 +238,8 @@ function reducer(state: V2State, action: Action): V2State {
       const wish: Wish = { id: crypto.randomUUID(), nickname, body, createdAt: new Date().toISOString() }
       return { ...state, wishes: already ? state.wishes.map((item) => (item.nickname === nickname ? wish : item)) : [wish, ...state.wishes] }
     }
+    case 'wish/delete':
+      return { ...state, wishes: state.wishes.filter((wish) => wish.id !== action.wishId) }
     case 'proposal/add': {
       const nickname = clamp(action.nickname, 16)
       const body = clamp(action.body, 180)
@@ -272,14 +316,17 @@ interface V2ContextValue {
   evolutionStage: number
   currentReaction: string
   createClass: (className: string, teacherEmail?: string) => void
+  mergeClass: (payload: Partial<V2State>) => void
+  setRemoteStatus: (status: { ok: boolean; message: string }) => void
   joinStudent: (classCode: string, nickname: string) => void
   leaveStudent: () => void
   setLesson: (lessonNo: number) => void
   updateAiSettings: (settings: { provider: AiProvider; apiKey: string }) => void
-  addNameCandidate: (name: string, nickname?: string) => void
+  addNameCandidate: (name: string, nickname?: string, reason?: string) => void
   voteName: (candidateId: string, nickname?: string) => void
   confirmName: (name: string) => void
   addWish: (body: string, nickname?: string) => void
+  deleteWish: (wishId: string) => void
   addProposal: (proposal: { body: string; reason: string; valueCard: string; revisionOfNo: number | null; nickname?: string }) => void
   voteProposal: (proposalId: string, nickname?: string) => void
   adoptProposal: (proposalId: string) => void
@@ -310,14 +357,17 @@ export function V2Provider({ children }: { children: ReactNode }) {
       evolutionStage,
       currentReaction,
       createClass: (className, teacherEmail) => dispatch({ type: 'class/create', className, teacherEmail }),
+      mergeClass: (payload) => dispatch({ type: 'class/merge', payload }),
+      setRemoteStatus: (status) => dispatch({ type: 'remote/status', ...status }),
       joinStudent: (classCode, nickname) => dispatch({ type: 'class/joinStudent', classCode, nickname }),
       leaveStudent: () => dispatch({ type: 'class/leaveStudent' }),
       setLesson: (lessonNo) => dispatch({ type: 'lesson/set', lessonNo }),
       updateAiSettings: (settings) => dispatch({ type: 'settings/updateAi', ...settings }),
-      addNameCandidate: (name, explicitNickname) => dispatch({ type: 'name/add', name, nickname: explicitNickname ?? nickname }),
+      addNameCandidate: (name, explicitNickname, reason) => dispatch({ type: 'name/add', name, nickname: explicitNickname ?? nickname, reason }),
       voteName: (candidateId, explicitNickname) => dispatch({ type: 'name/vote', candidateId, nickname: explicitNickname ?? nickname }),
       confirmName: (name) => dispatch({ type: 'name/confirm', name }),
       addWish: (body, explicitNickname) => dispatch({ type: 'wish/add', body, nickname: explicitNickname ?? nickname }),
+      deleteWish: (wishId) => dispatch({ type: 'wish/delete', wishId }),
       addProposal: (proposal) => dispatch({ type: 'proposal/add', ...proposal, nickname: proposal.nickname ?? nickname }),
       voteProposal: (proposalId, explicitNickname) => dispatch({ type: 'proposal/vote', proposalId, nickname: explicitNickname ?? nickname }),
       adoptProposal: (proposalId) => dispatch({ type: 'proposal/adopt', proposalId }),

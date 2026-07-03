@@ -3,12 +3,13 @@ import { useNavigate } from 'react-router-dom'
 import { LogIn, LogOut } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
 import { Button, Panel } from '../components/ui'
-import { signInWithGoogle, signOut, useSupabaseUser } from '../lib/useSupabaseUser'
+import { googleRedirectUrl, signInWithGoogle, signOut, useSupabaseUser } from '../lib/useSupabaseUser'
 
 export function LoginPage() {
   const navigate = useNavigate()
   const { user, isConfigured, isLoading } = useSupabaseUser()
   const [message, setMessage] = useState('')
+  const redirectUrl = googleRedirectUrl('/home')
 
   const login = async () => {
     setMessage('')
@@ -45,6 +46,10 @@ export function LoginPage() {
         {message ? (
           <p className="mt-4 rounded-2xl border border-[#FFD37A]/25 bg-[#FFD37A]/10 px-4 py-3 text-sm text-[#FFD37A]">{message}</p>
         ) : null}
+        <div className="mt-5 rounded-2xl border border-white/10 bg-[#07111B]/45 px-4 py-3 text-left">
+          <p className="font-data text-xs text-[#8AA0B0]">OAuth callback</p>
+          <p className="mt-1 break-all text-sm leading-6 text-[#B7C7D2]">{redirectUrl}</p>
+        </div>
         <div className="mt-8 grid gap-3">
           {user ? (
             <Button onClick={() => navigate('/home')}>

@@ -6,8 +6,10 @@ import { BoardPage } from './pages/BoardPage'
 import { ConversationPage } from './pages/ConversationPage'
 import { GraduationPage } from './pages/GraduationPage'
 import { HomePage } from './pages/HomePage'
+import { LessonOnePage } from './pages/LessonOnePage'
 import { LoginPage } from './pages/LoginPage'
 import { StartPage } from './pages/StartPage'
+import { TrainingPage } from './pages/TrainingPage'
 import { ValueCodePage } from './pages/ValueCodePage'
 
 export default function App() {
@@ -22,7 +24,9 @@ export default function App() {
           <Route path="auth/callback" element={<AuthCallbackPage />} />
           <Route path="intro" element={<Navigate to="/home" replace />} />
           <Route path="home" element={<HomePage />} />
-          <Route path="lesson" element={<Navigate to="/home" replace />} />
+          <Route path="lesson" element={<Navigate to="/lesson/1" replace />} />
+          <Route path="lesson/1" element={<LessonOnePage />} />
+          <Route path="training" element={<TrainingPage />} />
           <Route path="codes" element={<ValueCodePage />} />
           <Route path="board" element={<BoardPage />} />
           <Route path="talk" element={<ConversationPage />} />
