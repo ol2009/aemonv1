@@ -5,7 +5,7 @@ import { Button, Panel } from '../components/ui'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 
 function safeNextPath(value: string | null) {
-  if (!value || !value.startsWith('/') || value.startsWith('//')) return '/guide'
+  if (!value || !value.startsWith('/') || value.startsWith('//')) return '/home'
   return value
 }
 
@@ -25,9 +25,23 @@ export function AuthCallbackPage() {
       }
 
       try {
+        const oauthError = searchParams.get('error_description') ?? searchParams.get('error')
+        if (oauthError) throw new Error(decodeURIComponent(oauthError))
+
         const code = searchParams.get('code')
         if (code) {
           const { error } = await supabase.auth.exchangeCodeForSession(code)
+          if (error) throw error
+        }
+
+        const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''))
+        const accessToken = hash.get('access_token')
+        const refreshToken = hash.get('refresh_token')
+        if (accessToken && refreshToken) {
+          const { error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          })
           if (error) throw error
         }
 
@@ -61,8 +75,8 @@ export function AuthCallbackPage() {
           <Button variant="secondary" onClick={() => navigate('/login', { replace: true })}>
             로그인 화면
           </Button>
-          <Button onClick={() => navigate('/guide', { replace: true })}>
-            교사자료실
+          <Button onClick={() => navigate('/home', { replace: true })}>
+            교사 화면
           </Button>
         </div>
       </Panel>

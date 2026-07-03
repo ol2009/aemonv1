@@ -47,7 +47,7 @@ export function LoginPage() {
         ) : null}
         <div className="mt-8 grid gap-3">
           {user ? (
-            <Button onClick={() => navigate('/guide')}>
+            <Button onClick={() => navigate('/home')}>
               <LogIn size={19} />
               교사 화면으로 이동
             </Button>
