@@ -273,6 +273,12 @@ export async function confirmRemoteName(args: { classId: string; aemonName: stri
   if (error) throw new Error(toMessage(error))
 }
 
+export async function updateRemoteLesson(args: { classId: string; lessonNo: number }) {
+  const client = ensureClient()
+  const { error } = await client.from('classes').update({ current_lesson: Math.min(7, Math.max(1, args.lessonNo)) }).eq('id', args.classId)
+  if (error) throw new Error(toMessage(error))
+}
+
 export async function upsertRemoteWish(args: { classId: string; nickname: string; body: string }) {
   const client = ensureClient()
   const { error } = await client

@@ -4,6 +4,7 @@ import { V2Provider } from './state/V2Store'
 import { AuthCallbackPage } from './pages/AuthCallbackPage'
 import { BoardPage } from './pages/BoardPage'
 import { ConversationPage } from './pages/ConversationPage'
+import { DexPage } from './pages/DexPage'
 import { GraduationPage } from './pages/GraduationPage'
 import { HomePage } from './pages/HomePage'
 import { LandingPage } from './pages/LandingPage'
@@ -33,7 +34,7 @@ export default function App() {
           <Route path="talk" element={<ConversationPage />} />
           <Route path="evolution" element={<Navigate to="/home" replace />} />
           <Route path="graduation" element={<GraduationPage />} />
-          <Route path="dex" element={<Navigate to="/home" replace />} />
+          <Route path="dex" element={<DexPage />} />
           <Route path="settings" element={<Navigate to="/talk" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

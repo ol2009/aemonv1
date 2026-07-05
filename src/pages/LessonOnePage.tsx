@@ -5,7 +5,7 @@ import { ArrowLeft, ArrowRight, BrainCircuit, Check, Database, Heart, Pencil, Pl
 import { AemonAvatar } from '../components/AemonAvatar'
 import { Button, Panel } from '../components/ui'
 import { absoluteUrl } from '../lib/siteUrl'
-import { confirmRemoteName, deleteRemoteWish, isRemoteReady, updateRemoteWish, addRemoteChatLog } from '../lib/v2Remote'
+import { confirmRemoteName, deleteRemoteWish, isRemoteReady, updateRemoteLesson, updateRemoteWish, addRemoteChatLog } from '../lib/v2Remote'
 import { runV2Chat } from '../lib/v2Chat'
 import { useV2RemoteSync } from '../lib/useV2RemoteSync'
 import { useV2 } from '../state/V2Store'
@@ -225,6 +225,7 @@ export function LessonOnePage() {
     addChatLog,
     deleteWish,
     addWish,
+    setLesson,
     setRemoteStatus,
   } = useV2()
   const [stepIndex, setStepIndex] = useState(0)
@@ -244,9 +245,21 @@ export function LessonOnePage() {
   const sortedNames = useMemo(() => sortedByLikes(state.nameCandidates), [state.nameCandidates])
 
   const goPrev = () => setStepIndex((current) => Math.max(0, current - 1))
+  const completeLessonOne = async () => {
+    setLesson(2)
+    if (state.classId && isRemoteReady()) {
+      try {
+        await updateRemoteLesson({ classId: state.classId, lessonNo: 2 })
+      } catch (error) {
+        setRemoteStatus({ ok: false, message: (error as Error).message })
+      }
+    }
+    navigate('/home')
+  }
+
   const goNext = () => {
     if (stepIndex >= steps.length - 1) {
-      navigate('/home')
+      void completeLessonOne()
       return
     }
     setStepIndex((current) => current + 1)
