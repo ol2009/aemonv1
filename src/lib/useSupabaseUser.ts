@@ -36,7 +36,9 @@ export function useSupabaseUser() {
 
 function authCallbackUrl(nextPath: string) {
   const url = new URL('/auth/callback', publicSiteUrl())
-  url.searchParams.set('next', nextPath)
+  if (nextPath && nextPath !== '/home') {
+    url.searchParams.set('next', nextPath)
+  }
   return url.toString()
 }
 
