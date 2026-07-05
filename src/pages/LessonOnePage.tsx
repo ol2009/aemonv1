@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, ArrowRight, Check, Heart, Pencil, Play, QrCode, Trash2 } from 'lucide-react'
+import { ArrowLeft, ArrowRight, BrainCircuit, Check, Database, Heart, Pencil, Play, QrCode, Sparkles, Trash2 } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
 import { Button, Panel } from '../components/ui'
 import { absoluteUrl } from '../lib/siteUrl'
@@ -10,9 +10,27 @@ import { runV2Chat } from '../lib/v2Chat'
 import { useV2RemoteSync } from '../lib/useV2RemoteSync'
 import { useV2 } from '../state/V2Store'
 
-type LessonStep = 'director-1' | 'director-2' | 'aemon-1' | 'aemon-2' | 'name' | 'wish' | 'cases' | 'demo' | 'wrap'
+type LessonStep = 'director-1' | 'director-2' | 'aemon-1' | 'aemon-2' | 'ai-info' | 'name' | 'wish' | 'cases' | 'demo' | 'wrap'
 
-const steps: LessonStep[] = ['director-1', 'director-2', 'aemon-1', 'aemon-2', 'name', 'wish', 'cases', 'demo', 'wrap']
+const steps: LessonStep[] = ['director-1', 'director-2', 'aemon-1', 'aemon-2', 'ai-info', 'name', 'wish', 'cases', 'demo', 'wrap']
+
+const aiInfoCards = [
+  {
+    icon: Database,
+    title: '많이 보고 배워요',
+    body: '인공지능은 글, 그림, 숫자 같은 많은 데이터를 보고 규칙과 패턴을 찾습니다.',
+  },
+  {
+    icon: Sparkles,
+    title: '배운 것으로 답해요',
+    body: '그래서 질문에 답하거나, 글을 쓰거나, 그림을 만들거나, 번역을 할 수 있습니다.',
+  },
+  {
+    icon: BrainCircuit,
+    title: '하지만 옳고 그름은 저절로 알지 못해요',
+    body: '친구 마음이 아픈지, 무엇이 공정한지, 어떤 행동이 착한지는 사람이 기준을 가르쳐야 합니다.',
+  },
+]
 
 const incidents = [
   {
@@ -357,6 +375,51 @@ export function LessonOnePage() {
             line={`${state.className || '너희 반'} 인공지능이 될 거래. 앞으로 잘 부탁해!`}
             caption="연구소에서 들었어. 너희가 날 가르쳐준대. 내가 사람들에게 도움이 되는 인공지능이 될 수 있도록 말이야."
           />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
+      ) : null}
+
+      {step === 'ai-info' ? (
+        <>
+          <Panel className="overflow-hidden">
+            <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+              <div>
+                <p className="font-data text-sm text-[#4FE0C0]">AI BASIC</p>
+                <h2 className="font-display mt-3 text-6xl leading-tight text-[#EAF2F5]">인공지능은 무엇일까?</h2>
+                <p className="mt-6 text-2xl font-black leading-10 text-[#FFD37A]">
+                  인공지능은 사람처럼 생각하는 것처럼 보이는 컴퓨터 프로그램입니다.
+                </p>
+                <p className="mt-5 text-lg leading-8 text-[#B7C7D2]">
+                  똑똑하게 답할 수는 있지만, 좋은 선택을 하는 기준은 저절로 생기지 않습니다.
+                </p>
+              </div>
+
+              <div className="grid gap-4">
+                {aiInfoCards.map((card) => {
+                  const Icon = card.icon
+                  return (
+                    <article key={card.title} className="rounded-[22px] border border-white/10 bg-[#07111B]/55 p-5">
+                      <div className="flex gap-4">
+                        <div className="flex h-13 w-13 shrink-0 items-center justify-center rounded-2xl bg-[#4FE0C0]/12 text-[#4FE0C0]">
+                          <Icon size={26} />
+                        </div>
+                        <div>
+                          <h3 className="text-xl font-black text-[#EAF2F5]">{card.title}</h3>
+                          <p className="mt-2 leading-7 text-[#B7C7D2]">{card.body}</p>
+                        </div>
+                      </div>
+                    </article>
+                  )
+                })}
+              </div>
+            </div>
+
+            <div className="mt-7 rounded-[24px] border border-[#FFD37A]/25 bg-[#FFD37A]/10 p-5 text-center">
+              <p className="font-display text-4xl leading-tight text-[#FFD37A]">
+                AI는 똑똑할 수 있지만, 좋은 AI가 되려면 사람이 기준을 가르쳐야 합니다.
+              </p>
+            </div>
+          </Panel>
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
       ) : null}
