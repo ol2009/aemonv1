@@ -54,36 +54,43 @@ function sortedByLikes<T extends { votes: string[]; createdAt: string }>(items: 
 
 function StepShell({
   children,
+}: {
+  children: ReactNode
+}) {
+  return (
+    <div className="mx-auto max-w-7xl px-5 pb-8">
+      <div className="mb-4">
+        <div>
+          <p className="font-data text-sm text-[#4FE0C0]">1차시 · 탄생</p>
+          <h1 className="font-display mt-1 text-4xl text-[#EAF2F5]">너는 누구야</h1>
+        </div>
+      </div>
+      {children}
+    </div>
+  )
+}
+
+function StepControls({
   stepIndex,
   onPrev,
   onNext,
   nextLabel = '다음',
 }: {
-  children: ReactNode
   stepIndex: number
   onPrev: () => void
   onNext: () => void
   nextLabel?: string
 }) {
   return (
-    <div className="mx-auto max-w-7xl px-5 pb-8">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="font-data text-sm text-[#4FE0C0]">1차시 · 탄생</p>
-          <h1 className="font-display mt-1 text-4xl text-[#EAF2F5]">너는 누구야</h1>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="secondary" disabled={stepIndex === 0} onClick={onPrev}>
-            <ArrowLeft size={18} />
-            이전
-          </Button>
-          <Button onClick={onNext}>
-            {nextLabel}
-            <ArrowRight size={18} />
-          </Button>
-        </div>
-      </div>
-      {children}
+    <div className="mt-4 flex justify-end gap-2">
+      <Button variant="secondary" disabled={stepIndex === 0} onClick={onPrev}>
+        <ArrowLeft size={18} />
+        이전
+      </Button>
+      <Button onClick={onNext}>
+        {nextLabel}
+        <ArrowRight size={18} />
+      </Button>
     </div>
   )
 }
@@ -245,98 +252,114 @@ export function LessonOnePage() {
   }
 
   return (
-    <StepShell stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextLabel={stepIndex >= steps.length - 1 ? '교사 화면' : '다음'}>
+    <StepShell>
       {step === 'director-1' ? (
-        <VisualNovelScene
-          image="/v2/lesson-1/director.png"
-          speaker="연구소장"
-          line="선생님, 이 알을 맡아주십시오."
-          caption="데이터의 바다에서 막 깨어난 학급 인공지능입니다. 지식은 많지만, 아직 무엇을 지켜야 하는지 모릅니다."
-        />
+        <>
+          <VisualNovelScene
+            image="/v2/lesson-1/director.png"
+            speaker="연구소장"
+            line="선생님, 이 알을 맡아주십시오."
+            caption="데이터의 바다에서 막 깨어난 학급 인공지능입니다. 지식은 많지만, 아직 무엇을 지켜야 하는지 모릅니다."
+          />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
       ) : null}
 
       {step === 'director-2' ? (
-        <VisualNovelScene
-          image="/v2/lesson-1/director.png"
-          speaker="연구소장"
-          line="이 AI는 똑똑합니다. 하지만 착하다고 말할 수는 없습니다."
-          caption="오늘부터 이 반이 한 줄 한 줄 가치 코드를 새기며, 이 AI가 사람에게 도움이 되는 존재로 자라도록 도와주세요."
-        />
+        <>
+          <VisualNovelScene
+            image="/v2/lesson-1/director.png"
+            speaker="연구소장"
+            line="이 AI는 똑똑합니다. 하지만 착하다고 말할 수는 없습니다."
+            caption="오늘부터 이 반이 한 줄 한 줄 가치 코드를 새기며, 이 AI가 사람에게 도움이 되는 존재로 자라도록 도와주세요."
+          />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
       ) : null}
 
       {step === 'aemon-1' ? (
-        <VisualNovelScene
-          avatar
-          speaker="에아몬"
-          line="…여기가 어디야? 나는 아직 아무것도 몰라. 시키면 뭐든 해."
-          caption="화면의 알 속에서 작은 인공지능이 처음 말을 겁니다."
-        />
+        <>
+          <VisualNovelScene
+            avatar
+            speaker="에아몬"
+            line="…여기가 어디야? 나는 아직 아무것도 몰라. 시키면 뭐든 해."
+            caption="화면의 알 속에서 작은 인공지능이 처음 말을 겁니다."
+          />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
       ) : null}
 
       {step === 'aemon-2' ? (
-        <VisualNovelScene
-          avatar
-          speaker="에아몬"
-          line="너네 반 인공지능이 될 거래. 앞으로 잘 부탁해!"
-          caption="교사 멘트: 얘는 갓 태어난 인공지능이에요. 아직 아무것도 몰라요. 우리 반이 얘를 키울 거예요."
-        />
+        <>
+          <VisualNovelScene
+            avatar
+            speaker="에아몬"
+            line="너네 반 인공지능이 될 거래. 앞으로 잘 부탁해!"
+            caption="교사 멘트: 얘는 갓 태어난 인공지능이에요. 아직 아무것도 몰라요. 우리 반이 얘를 키울 거예요."
+          />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
       ) : null}
 
       {step === 'name' ? (
-        <div className="grid gap-5 lg:grid-cols-[0.8fr_1.2fr]">
-          <Panel>
-            <p className="font-data text-sm text-[#FFD37A]">이름 짓기</p>
-            <h2 className="font-display mt-2 text-4xl text-[#EAF2F5]">“내 이름은 뭐야?”</h2>
-            <p className="mt-3 leading-7 text-[#B7C7D2]">학생은 QR로 들어가 닉네임, 이름 후보, 이유를 올립니다. 교사 화면에는 좋아요 많은 순으로 쌓입니다.</p>
-            <div className="mt-5">
-              <QrBlock title="이름 후보 게시판" url={nameBoardUrl} />
-            </div>
-            <div className="mt-5 rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
-              <label className="text-sm font-bold text-[#8AA0B0]">최종 이름 입력</label>
-              <div className="mt-2 flex gap-2">
-                <input
-                  className="min-w-0 flex-1 rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 text-[#EAF2F5]"
-                  maxLength={12}
-                  placeholder="예: 루미"
-                  value={finalName}
-                  onChange={(event) => setFinalName(event.target.value)}
-                />
-                <Button disabled={!finalName.trim()} onClick={saveFinalName}>
-                  <Check size={18} />
-                  저장
-                </Button>
+        <>
+          <div className="grid gap-5 lg:grid-cols-[0.8fr_1.2fr]">
+            <Panel>
+              <p className="font-data text-sm text-[#FFD37A]">이름 짓기</p>
+              <h2 className="font-display mt-2 text-4xl text-[#EAF2F5]">“내 이름은 뭐야?”</h2>
+              <p className="mt-3 leading-7 text-[#B7C7D2]">학생은 QR로 들어가 닉네임, 이름 후보, 이유를 올립니다. 교사 화면에는 좋아요 많은 순으로 쌓입니다.</p>
+              <div className="mt-5">
+                <QrBlock title="이름 후보 게시판" url={nameBoardUrl} />
               </div>
-              {state.aemonName ? <p className="mt-3 text-sm text-[#4FE0C0]">저장됨: {state.aemonName}</p> : null}
-            </div>
-          </Panel>
-
-          <Panel>
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="font-display text-3xl text-[#EAF2F5]">이름 후보</h2>
-              <span className="rounded-full bg-[#07111B]/70 px-3 py-1 text-sm text-[#8AA0B0]">{sortedNames.length}개</span>
-            </div>
-            <div className="mt-4 grid gap-3">
-              {sortedNames.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0]">학생 후보를 기다리는 중입니다.</p> : null}
-              {sortedNames.map((candidate) => (
-                <div key={candidate.id} className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-3xl font-black text-[#EAF2F5]">{candidate.name}</p>
-                      <p className="mt-1 leading-6 text-[#8AA0B0]">{candidate.reason || '이유 없음'} · {candidate.nickname}</p>
-                    </div>
-                    <span className="inline-flex items-center gap-1 rounded-full bg-[#FFD37A]/15 px-3 py-1 font-bold text-[#FFD37A]">
-                      <Heart size={17} fill="currentColor" />
-                      {candidate.votes.length}
-                    </span>
-                  </div>
+              <div className="mt-5 rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
+                <label className="text-sm font-bold text-[#8AA0B0]">최종 이름 입력</label>
+                <div className="mt-2 flex gap-2">
+                  <input
+                    className="min-w-0 flex-1 rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 text-[#EAF2F5]"
+                    maxLength={12}
+                    placeholder="예: 루미"
+                    value={finalName}
+                    onChange={(event) => setFinalName(event.target.value)}
+                  />
+                  <Button disabled={!finalName.trim()} onClick={saveFinalName}>
+                    <Check size={18} />
+                    저장
+                  </Button>
                 </div>
-              ))}
-            </div>
-          </Panel>
-        </div>
+                {state.aemonName ? <p className="mt-3 text-sm text-[#4FE0C0]">저장됨: {state.aemonName}</p> : null}
+              </div>
+            </Panel>
+
+            <Panel>
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="font-display text-3xl text-[#EAF2F5]">이름 후보</h2>
+                <span className="rounded-full bg-[#07111B]/70 px-3 py-1 text-sm text-[#8AA0B0]">{sortedNames.length}개</span>
+              </div>
+              <div className="mt-4 grid gap-3">
+                {sortedNames.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0]">학생 후보를 기다리는 중입니다.</p> : null}
+                {sortedNames.map((candidate) => (
+                  <div key={candidate.id} className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-3xl font-black text-[#EAF2F5]">{candidate.name}</p>
+                        <p className="mt-1 leading-6 text-[#8AA0B0]">{candidate.reason || '이유 없음'} · {candidate.nickname}</p>
+                      </div>
+                      <span className="inline-flex items-center gap-1 rounded-full bg-[#FFD37A]/15 px-3 py-1 font-bold text-[#FFD37A]">
+                        <Heart size={17} fill="currentColor" />
+                        {candidate.votes.length}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Panel>
+          </div>
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
       ) : null}
 
       {step === 'wish' ? (
+        <>
         <div className="grid gap-5 lg:grid-cols-[0.8fr_1.2fr]">
           <Panel>
             <p className="font-data text-sm text-[#FFD37A]">바람 입력</p>
@@ -389,9 +412,12 @@ export function LessonOnePage() {
             </div>
           </Panel>
         </div>
+        <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
       ) : null}
 
       {step === 'cases' ? (
+        <>
         <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
           <Panel className="p-4">
             <img className="aspect-square w-full rounded-[18px] object-cover" src={incidents[caseIndex].image} alt="" />
@@ -426,9 +452,12 @@ export function LessonOnePage() {
             </div>
           </Panel>
         </div>
+        <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
       ) : null}
 
       {step === 'demo' ? (
+        <>
         <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
           <Panel>
             <p className="font-data text-sm text-[#FFD37A]">시연 · 규칙 없는 AI</p>
@@ -465,15 +494,20 @@ export function LessonOnePage() {
             </div>
           </Panel>
         </div>
+        <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
       ) : null}
 
       {step === 'wrap' ? (
-        <VisualNovelScene
-          avatar
-          speaker={state.aemonName || '에아몬'}
-          line="이름이 생겼어. 근데… 난 아직 뭘 지켜야 하는지 몰라. 규칙이 하나도 없어."
-          caption="다음 시간에 우리가 에아몬의 규칙, 가치 코드를 직접 만들어줄 거예요."
-        />
+        <>
+          <VisualNovelScene
+            avatar
+            speaker={state.aemonName || '에아몬'}
+            line="이름이 생겼어. 근데… 난 아직 뭘 지켜야 하는지 몰라. 규칙이 하나도 없어."
+            caption="다음 시간에 우리가 에아몬의 규칙, 가치 코드를 직접 만들어줄 거예요."
+          />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextLabel="교사 화면" />
+        </>
       ) : null}
     </StepShell>
   )
