@@ -122,7 +122,7 @@ export function BoardPage() {
       joinStudent(code, nick)
     } catch (error) {
       setRemoteStatus({ ok: false, message: (error as Error).message })
-      setMessage((error as Error).message)
+      setMessage('학급 코드를 확인할 수 없습니다. 선생님 화면의 코드를 다시 확인해주세요.')
     } finally {
       setIsEntering(false)
     }
@@ -298,10 +298,6 @@ export function BoardPage() {
           </Button>
         ) : null}
       </div>
-
-      {!state.remote.ok ? (
-        <p className="mb-5 rounded-2xl border border-[#FFD37A]/25 bg-[#FFD37A]/10 px-4 py-3 text-sm leading-6 text-[#FFD37A]">{state.remote.message}</p>
-      ) : null}
 
       <Panel className="mb-5">
         <div className="flex flex-wrap gap-2">

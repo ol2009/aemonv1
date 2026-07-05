@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowRight, Database, LogIn, RotateCcw, School } from 'lucide-react'
+import { ArrowRight, LogIn, RotateCcw, School } from 'lucide-react'
 import { Button, Panel } from '../components/ui'
 import { createRemoteClass, isRemoteReady, probeV2Database } from '../lib/v2Remote'
 import { useSupabaseUser } from '../lib/useSupabaseUser'
@@ -8,7 +8,7 @@ import { useV2 } from '../state/V2Store'
 
 export function StartPage() {
   const navigate = useNavigate()
-  const { user, isConfigured } = useSupabaseUser()
+  const { user } = useSupabaseUser()
   const { state, createClass, mergeClass, resetDemo, setRemoteStatus } = useV2()
   const [className, setClassName] = useState(state.className)
   const [message, setMessage] = useState('')
@@ -36,13 +36,13 @@ export function StartPage() {
       createClass(trimmed, user?.email ?? '')
       setRemoteStatus({
         ok: false,
-        message: user ? 'Supabase 환경변수가 없어 로컬 학급으로 시작했습니다.' : 'Google 로그인 전이라 로컬 학급으로 시작했습니다. 학생 QR 공유는 Supabase 연결 후 사용하세요.',
+        message: '학급을 먼저 열었습니다.',
       })
       navigate('/home')
     } catch (error) {
       createClass(trimmed, user?.email ?? '')
       setRemoteStatus({ ok: false, message: (error as Error).message })
-      setMessage(`${(error as Error).message} 로컬 학급으로는 계속 진행할 수 있습니다.`)
+      setMessage('학급을 먼저 열었습니다. 저장 설정은 나중에 다시 확인할 수 있습니다.')
       navigate('/home')
     } finally {
       setIsCreating(false)
@@ -84,18 +84,6 @@ export function StartPage() {
             onChange={(event) => setClassName(event.target.value)}
           />
         </label>
-
-        <div className="mt-5 rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
-          <div className="flex items-start gap-3">
-            <Database className={state.remote.ok ? 'text-[#4FE0C0]' : 'text-[#FFD37A]'} size={20} />
-            <div>
-              <p className="font-bold text-[#EAF2F5]">공유 상태</p>
-              <p className="mt-1 text-sm leading-6 text-[#8AA0B0]">
-                {state.remote.message || (isConfigured ? 'Supabase 연결 확인 전입니다.' : 'Supabase 환경변수가 없습니다.')}
-              </p>
-            </div>
-          </div>
-        </div>
 
         {message ? <p className="mt-4 rounded-2xl border border-[#FFD37A]/25 bg-[#FFD37A]/10 px-4 py-3 text-sm text-[#FFD37A]">{message}</p> : null}
 

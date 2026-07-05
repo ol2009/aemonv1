@@ -92,11 +92,6 @@ export function HomePage() {
           </div>
         </Panel>
 
-        {!state.remote.ok ? (
-          <p className="mt-4 rounded-2xl border border-[#FFD37A]/25 bg-[#FFD37A]/10 px-4 py-3 text-sm leading-6 text-[#FFD37A]">
-            {state.remote.message}
-          </p>
-        ) : null}
       </div>
     </div>
   )

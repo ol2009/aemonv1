@@ -176,6 +176,7 @@ export async function createRemoteClass(input: { className: string; teacherId?: 
       .from('classes')
       .insert({
         name: input.className.trim(),
+        mode: 'ai',
         code,
         teacher_id: input.teacherId ?? null,
         current_lesson: 1,

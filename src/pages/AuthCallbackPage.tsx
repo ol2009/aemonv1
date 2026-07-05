@@ -20,7 +20,7 @@ export function AuthCallbackPage() {
 
     async function finishLogin() {
       if (!isSupabaseConfigured || !supabase) {
-        setMessage('Supabase 환경변수가 설정되어 있지 않습니다.')
+        setMessage('로그인 설정이 아직 완료되지 않았습니다.')
         return
       }
 
@@ -53,8 +53,8 @@ export function AuthCallbackPage() {
         }
 
         if (mounted) navigate(nextPath, { replace: true })
-      } catch (error) {
-        if (mounted) setMessage((error as Error).message)
+      } catch {
+        if (mounted) setMessage('로그인 처리 중 문제가 생겼습니다. 다시 시도해주세요.')
       }
     }
 

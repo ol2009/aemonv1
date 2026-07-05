@@ -1,21 +1,11 @@
 create extension if not exists pgcrypto;
 
-create table if not exists classes (
-  id uuid primary key default gen_random_uuid(),
-  teacher_id uuid,
-  name text not null,
-  mode text not null default 'ai' check (mode in ('ai', 'basic')),
-  code text not null unique,
-  current_lesson int not null default 1 check (current_lesson between 1 and 7),
-  aemon_name text not null default '',
-  created_at timestamptz not null default now()
-);
-
-alter table classes add column if not exists mode text not null default 'ai' check (mode in ('ai', 'basic'));
 alter table classes add column if not exists code text;
 alter table classes add column if not exists current_lesson int not null default 1 check (current_lesson between 1 and 7);
 alter table classes add column if not exists aemon_name text not null default '';
+
 create unique index if not exists classes_code_unique_idx on classes(code) where code is not null;
+create index if not exists classes_code_idx on classes(code);
 
 create table if not exists name_candidates (
   id uuid primary key default gen_random_uuid(),
@@ -75,7 +65,6 @@ create table if not exists chat_logs (
   created_at timestamptz not null default now()
 );
 
-create index if not exists classes_code_idx on classes(code);
 create index if not exists name_candidates_class_created_idx on name_candidates(class_id, created_at desc);
 create index if not exists name_votes_class_candidate_idx on name_votes(class_id, candidate_id);
 create index if not exists wishes_class_created_idx on wishes(class_id, created_at desc);
@@ -83,22 +72,12 @@ create index if not exists codes_class_status_idx on codes(class_id, status);
 create index if not exists code_votes_class_code_idx on code_votes(class_id, code_id);
 create index if not exists chat_logs_class_created_idx on chat_logs(class_id, created_at desc);
 
-alter table classes enable row level security;
 alter table name_candidates enable row level security;
 alter table name_votes enable row level security;
 alter table wishes enable row level security;
 alter table codes enable row level security;
 alter table code_votes enable row level security;
 alter table chat_logs enable row level security;
-
-drop policy if exists "classes public read" on classes;
-create policy "classes public read" on classes for select using (true);
-
-drop policy if exists "classes authenticated insert" on classes;
-create policy "classes authenticated insert" on classes for insert to authenticated with check (true);
-
-drop policy if exists "classes authenticated update" on classes;
-create policy "classes authenticated update" on classes for update to authenticated using (true) with check (true);
 
 drop policy if exists "name candidates public read" on name_candidates;
 create policy "name candidates public read" on name_candidates for select using (true);
