@@ -299,6 +299,37 @@ export async function deleteRemoteWish(wishId: string) {
   if (error) throw new Error(toMessage(error))
 }
 
+export async function addRemoteCodeProposal(args: {
+  classId: string
+  nickname: string
+  body: string
+  reason: string
+  valueCard: string
+  revisionOfNo: number | null
+}) {
+  const client = ensureClient()
+  const { error } = await client.from('codes').insert({
+    class_id: args.classId,
+    nickname: args.nickname.trim(),
+    body: args.body.trim(),
+    reason: args.reason.trim(),
+    value_card: args.valueCard,
+    revision_of_no: args.revisionOfNo,
+    status: 'pending',
+  })
+  if (error) throw new Error(toMessage(error))
+}
+
+export async function voteRemoteCodeProposal(args: { classId: string; nickname: string; proposalId: string }) {
+  const client = ensureClient()
+  const base = { class_id: args.classId, nickname: args.nickname.trim() }
+  const { error: deleteError } = await client.from('code_votes').delete().match(base)
+  if (deleteError) throw new Error(toMessage(deleteError))
+
+  const { error } = await client.from('code_votes').insert({ ...base, code_id: args.proposalId })
+  if (error) throw new Error(toMessage(error))
+}
+
 export async function addRemoteChatLog(args: { classId: string; question: string; answer: string; mode: 'canned' | 'live'; promptSnapshot: string }) {
   const client = ensureClient()
   const { error } = await client.from('chat_logs').insert({

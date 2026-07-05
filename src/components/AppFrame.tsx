@@ -6,7 +6,7 @@ import { signOut, useSupabaseUser } from '../lib/useSupabaseUser'
 const navItems = [
   { path: '/home', label: '교사 화면', icon: Home },
   { path: '/codes', label: '가치코드', icon: ClipboardList },
-  { path: '/board', label: '학생 화면', icon: MessageSquareText },
+  { path: '/board', label: '학습게시판', icon: MessageSquareText },
   { path: '/talk', label: '챗봇', icon: MessageSquare },
   { path: '/graduation', label: '임명식', icon: Crown },
 ]

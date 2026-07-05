@@ -77,7 +77,7 @@ export function HomePage() {
                 </Button>
                 <Button variant="secondary" onClick={() => navigate('/board')}>
                   <QrCode size={18} />
-                  학생 게시판
+                  학습게시판
                 </Button>
                 <Button variant="secondary" onClick={() => navigate('/talk')}>
                   <MessageSquare size={18} />
