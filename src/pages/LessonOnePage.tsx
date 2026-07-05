@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, Check, Heart, Pencil, Play, QrCode, Trash2 } from 'lucide-react'
@@ -50,6 +50,52 @@ function qrUrl(target: string) {
 
 function sortedByLikes<T extends { votes: string[]; createdAt: string }>(items: T[]) {
   return [...items].sort((a, b) => b.votes.length - a.votes.length || Date.parse(b.createdAt) - Date.parse(a.createdAt))
+}
+
+function TypewriterText({
+  text,
+  enabled = true,
+  speed = 28,
+  cursor = false,
+  onDone,
+}: {
+  text: string
+  enabled?: boolean
+  speed?: number
+  cursor?: boolean
+  onDone?: () => void
+}) {
+  const characters = useMemo(() => Array.from(text), [text])
+  const [progress, setProgress] = useState({ text, count: 0 })
+  const count = progress.text === text ? progress.count : 0
+  const visibleText = enabled ? characters.slice(0, count).join('') : ''
+
+  useEffect(() => {
+    if (!enabled) return
+    if (!characters.length) {
+      onDone?.()
+      return
+    }
+
+    let index = 0
+    const timer = window.setInterval(() => {
+      index += 1
+      setProgress({ text, count: index })
+      if (index >= characters.length) {
+        window.clearInterval(timer)
+        onDone?.()
+      }
+    }, speed)
+
+    return () => window.clearInterval(timer)
+  }, [characters.length, enabled, onDone, speed, text])
+
+  return (
+    <>
+      {visibleText}
+      {cursor ? <span className="ml-1 animate-pulse text-[#4FE0C0]">▌</span> : null}
+    </>
+  )
 }
 
 function StepShell({
@@ -108,6 +154,14 @@ function VisualNovelScene({
   line: string
   caption?: string
 }) {
+  const [lineDoneState, setLineDoneState] = useState({ line, done: false })
+  const [captionDoneState, setCaptionDoneState] = useState({ caption: caption ?? '', done: false })
+  const lineDone = lineDoneState.line === line && lineDoneState.done
+  const captionText = caption ?? ''
+  const captionDone = captionDoneState.caption === captionText && captionDoneState.done
+  const handleLineDone = useCallback(() => setLineDoneState({ line, done: true }), [line])
+  const handleCaptionDone = useCallback(() => setCaptionDoneState({ caption: captionText, done: true }), [captionText])
+
   return (
     <Panel className="relative min-h-[650px] overflow-hidden p-0">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(79,224,192,.18),transparent_38%),linear-gradient(180deg,#0B1A29,#07111B)]" />
@@ -119,8 +173,14 @@ function VisualNovelScene({
       ) : null}
       <div className="absolute inset-x-5 bottom-5 rounded-[22px] border border-white/15 bg-[#07111B]/88 p-6 shadow-2xl backdrop-blur">
         <p className="font-data text-sm text-[#FFD37A]">{speaker}</p>
-        <p className="font-display mt-3 text-4xl leading-tight text-[#EAF2F5]">{line}</p>
-        {caption ? <p className="mt-4 text-lg leading-8 text-[#B7C7D2]">{caption}</p> : null}
+        <p className="font-display mt-3 min-h-[3rem] text-4xl leading-tight text-[#EAF2F5]">
+          <TypewriterText key={line} text={line} speed={34} cursor={!lineDone} onDone={handleLineDone} />
+        </p>
+        {caption ? (
+          <p className="mt-4 min-h-8 text-lg leading-8 text-[#B7C7D2]">
+            <TypewriterText key={captionText} text={captionText} enabled={lineDone} speed={18} cursor={lineDone && !captionDone} onDone={handleCaptionDone} />
+          </p>
+        ) : null}
       </div>
     </Panel>
   )
