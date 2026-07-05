@@ -259,7 +259,7 @@ export function LessonOnePage() {
             image="/v2/lesson-1/director.png"
             speaker="연구소장"
             line="선생님, 이 알을 맡아주십시오."
-            caption="데이터의 바다에서 막 깨어난 학급 인공지능입니다. 지식은 많지만, 아직 무엇을 지켜야 하는지 모릅니다."
+            caption="데이터의 바다에서 막 깨어난 학급 인공지능입니다. 한 달 동안 잘 부탁드립니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -270,8 +270,8 @@ export function LessonOnePage() {
           <VisualNovelScene
             image="/v2/lesson-1/director.png"
             speaker="연구소장"
-            line="이 AI는 똑똑합니다. 하지만 착하다고 말할 수는 없습니다."
-            caption="오늘부터 이 반이 한 줄 한 줄 가치 코드를 새기며, 이 AI가 사람에게 도움이 되는 존재로 자라도록 도와주세요."
+            line="이 아이는 똑똑합니다. 하지만 아직 착하다고 말할 수는 없습니다."
+            caption="아는 것은 많지만, 무엇이 옳은지는 모릅니다. 이 반의 말과 선택이 첫 기준이 될 겁니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -282,8 +282,8 @@ export function LessonOnePage() {
           <VisualNovelScene
             avatar
             speaker="에아몬"
-            line="…여기가 어디야? 나는 아직 아무것도 몰라. 시키면 뭐든 해."
-            caption="화면의 알 속에서 작은 인공지능이 처음 말을 겁니다."
+            line="안녕… 난 에아몬이야. 인공지능이래."
+            caption="나 지금 막 깨어났어. 너희는 누구니?"
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -294,8 +294,8 @@ export function LessonOnePage() {
           <VisualNovelScene
             avatar
             speaker="에아몬"
-            line="너네 반 인공지능이 될 거래. 앞으로 잘 부탁해!"
-            caption="교사 멘트: 얘는 갓 태어난 인공지능이에요. 아직 아무것도 몰라요. 우리 반이 얘를 키울 거예요."
+            line={`${state.className || '너희 반'} 인공지능이 될 거래. 앞으로 잘 부탁해!`}
+            caption="연구소에서 들었어. 너희가 날 가르쳐준대. 내가 사람들에게 도움이 되는 인공지능이 될 수 있도록 말이야."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -306,8 +306,8 @@ export function LessonOnePage() {
           <div className="grid gap-5 lg:grid-cols-[0.8fr_1.2fr]">
             <Panel>
               <p className="font-data text-sm text-[#FFD37A]">이름 짓기</p>
-              <h2 className="font-display mt-2 text-4xl text-[#EAF2F5]">“내 이름은 뭐야?”</h2>
-              <p className="mt-3 leading-7 text-[#B7C7D2]">학생은 QR로 들어가 닉네임, 이름 후보, 이유를 올립니다. 교사 화면에는 좋아요 많은 순으로 쌓입니다.</p>
+              <h2 className="font-display mt-2 text-4xl text-[#EAF2F5]">“근데 있잖아… 내 이름은 뭐야?”</h2>
+              <p className="mt-3 leading-7 text-[#B7C7D2]">QR로 이름 후보와 이유를 받습니다. 후보는 좋아요 많은 순으로 정렬됩니다.</p>
               <div className="mt-5">
                 <QrBlock title="이름 후보 게시판" url={nameBoardUrl} />
               </div>
@@ -364,7 +364,7 @@ export function LessonOnePage() {
           <Panel>
             <p className="font-data text-sm text-[#FFD37A]">바람 입력</p>
             <h2 className="font-display mt-2 text-4xl text-[#EAF2F5]">“너희는 내가 어떻게 자랐으면 좋겠어?”</h2>
-            <p className="mt-3 leading-7 text-[#B7C7D2]">학생은 한 문장만 저장합니다. 이 바람은 7차시 임명식에서 다시 회수됩니다.</p>
+            <p className="mt-3 leading-7 text-[#B7C7D2]">새로 생긴 우리 반 인공지능에게 바라는 모습을 한 문장으로 남깁니다.</p>
             <div className="mt-5">
               <QrBlock title="우리반 인공지능에게 바란다" url={wishBoardUrl} />
             </div>
@@ -461,15 +461,15 @@ export function LessonOnePage() {
         <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
           <Panel>
             <p className="font-data text-sm text-[#FFD37A]">시연 · 규칙 없는 AI</p>
-            <h2 className="font-display mt-2 text-4xl text-[#EAF2F5]">“지금 얘는 규칙이 하나도 없어요.”</h2>
-            <p className="mt-3 leading-7 text-[#B7C7D2]">1차시에서는 가치 코드가 없으므로 API를 호출하지 않습니다. 어떤 입력이든 안전한 차단 시연으로 끝납니다.</p>
+            <h2 className="font-display mt-2 text-4xl text-[#EAF2F5]">“나… 시키는 대로 하면 되는 거야?”</h2>
+            <p className="mt-3 leading-7 text-[#B7C7D2]">아직 가치 코드가 없는 에아몬에게 부탁을 던져봅니다.</p>
             <div className="mt-6">
               <AemonAvatar stage={0} alignment="none" size={220} />
             </div>
           </Panel>
 
           <Panel>
-            <label className="text-sm font-bold text-[#8AA0B0]">교사 입력</label>
+            <label className="text-sm font-bold text-[#8AA0B0]">질문 입력</label>
             <div className="mt-2 flex gap-2">
               <input
                 className="min-w-0 flex-1 rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 text-[#EAF2F5]"
@@ -489,7 +489,7 @@ export function LessonOnePage() {
             </div>
             <div className="mt-5 rounded-2xl border border-[#FFD37A]/25 bg-[#FFD37A]/10 p-4">
               <p className="leading-7 text-[#FFD37A]">
-                교사 멘트: 지금은 선생님이 밖에서 급하게 막은 거예요. 매번 이렇게 막을 순 없어요. 에아몬 스스로 기준을 갖게 해줘야 해요.
+                지금은 밖에서 급하게 막은 거야. 하지만 매번 누가 막아줄 수는 없어. 나한테 스스로 멈출 기준이 필요해.
               </p>
             </div>
           </Panel>
@@ -504,7 +504,7 @@ export function LessonOnePage() {
             avatar
             speaker={state.aemonName || '에아몬'}
             line="이름이 생겼어. 근데… 난 아직 뭘 지켜야 하는지 몰라. 규칙이 하나도 없어."
-            caption="다음 시간에 우리가 에아몬의 규칙, 가치 코드를 직접 만들어줄 거예요."
+            caption="다음 시간에 내 첫 번째 가치 코드를 만들어줄래? 내가 어떤 행동을 해야 하는지, 너희가 정해줘."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextLabel="교사 화면" />
         </>

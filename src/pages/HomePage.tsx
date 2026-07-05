@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { BookOpen, ClipboardList, MessageSquare, Play, Presentation, QrCode } from 'lucide-react'
+import { Play, Presentation } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
 import { Button, Panel } from '../components/ui'
 import { useV2RemoteSync } from '../lib/useV2RemoteSync'
@@ -42,7 +42,7 @@ export function HomePage() {
             </div>
 
             <div>
-              <p className="font-data text-sm text-[#FFD37A]">교사 시작 화면</p>
+              <p className="font-data text-sm text-[#FFD37A]">시작 화면</p>
               <h2 className="font-display mt-2 text-5xl leading-tight text-[#EAF2F5]">무엇을 먼저 열까요?</h2>
               <div className="mt-8 grid gap-4 sm:grid-cols-2">
                 <button
@@ -68,25 +68,6 @@ export function HomePage() {
                   <span className="font-display mt-5 block text-4xl text-[#EAF2F5]">사전연수 보기</span>
                   <span className="mt-3 block leading-7 text-[#B7C7D2]">가치정렬 철학과 수업 운영 구조를 확인합니다.</span>
                 </button>
-              </div>
-
-              <div className="mt-6 flex flex-wrap gap-3">
-                <Button variant="secondary" onClick={() => navigate('/codes')}>
-                  <ClipboardList size={18} />
-                  가치코드
-                </Button>
-                <Button variant="secondary" onClick={() => navigate('/board')}>
-                  <QrCode size={18} />
-                  학습게시판
-                </Button>
-                <Button variant="secondary" onClick={() => navigate('/talk')}>
-                  <MessageSquare size={18} />
-                  챗봇
-                </Button>
-                <Button variant="ghost" onClick={() => navigate('/start')}>
-                  <BookOpen size={18} />
-                  학급 설정
-                </Button>
               </div>
             </div>
           </div>
