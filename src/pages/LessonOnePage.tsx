@@ -17,7 +17,8 @@ type LessonStep =
   | 'director-2'
   | 'aemon-1'
   | 'class-profile'
-  | 'survey'
+  | 'survey-intro'
+  | 'survey-qr'
   | 'aemon-2'
   | 'ai-basic-1'
   | 'ai-basic-2'
@@ -38,7 +39,8 @@ const steps: LessonStep[] = [
   'director-2',
   'aemon-1',
   'class-profile',
-  'survey',
+  'survey-intro',
+  'survey-qr',
   'aemon-2',
   'ai-basic-1',
   'ai-basic-2',
@@ -403,27 +405,31 @@ export function LessonOnePage() {
         </>
       ) : null}
 
-      {step === 'survey' ? (
+      {step === 'survey-intro' ? (
         <>
-          <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
-            <Panel className="overflow-hidden">
-              <div className="grid gap-6 lg:grid-cols-[0.55fr_1fr] lg:items-center">
-                <div className="overflow-hidden rounded-[22px] border border-white/10 bg-[#07111B]/55">
-                  <img className="aspect-[4/5] h-full w-full object-cover object-bottom" src="/v2/lesson-1/director.png" alt="" />
-                </div>
-                <div>
-                  <p className="font-data text-sm text-[#6AD8FF]">오박사의 사전조사</p>
-                  <h2 className="font-display mt-3 text-5xl leading-tight text-[#EAF2F5]">{AI_SURVEY_TITLE}</h2>
-                  <p className="mt-5 text-lg leading-8 text-[#B7C7D2]">
-                    {AI_SURVEY_DESCRIPTION} 선택형 {AI_SURVEY_ITEMS.length}문항과 서술형 2문항을 남깁니다. 나중에 우리 생각이 어떻게 달라졌는지 다시 볼 겁니다.
-                  </p>
-                </div>
-              </div>
-            </Panel>
+          <VisualNovelScene
+            image="/v2/lesson-1/director.png"
+            speaker="오박사"
+            line="시작하기 전에, 아이들이 지금 AI를 어떻게 보는지 먼저 남겨야 합니다."
+            caption={`${AI_SURVEY_DESCRIPTION} 선택형 ${AI_SURVEY_ITEMS.length}문항과 서술형 2문항입니다. 다음 화면의 QR을 띄우고 학생들이 각자 응답하게 해주세요.`}
+          />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextLabel="QR 띄우기" />
+        </>
+      ) : null}
 
-            <Panel>
-              <QrBlock title="AI 인식 설문" url={surveyBoardUrl} />
-              <div className="mt-5 rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-center">
+      {step === 'survey-qr' ? (
+        <>
+          <div className="mx-auto grid max-w-2xl gap-5">
+            <Panel className="p-6 text-center">
+              <p className="font-data text-sm text-[#4FE0C0]">오박사의 사전조사</p>
+              <h2 className="font-display mt-2 text-5xl leading-tight text-[#EAF2F5]">{AI_SURVEY_TITLE}</h2>
+              <p className="mx-auto mt-3 max-w-xl text-lg leading-8 text-[#B7C7D2]">
+                학생들이 QR을 찍으면 이 학급 코드로 바로 설문이 열립니다.
+              </p>
+              <div className="mx-auto mt-6 max-w-sm">
+                <QrBlock title="AI 인식 설문" url={surveyBoardUrl} />
+              </div>
+              <div className="mx-auto mt-5 max-w-sm rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
                 <p className="font-display text-3xl text-[#EAF2F5]">{surveyResponses.length}개 저장됨</p>
               </div>
             </Panel>
