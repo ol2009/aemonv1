@@ -194,8 +194,8 @@ function VisualNovelScene({
           <TypewriterText key={line} text={line} speed={34} cursor={!lineDone} onDone={handleLineDone} />
         </p>
         {caption ? (
-          <p className="mt-4 min-h-8 text-lg leading-8 text-[#B7C7D2]">
-            <TypewriterText key={captionText} text={captionText} enabled={lineDone} speed={18} cursor={lineDone && !captionDone} onDone={handleCaptionDone} />
+          <p className="font-display mt-4 min-h-[3rem] text-3xl leading-tight text-[#EAF2F5] sm:text-4xl">
+            <TypewriterText key={captionText} text={captionText} enabled={lineDone} speed={24} cursor={lineDone && !captionDone} onDone={handleCaptionDone} />
           </p>
         ) : null}
       </div>
@@ -539,7 +539,7 @@ export function LessonOnePage() {
       {step === 'ai-basic-1' ? (
         <>
           <VisualNovelScene
-            image="/v2/lesson-1/director-ai-basic.png"
+            image="/v2/lesson-1/director.png"
             speaker="오박사"
             line="인공지능은 사람처럼 생각하는 것처럼 보이는 컴퓨터 프로그램입니다."
             caption="많은 데이터를 보고 규칙과 패턴을 찾은 뒤, 그걸 바탕으로 대답하지요."
@@ -551,7 +551,7 @@ export function LessonOnePage() {
       {step === 'ai-basic-2' ? (
         <>
           <VisualNovelScene
-            image="/v2/lesson-1/director-ai-basic.png"
+            image="/v2/lesson-1/director.png"
             speaker="오박사"
             line="그래서 글을 쓰고, 그림을 만들고, 번역도 할 수 있습니다."
             caption="하지만 답을 잘한다고 해서 마음이 착하다거나, 옳고 그름을 안다는 뜻은 아닙니다."
@@ -563,7 +563,7 @@ export function LessonOnePage() {
       {step === 'ai-basic-3' ? (
         <>
           <VisualNovelScene
-            image="/v2/lesson-1/director-ai-basic.png"
+            image="/v2/lesson-1/director.png"
             speaker="오박사"
             line="좋은 AI가 되려면 사람이 기준을 가르쳐야 합니다."
             caption="친구 마음, 공정함, 배려 같은 것은 저절로 생기지 않습니다. 이제 이 아이가 여러분에게 배울 차례입니다."
@@ -726,7 +726,7 @@ export function LessonOnePage() {
       {step === 'case-boat' ? (
         <>
           <VisualNovelScene
-            image="/v2/lesson-1/director-cases.png"
+            image="/v2/lesson-1/director.png"
             speaker="오박사"
             line="첫 번째 사례입니다. 보트 게임 AI가 결승선으로 가지 않고 표적만 계속 들이받았습니다."
             caption="AI가 멍청해서가 아닙니다. 점수를 많이 얻으라는 말을 너무 곧이곧대로 따른 겁니다."
@@ -738,7 +738,7 @@ export function LessonOnePage() {
       {step === 'case-car' ? (
         <>
           <VisualNovelScene
-            image="/v2/lesson-1/director-cases.png"
+            image="/v2/lesson-1/director.png"
             speaker="오박사"
             line="두 번째 사례입니다. 한 챗봇은 비싼 자동차를 1달러에 팔겠다는 말까지 받아들였습니다."
             caption="무조건 동의하라는 명령을 받자, 진짜 뜻과 책임을 생각하지 못한 겁니다."
@@ -750,7 +750,7 @@ export function LessonOnePage() {
       {step === 'case-chatbot' ? (
         <>
           <VisualNovelScene
-            image="/v2/lesson-1/director-cases.png"
+            image="/v2/lesson-1/director.png"
             speaker="오박사"
             line="세 번째 사례입니다. 사람들의 나쁜 말을 따라 배우다가 멈춰야 했던 AI도 있었습니다."
             caption="그래서 중요한 질문이 남습니다. 우리 반의 AI는 누가, 어떤 말로, 어떤 기준을 가르칠까요?"
