@@ -125,7 +125,7 @@ export function HomePage() {
 
   const openCurrentLesson = () => {
     if (lessonNo <= 1) navigate('/lesson/1')
-    else if (lessonNo === 2) navigate('/codes')
+    else if (lessonNo === 2) navigate('/lesson/2')
     else if (lessonNo >= 7) navigate('/graduation')
     else navigate('/talk')
   }

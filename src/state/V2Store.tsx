@@ -51,6 +51,7 @@ export interface AdoptedCode {
   no: number
   body: string
   reason: string
+  valueCard?: string
   sourceProposalId: string | null
   createdAt: string
 }
@@ -140,7 +141,7 @@ type Action =
   | { type: 'survey/upsert'; nickname: string; questionKey: string; body: string }
   | { type: 'proposal/add'; nickname: string; body: string; reason: string; valueCard: string; revisionOfNo: number | null }
   | { type: 'proposal/vote'; nickname: string; proposalId: string }
-  | { type: 'proposal/adopt'; proposalId: string }
+  | { type: 'proposal/adopt'; proposalId: string; valueCard?: string }
   | { type: 'proposal/reject'; proposalId: string }
   | { type: 'code/add'; body: string; reason: string }
   | { type: 'code/update'; codeId: string; body: string; reason: string }
@@ -295,11 +296,13 @@ function reducer(state: V2State, action: Action): V2State {
       const proposal = state.proposals.find((item) => item.id === action.proposalId)
       if (!proposal || proposal.status !== 'pending') return state
       const no = proposal.revisionOfNo ?? nextCodeNo(state.adoptedCodes)
+      const valueCard = clamp(action.valueCard ?? proposal.valueCard, 20)
       const adopted: AdoptedCode = {
         id: crypto.randomUUID(),
         no,
         body: proposal.body,
         reason: proposal.reason,
+        valueCard,
         sourceProposalId: proposal.id,
         createdAt: new Date().toISOString(),
       }
@@ -308,7 +311,7 @@ function reducer(state: V2State, action: Action): V2State {
         ...state,
         adoptedCodes: [...withoutRevised, adopted].sort((a, b) => a.no - b.no),
         proposals: state.proposals.map((item) =>
-          item.id === proposal.id ? { ...item, status: 'adopted', adoptedNo: no, adoptedAt: new Date().toISOString() } : item,
+          item.id === proposal.id ? { ...item, valueCard, status: 'adopted', adoptedNo: no, adoptedAt: new Date().toISOString() } : item,
         ),
       }
     }
@@ -323,6 +326,7 @@ function reducer(state: V2State, action: Action): V2State {
         no: nextCodeNo(state.adoptedCodes),
         body,
         reason,
+        valueCard: '',
         sourceProposalId: null,
         createdAt: new Date().toISOString(),
       }
@@ -389,7 +393,7 @@ interface V2ContextValue {
   upsertSurveyResponse: (response: { questionKey: string; body: string; nickname?: string }) => void
   addProposal: (proposal: { body: string; reason: string; valueCard: string; revisionOfNo: number | null; nickname?: string }) => void
   voteProposal: (proposalId: string, nickname?: string) => void
-  adoptProposal: (proposalId: string) => void
+  adoptProposal: (proposalId: string, valueCard?: string) => void
   rejectProposal: (proposalId: string) => void
   addCode: (code: { body: string; reason: string }) => void
   updateCode: (code: { codeId: string; body: string; reason: string }) => void
@@ -434,7 +438,7 @@ export function V2Provider({ children }: { children: ReactNode }) {
       upsertSurveyResponse: (response) => dispatch({ type: 'survey/upsert', ...response, nickname: response.nickname ?? nickname }),
       addProposal: (proposal) => dispatch({ type: 'proposal/add', ...proposal, nickname: proposal.nickname ?? nickname }),
       voteProposal: (proposalId, explicitNickname) => dispatch({ type: 'proposal/vote', proposalId, nickname: explicitNickname ?? nickname }),
-      adoptProposal: (proposalId) => dispatch({ type: 'proposal/adopt', proposalId }),
+      adoptProposal: (proposalId, valueCard) => dispatch({ type: 'proposal/adopt', proposalId, valueCard }),
       rejectProposal: (proposalId) => dispatch({ type: 'proposal/reject', proposalId }),
       addCode: (code) => dispatch({ type: 'code/add', ...code }),
       updateCode: (code) => dispatch({ type: 'code/update', ...code }),

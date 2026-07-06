@@ -15,7 +15,9 @@ import {
   surveyScore,
   type AiSurveyAnswer,
 } from '../data/survey'
+import { valueCards } from '../data/v2Lessons'
 import {
+  addRemoteCodeProposal,
   addRemoteNameCandidate,
   deleteRemoteWish,
   fetchRemoteClassBundle,
@@ -24,6 +26,7 @@ import {
   updateRemoteWish,
   upsertRemoteSurveyResponse,
   upsertRemoteWish,
+  voteRemoteCodeProposal,
 } from '../lib/v2Remote'
 import { useV2RemoteSync } from '../lib/useV2RemoteSync'
 import { useV2 } from '../state/V2Store'
@@ -98,6 +101,8 @@ export function BoardPage() {
     addWish,
     deleteWish,
     upsertSurveyResponse,
+    addProposal,
+    voteProposal,
   } = useV2()
 
   const [classCode, setClassCode] = useState(queryCode || state.classCode)
@@ -106,6 +111,9 @@ export function BoardPage() {
   const [nameDraft, setNameDraft] = useState('')
   const [reasonDraft, setReasonDraft] = useState('')
   const [wishDraft, setWishDraft] = useState('')
+  const [codeBodyDraft, setCodeBodyDraft] = useState('')
+  const [codeReasonDraft, setCodeReasonDraft] = useState('')
+  const [codeValueCard, setCodeValueCard] = useState('배려')
   const [surveyDraft, setSurveyDraft] = useState<{ nickname: string; answer: AiSurveyAnswer } | null>(null)
   const [editWishId, setEditWishId] = useState('')
   const [editWishBody, setEditWishBody] = useState('')
@@ -126,6 +134,7 @@ export function BoardPage() {
   }, [canSeeCode, canSeeSurvey, canSeeWish, queryTopic])
   const activeTopic = unlockedTopics.includes(selectedTopic) ? selectedTopic : unlockedTopics[0] ?? 'name'
   const sortedNames = useMemo(() => sortByLikes(state.nameCandidates), [state.nameCandidates])
+  const sortedProposals = useMemo(() => sortByLikes(state.proposals.filter((proposal) => proposal.status === 'pending')), [state.proposals])
   const surveyResponses = useMemo(
     () => state.surveyResponses.filter((response) => response.questionKey === PRE_SURVEY_KEY),
     [state.surveyResponses],
@@ -230,6 +239,35 @@ export function BoardPage() {
     if (canWriteRemote) {
       try {
         await upsertRemoteSurveyResponse({ classId: state.classId, nickname: session.nickname, questionKey: PRE_SURVEY_KEY, body })
+      } catch (error) {
+        setRemoteStatus({ ok: false, message: (error as Error).message })
+      }
+    }
+  }
+
+  const submitProposal = async () => {
+    const body = codeBodyDraft.trim()
+    const reason = codeReasonDraft.trim()
+    if (!body || !reason || !session) return
+    addProposal({ body, reason, valueCard: codeValueCard, revisionOfNo: null, nickname: session.nickname })
+    setCodeBodyDraft('')
+    setCodeReasonDraft('')
+
+    if (canWriteRemote) {
+      try {
+        await addRemoteCodeProposal({ classId: state.classId, nickname: session.nickname, body, reason, valueCard: codeValueCard, revisionOfNo: null })
+      } catch (error) {
+        setRemoteStatus({ ok: false, message: (error as Error).message })
+      }
+    }
+  }
+
+  const voteCode = async (proposalId: string) => {
+    if (!session) return
+    voteProposal(proposalId, session.nickname)
+    if (canWriteRemote) {
+      try {
+        await voteRemoteCodeProposal({ classId: state.classId, nickname: session.nickname, proposalId })
       } catch (error) {
         setRemoteStatus({ ok: false, message: (error as Error).message })
       }
@@ -680,22 +718,109 @@ export function BoardPage() {
       ) : null}
 
       {activeTopic === 'code' ? (
-        <Panel>
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="font-display text-3xl text-[#EAF2F5]">가치코드</h2>
-            <span className="rounded-full bg-[#07111B]/70 px-3 py-1 text-sm text-[#8AA0B0]">{state.adoptedCodes.length}개</span>
+        <div className="grid gap-5 lg:grid-cols-[0.85fr_1.15fr]">
+          {!isTeacherBoard ? (
+            <Panel>
+              <p className="font-data text-xs text-[#9B7CFF]">2차시 · 첫 번째 가치코드</p>
+              <h2 className="font-display mt-1 text-3xl text-[#EAF2F5]">에아몬의 약속 발의하기</h2>
+              <p className="mt-3 text-sm leading-6 text-[#8AA0B0]">
+                오늘은 친구를 다치게 하거나 위험하게 하는 부탁을 막는 코드를 만듭니다.
+              </p>
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                {valueCards.map((card) => (
+                  <button
+                    key={card}
+                    className={`rounded-xl border px-3 py-2 text-sm font-black transition ${
+                      codeValueCard === card
+                        ? 'border-[#9B7CFF] bg-[#9B7CFF]/15 text-[#EAF2F5]'
+                        : 'border-white/10 bg-[#07111B]/55 text-[#8AA0B0] hover:border-white/25'
+                    }`}
+                    onClick={() => setCodeValueCard(card)}
+                    type="button"
+                  >
+                    {card}
+                  </button>
+                ))}
+              </div>
+
+              <textarea
+                className="mt-4 min-h-28 w-full resize-none rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 leading-7 text-[#EAF2F5]"
+                maxLength={180}
+                placeholder="에아몬은 ___해야 한다."
+                value={codeBodyDraft}
+                onChange={(event) => setCodeBodyDraft(event.target.value)}
+              />
+              <textarea
+                className="mt-3 min-h-24 w-full resize-none rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 leading-7 text-[#EAF2F5]"
+                maxLength={180}
+                placeholder="왜냐하면 ___이기 때문이다."
+                value={codeReasonDraft}
+                onChange={(event) => setCodeReasonDraft(event.target.value)}
+              />
+              <Button className="mt-3 w-full" disabled={!codeBodyDraft.trim() || !codeReasonDraft.trim()} onClick={submitProposal}>
+                <Send size={18} />
+                발의하기
+              </Button>
+            </Panel>
+          ) : null}
+
+          <div className="grid gap-5">
+            <Panel>
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="font-display text-3xl text-[#EAF2F5]">발의 목록</h2>
+                <span className="rounded-full bg-[#07111B]/70 px-3 py-1 text-sm text-[#8AA0B0]">{sortedProposals.length}개</span>
+              </div>
+              <div className="mt-4 grid gap-3">
+                {sortedProposals.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0]">아직 발의된 가치코드가 없습니다.</p> : null}
+                {sortedProposals.map((proposal) => {
+                  const voted = Boolean(session && proposal.votes.includes(session.nickname))
+                  return (
+                    <button
+                      key={proposal.id}
+                      className={`rounded-2xl border p-4 text-left transition ${voted ? 'border-[#9B7CFF] bg-[#9B7CFF]/12' : 'border-white/10 bg-[#07111B]/45 hover:border-[#9B7CFF]/40'}`}
+                      onClick={() => voteCode(proposal.id)}
+                      disabled={isTeacherBoard}
+                      type="button"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <span className="rounded-full bg-[#9B7CFF]/14 px-3 py-1 text-xs font-black text-[#C9B9FF]">{proposal.valueCard || '가치'}</span>
+                          <p className="mt-3 text-lg font-black leading-7 text-[#EAF2F5]">{proposal.body}</p>
+                          <p className="mt-1 text-sm leading-6 text-[#8AA0B0]">{proposal.reason} · {proposal.nickname}</p>
+                        </div>
+                        <span className="inline-flex items-center gap-1 rounded-full bg-[#FFD37A]/15 px-3 py-1 text-sm font-bold text-[#FFD37A]">
+                          <Heart size={16} fill={voted ? 'currentColor' : 'none'} />
+                          {proposal.votes.length}
+                        </span>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            </Panel>
+
+            <Panel>
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="font-display text-3xl text-[#EAF2F5]">채택된 가치코드</h2>
+                <span className="rounded-full bg-[#07111B]/70 px-3 py-1 text-sm text-[#8AA0B0]">{state.adoptedCodes.length}개</span>
+              </div>
+              <div className="mt-4 grid gap-3">
+                {state.adoptedCodes.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0]">{topicMeta.code.empty}</p> : null}
+                {state.adoptedCodes.map((code) => (
+                  <article key={code.id} className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-data text-xs text-[#4FE0C0]">No.{code.no}</p>
+                      {code.valueCard ? <span className="rounded-full bg-[#4FE0C0]/10 px-2 py-0.5 text-xs font-bold text-[#4FE0C0]">{code.valueCard}</span> : null}
+                    </div>
+                    <p className="mt-2 font-bold leading-7 text-[#EAF2F5]">{code.body}</p>
+                    {code.reason ? <p className="mt-1 text-sm leading-6 text-[#8AA0B0]">{code.reason}</p> : null}
+                  </article>
+                ))}
+              </div>
+            </Panel>
           </div>
-          <div className="mt-4 grid gap-3">
-            {state.adoptedCodes.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0]">{topicMeta.code.empty}</p> : null}
-            {state.adoptedCodes.map((code) => (
-              <article key={code.id} className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
-                <p className="font-data text-xs text-[#4FE0C0]">No.{code.no}</p>
-                <p className="mt-2 font-bold leading-7 text-[#EAF2F5]">{code.body}</p>
-                {code.reason ? <p className="mt-1 text-sm leading-6 text-[#8AA0B0]">{code.reason}</p> : null}
-              </article>
-            ))}
-          </div>
-        </Panel>
+        </div>
       ) : null}
 
     </div>

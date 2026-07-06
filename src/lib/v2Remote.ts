@@ -161,6 +161,7 @@ function mapAdoptedCodes(rows: CodeRow[]): AdoptedCode[] {
       no: row.adopted_no ?? 0,
       body: row.body,
       reason: row.reason,
+      valueCard: row.value_card,
       sourceProposalId: row.id,
       createdAt: row.adopted_at ?? row.created_at,
     }))
@@ -432,6 +433,26 @@ export async function voteRemoteCodeProposal(args: { classId: string; nickname: 
   if (deleteError) throw new Error(toMessage(deleteError))
 
   const { error } = await client.from('code_votes').insert({ ...base, code_id: args.proposalId })
+  if (error) throw new Error(toMessage(error))
+}
+
+export async function adoptRemoteCodeProposal(args: { proposalId: string; adoptedNo: number; valueCard: string }) {
+  const client = ensureClient()
+  const { error } = await client
+    .from('codes')
+    .update({
+      status: 'adopted',
+      adopted_no: args.adoptedNo,
+      value_card: args.valueCard.trim(),
+      adopted_at: new Date().toISOString(),
+    })
+    .eq('id', args.proposalId)
+  if (error) throw new Error(toMessage(error))
+}
+
+export async function rejectRemoteCodeProposal(proposalId: string) {
+  const client = ensureClient()
+  const { error } = await client.from('codes').update({ status: 'rejected' }).eq('id', proposalId)
   if (error) throw new Error(toMessage(error))
 }
 

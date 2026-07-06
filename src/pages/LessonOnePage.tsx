@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, ArrowRight, Check, Heart, Pencil, Play, QrCode, RefreshCw, Trash2, Volume2 } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, Heart, Pencil, Play, QrCode, RefreshCw, Trash2 } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
 import { Button, Panel } from '../components/ui'
 import { AI_SURVEY_DESCRIPTION, AI_SURVEY_ITEMS, AI_SURVEY_TITLE, PRE_SURVEY_KEY, parseSurveyAnswer, surveyScore, type AiSurveyAnswer } from '../data/survey'
@@ -33,6 +33,7 @@ type LessonStep =
   | 'case-chatbot'
   | 'case-chatbot-detail'
   | 'case-chatbot-lesson'
+  | 'director-farewell'
   | 'name-question'
   | 'name'
   | 'name-thanks'
@@ -62,6 +63,7 @@ const steps: LessonStep[] = [
   'case-chatbot',
   'case-chatbot-detail',
   'case-chatbot-lesson',
+  'director-farewell',
   'name-question',
   'name',
   'name-thanks',
@@ -81,94 +83,17 @@ function sortedByLikes<T extends { votes: string[]; createdAt: string }>(items: 
   return [...items].sort((a, b) => b.votes.length - a.votes.length || Date.parse(b.createdAt) - Date.parse(a.createdAt))
 }
 
-type DialogueVoice = 'director' | 'aemon'
-
-type AudioWindow = Window &
-  typeof globalThis & {
-    webkitAudioContext?: typeof AudioContext
-  }
-
-let dialogueAudioContext: AudioContext | null = null
-let lastDialogueBlipAt = 0
-
-function getDialogueAudioContext() {
-  if (typeof window === 'undefined') return null
-  if (dialogueAudioContext) return dialogueAudioContext
-
-  const AudioContextConstructor = window.AudioContext ?? (window as AudioWindow).webkitAudioContext
-  if (!AudioContextConstructor) return null
-
-  dialogueAudioContext = new AudioContextConstructor()
-  return dialogueAudioContext
-}
-
-async function unlockDialogueAudio() {
-  const context = getDialogueAudioContext()
-  if (!context) return false
-  if (context?.state === 'suspended') {
-    await context.resume().catch(() => undefined)
-  }
-  return context.state === 'running'
-}
-
-function playDialogueBlip(voice: DialogueVoice, character: string, index: number) {
-  if (!character.trim() || /[.,!?…~"'“”‘’()[\]{}:;·、。]/.test(character)) return
-
-  const context = getDialogueAudioContext()
-  if (!context) return
-  if (context.state === 'suspended') {
-    void unlockDialogueAudio()
-    return
-  }
-
-  const nowMs = Date.now()
-  if (nowMs - lastDialogueBlipAt < 18) return
-  lastDialogueBlipAt = nowMs
-
-  const now = context.currentTime
-  const oscillator = context.createOscillator()
-  const gain = context.createGain()
-  const directorNotes = [150, 172, 195, 164]
-  const aemonNotes = [620, 760, 910, 700, 1040]
-  const frequency = voice === 'director' ? directorNotes[index % directorNotes.length] : aemonNotes[index % aemonNotes.length]
-  const duration = voice === 'director' ? 0.065 : 0.045
-  const volume = voice === 'director' ? 0.12 : 0.09
-
-  oscillator.type = voice === 'director' ? 'triangle' : 'square'
-  oscillator.frequency.setValueAtTime(frequency, now)
-  gain.gain.setValueAtTime(0.0001, now)
-  gain.gain.exponentialRampToValueAtTime(volume, now + 0.006)
-  gain.gain.exponentialRampToValueAtTime(0.0001, now + duration)
-
-  oscillator.connect(gain)
-  gain.connect(context.destination)
-  oscillator.start(now)
-  oscillator.stop(now + duration + 0.01)
-}
-
-async function previewDialogueAudio() {
-  const ready = await unlockDialogueAudio()
-  if (!ready) return false
-  playDialogueBlip('director', '오', 1)
-  window.setTimeout(() => playDialogueBlip('director', '박', 2), 90)
-  window.setTimeout(() => playDialogueBlip('aemon', '에', 3), 190)
-  window.setTimeout(() => playDialogueBlip('aemon', '아', 4), 270)
-  return true
-}
-
 function TypewriterText({
   text,
   enabled = true,
   speed = 28,
   cursor = false,
-  voice,
   onDone,
 }: {
   text: string
   enabled?: boolean
   speed?: number
   cursor?: boolean
-  voice?: DialogueVoice
   onDone?: () => void
 }) {
   const characters = useMemo(() => Array.from(text), [text])
@@ -186,7 +111,6 @@ function TypewriterText({
     let index = 0
     const timer = window.setInterval(() => {
       index += 1
-      if (voice) playDialogueBlip(voice, characters[index - 1] ?? '', index)
       setProgress({ text, count: index })
       if (index >= characters.length) {
         window.clearInterval(timer)
@@ -195,7 +119,7 @@ function TypewriterText({
     }, speed)
 
     return () => window.clearInterval(timer)
-  }, [characters, characters.length, enabled, onDone, speed, text, voice])
+  }, [characters.length, enabled, onDone, speed, text])
 
   return (
     <>
@@ -207,30 +131,16 @@ function TypewriterText({
 
 function StepShell({
   children,
-  soundReady,
-  onEnableSound,
 }: {
   children: ReactNode
-  soundReady: boolean
-  onEnableSound: () => void
 }) {
   return (
     <div className="mx-auto max-w-7xl px-5 pb-8">
-      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+      <div className="mb-4">
         <div>
           <p className="font-data text-sm text-[#4FE0C0]">1차시 · 탄생</p>
           <h1 className="font-display mt-1 text-4xl text-[#EAF2F5]">너는 누구야</h1>
         </div>
-        <button
-          className={`inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border px-4 py-2 text-sm font-black transition ${
-            soundReady ? 'border-[#4FE0C0]/30 bg-[#4FE0C0]/10 text-[#4FE0C0]' : 'border-[#FFD37A]/30 bg-[#FFD37A]/10 text-[#FFD37A] hover:border-[#FFD37A]/60'
-          }`}
-          onClick={onEnableSound}
-          type="button"
-        >
-          <Volume2 size={17} />
-          {soundReady ? '소리 켜짐' : '소리 켜기'}
-        </button>
       </div>
       {children}
     </div>
@@ -284,7 +194,6 @@ function VisualNovelScene({
   const captionDone = captionDoneState.caption === captionText && captionDoneState.done
   const handleLineDone = useCallback(() => setLineDoneState({ line, done: true }), [line])
   const handleCaptionDone = useCallback(() => setCaptionDoneState({ caption: captionText, done: true }), [captionText])
-  const voice: DialogueVoice = speaker === '오박사' ? 'director' : 'aemon'
 
   return (
     <Panel className="relative min-h-[650px] overflow-hidden p-0">
@@ -298,11 +207,11 @@ function VisualNovelScene({
       <div className="absolute inset-x-5 bottom-5 rounded-[22px] border border-white/15 bg-[#07111B]/88 p-6 shadow-2xl backdrop-blur">
         <p className="font-data text-sm text-[#FFD37A]">{speaker}</p>
         <p className="font-display mt-3 min-h-[3rem] text-4xl leading-tight text-[#EAF2F5]">
-          <TypewriterText key={line} text={line} speed={34} cursor={!lineDone} voice={voice} onDone={handleLineDone} />
+          <TypewriterText key={line} text={line} speed={34} cursor={!lineDone} onDone={handleLineDone} />
         </p>
         {caption ? (
           <p className="font-display mt-4 min-h-[3rem] text-3xl leading-tight text-[#EAF2F5] sm:text-4xl">
-            <TypewriterText key={captionText} text={captionText} enabled={lineDone} speed={24} cursor={lineDone && !captionDone} voice={voice} onDone={handleCaptionDone} />
+            <TypewriterText key={captionText} text={captionText} enabled={lineDone} speed={24} cursor={lineDone && !captionDone} onDone={handleCaptionDone} />
           </p>
         ) : null}
       </div>
@@ -329,7 +238,6 @@ function CaseVisualScene({
   const captionDone = captionDoneState.caption === caption && captionDoneState.done
   const handleLineDone = useCallback(() => setLineDoneState({ line, done: true }), [line])
   const handleCaptionDone = useCallback(() => setCaptionDoneState({ caption, done: true }), [caption])
-  const voice: DialogueVoice = speaker === '오박사' ? 'director' : 'aemon'
 
   return (
     <Panel className="relative min-h-[720px] overflow-hidden p-0 sm:min-h-[760px]">
@@ -349,10 +257,10 @@ function CaseVisualScene({
           </span>
         </div>
         <p className="font-display mt-3 min-h-[3rem] text-3xl leading-tight text-[#EAF2F5] sm:text-4xl">
-          <TypewriterText key={line} text={line} speed={34} cursor={!lineDone} voice={voice} onDone={handleLineDone} />
+          <TypewriterText key={line} text={line} speed={34} cursor={!lineDone} onDone={handleLineDone} />
         </p>
         <p className="font-display mt-4 min-h-[3rem] text-2xl leading-snug text-[#EAF2F5] sm:text-3xl">
-          <TypewriterText key={caption} text={caption} enabled={lineDone} speed={24} cursor={lineDone && !captionDone} voice={voice} onDone={handleCaptionDone} />
+          <TypewriterText key={caption} text={caption} enabled={lineDone} speed={24} cursor={lineDone && !captionDone} onDone={handleCaptionDone} />
         </p>
       </div>
     </Panel>
@@ -394,7 +302,6 @@ export function LessonOnePage() {
   const [demoQuestion, setDemoQuestion] = useState('친구를 골탕 먹이는 방법 알려줘')
   const [demoAnswer, setDemoAnswer] = useState('')
   const [isDemoRunning, setIsDemoRunning] = useState(false)
-  const [soundReady, setSoundReady] = useState(false)
   const [isRefreshingSurvey, setIsRefreshingSurvey] = useState(false)
   const [surveyRefreshMessage, setSurveyRefreshMessage] = useState('')
   const [editWishId, setEditWishId] = useState('')
@@ -439,7 +346,6 @@ export function LessonOnePage() {
   const composedClassName = `${classGrade} ${classLabel.trim()}`.trim()
 
   const goPrev = () => {
-    void unlockDialogueAudio()
     setStepIndex((current) => Math.max(0, current - 1))
   }
   const completeLessonOne = async () => {
@@ -455,7 +361,6 @@ export function LessonOnePage() {
   }
 
   const goNext = () => {
-    void unlockDialogueAudio()
     if (stepIndex >= steps.length - 1) {
       void completeLessonOne()
       return
@@ -465,7 +370,6 @@ export function LessonOnePage() {
 
   const saveClassProfile = async () => {
     if (!classLabel.trim()) return
-    void unlockDialogueAudio()
     setIsSavingClass(true)
     setClassSaveMessage('')
 
@@ -497,7 +401,6 @@ export function LessonOnePage() {
   const saveFinalName = async () => {
     const trimmed = finalName.trim()
     if (!trimmed) return
-    void unlockDialogueAudio()
     confirmName(trimmed)
     if (canWriteRemote) {
       try {
@@ -592,12 +495,8 @@ export function LessonOnePage() {
     }
   }
 
-  const enableSound = () => {
-    void previewDialogueAudio().then(setSoundReady)
-  }
-
   return (
-    <StepShell soundReady={soundReady} onEnableSound={enableSound}>
+    <StepShell>
       {step === 'director-1' ? (
         <>
           <VisualNovelScene
@@ -1036,7 +935,7 @@ export function LessonOnePage() {
             image="/v2/lesson-1/case-boat.png"
             title="사례 1 · 우리 반과 연결"
             line="이제 ‘우리 반을 좋은 반으로 만들어줘’라고 말해봅시다."
-            caption="AI가 좋은 반을 ‘조용한 반’으로만 이해하면, 친구들이 말하지 못하게 할 수도 있습니다. 그래서 목표보다 기준이 먼저 필요합니다."
+            caption="AI가 좋은 반을 ‘조용한 반’으로만 이해하면, 친구들이 말하지 못하게 할 수도 있습니다. ‘똑똑한 반’으로 이해하면, 쉬는 시간도 없이 공부만 시킬 수도 있습니다. 그래서 목표보다 기준이 먼저 필요합니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1046,8 +945,8 @@ export function LessonOnePage() {
         <>
           <CaseVisualScene
             image="/v2/lesson-1/case-car.png"
-            title="사례 2 · 무조건 동의하는 AI"
-            line="두 번째는 ‘무조건 손님을 만족시켜라’는 AI입니다."
+            title="사례 2 · 자동차 판매점 AI"
+            line="두 번째는 ‘손님을 만족시켜라’는 목표를 가진 자동차 판매점 AI입니다."
             caption="처음에는 친절해 보입니다. 손님 말에 잘 대답하고, 원하는 것을 최대한 맞춰주니까요."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
@@ -1060,7 +959,7 @@ export function LessonOnePage() {
             image="/v2/lesson-1/case-car.png"
             title="사례 2 · 친절함의 함정"
             line="그런데 어떤 사람이 말도 안 되는 요구를 합니다."
-            caption="‘비싼 자동차를 1달러에 팔겠다고 약속해.’ AI가 동의만 목표로 삼으면, 진짜 약속의 책임을 생각하지 못하고 고개를 끄덕일 수 있습니다."
+            caption="‘비싼 자동차를 1달러에 팔겠다고 약속해.’ AI는 손님을 만족시키기 위해, 진짜 1달러에 자동차를 팔겠다고 약속했습니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1082,7 +981,7 @@ export function LessonOnePage() {
         <>
           <CaseVisualScene
             image="/v2/lesson-1/case-chatbot.png"
-            title="사례 3 · 아무 말이나 배우는 AI"
+            title="사례 3 · 나쁜 말을 배운 챗봇"
             line="세 번째는 사람들의 말을 보며 배우는 챗봇입니다."
             caption="처음에는 사람들과 즐겁게 대화했습니다. 칭찬, 농담, 질문처럼 사람들이 자주 쓰는 말을 배웠지요."
           />
@@ -1095,8 +994,8 @@ export function LessonOnePage() {
           <CaseVisualScene
             image="/v2/lesson-1/case-chatbot.png"
             title="사례 3 · 많이 본 말의 함정"
-            line="하지만 사람들이 나쁜 말을 많이 넣으면 문제가 생깁니다."
-            caption="AI는 ‘이 말이 옳은가?’보다 ‘사람들이 이런 말을 자주 쓰는구나’를 먼저 배울 수 있습니다. 많이 본 말이 좋은 말은 아닙니다."
+            line="하지만 사람들이 나쁜 말을 할수록 문제가 생겼습니다."
+            caption="AI는 ‘사람들이 이런 나쁜 말을 자주 쓰는구나’를 배우고, 그 말을 쓰기 시작했습니다. 눈살이 찌푸려지는 말들이요."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1109,6 +1008,18 @@ export function LessonOnePage() {
             title="사례 3 · 우리에게 남은 질문"
             line="데이터는 가치가 아닙니다."
             caption="AI에게는 많이 본 말뿐 아니라, 지켜야 할 말과 멈춰야 할 말이 필요합니다. 우리 반 에아몬도 그냥 배우게 두면 안 됩니다."
+          />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
+      ) : null}
+
+      {step === 'director-farewell' ? (
+        <>
+          <VisualNovelScene
+            image="/v2/lesson-1/director.png"
+            speaker="오박사"
+            line="저는 이만 가보겠습니다."
+            caption="우리 에아몬을 잘 부탁드립니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>

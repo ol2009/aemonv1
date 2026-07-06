@@ -1,7 +1,7 @@
 import type { Alignment } from '../domain/types'
 
 function avatarSource(stage: number, alignment: Alignment) {
-  if (stage === 0) return '/aemon/aemon-egg-mecha.png'
+  if (stage === 0) return '/aemon/aemon-egg-data.png'
   if (alignment === 'evil') return '/aemon/aemon-unstable.png'
   if (stage === 1) return '/aemon/aemon-unstable.png'
   if (stage === 2) return '/aemon/aemon-basic.png'
