@@ -1,8 +1,20 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { BookOpenText, Heart, LogOut, Pencil, Send, Trash2 } from 'lucide-react'
+import { BarChart3, BookOpenText, CheckCircle2, Heart, LogOut, Pencil, Send, Trash2 } from 'lucide-react'
 import { Button, Panel } from '../components/ui'
-import { PRE_SURVEY_KEY, PRE_SURVEY_QUESTION } from '../data/survey'
+import {
+  AI_SURVEY_DESCRIPTION,
+  AI_SURVEY_ITEMS,
+  AI_SURVEY_OPEN_QUESTIONS,
+  AI_SURVEY_OPTIONS,
+  AI_SURVEY_TITLE,
+  PRE_SURVEY_KEY,
+  emptySurveyAnswer,
+  parseSurveyAnswer,
+  serializeSurveyAnswer,
+  surveyScore,
+  type AiSurveyAnswer,
+} from '../data/survey'
 import {
   addRemoteNameCandidate,
   deleteRemoteWish,
@@ -20,10 +32,10 @@ type BoardTopic = 'survey' | 'name' | 'wish' | 'code'
 
 const topicMeta: Record<BoardTopic, { label: string; title: string; lesson: string; empty: string }> = {
   survey: {
-    label: '사전 생각',
-    title: '사전 생각 남기기',
+    label: '사전조사',
+    title: AI_SURVEY_TITLE,
     lesson: '1차시',
-    empty: '아직 남긴 생각이 없습니다.',
+    empty: '아직 설문 응답이 없습니다.',
   },
   name: {
     label: '이름 후보',
@@ -61,6 +73,14 @@ function classNameForTopic(topic: BoardTopic) {
   return 'border-[#9B7CFF] bg-[#9B7CFF]/12 text-[#C9B9FF]'
 }
 
+function surveyComplete(answer: AiSurveyAnswer) {
+  return answer.s.every(Boolean) && answer.o.every((text) => text.trim().length > 0)
+}
+
+function optionLabel(value: number) {
+  return AI_SURVEY_OPTIONS.find((option) => option.value === value)?.label ?? '-'
+}
+
 export function BoardPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -86,7 +106,8 @@ export function BoardPage() {
   const [nameDraft, setNameDraft] = useState('')
   const [reasonDraft, setReasonDraft] = useState('')
   const [wishDraft, setWishDraft] = useState('')
-  const [surveyDraft, setSurveyDraft] = useState('')
+  const [surveyAnswer, setSurveyAnswer] = useState<AiSurveyAnswer>(() => emptySurveyAnswer())
+  const [surveySaved, setSurveySaved] = useState(false)
   const [editWishId, setEditWishId] = useState('')
   const [editWishBody, setEditWishBody] = useState('')
   const [message, setMessage] = useState('')
@@ -110,9 +131,27 @@ export function BoardPage() {
     () => state.surveyResponses.filter((response) => response.questionKey === PRE_SURVEY_KEY),
     [state.surveyResponses],
   )
+  const parsedSurveyResponses = useMemo(
+    () =>
+      surveyResponses
+        .map((response) => ({ response, answer: parseSurveyAnswer(response.body) }))
+        .filter((item): item is { response: (typeof surveyResponses)[number]; answer: AiSurveyAnswer } => Boolean(item.answer)),
+    [surveyResponses],
+  )
+  const surveyAverageScore = parsedSurveyResponses.length
+    ? Math.round((parsedSurveyResponses.reduce((sum, item) => sum + surveyScore(item.answer), 0) / parsedSurveyResponses.length) * 10) / 10
+    : 0
   const canWriteRemote = Boolean(state.classId && state.remote.ok && isRemoteReady())
 
   useV2RemoteSync(state.classCode, Boolean(state.classCode && (session || isTeacherBoard)))
+
+  useEffect(() => {
+    if (!session) return
+    const existing = surveyResponses.find((response) => response.nickname === session.nickname)
+    const parsed = existing ? parseSurveyAnswer(existing.body) : null
+    setSurveyAnswer(parsed ?? emptySurveyAnswer())
+    setSurveySaved(Boolean(parsed))
+  }, [session?.nickname, surveyResponses])
 
   const enter = async () => {
     const code = classCode.trim()
@@ -180,10 +219,10 @@ export function BoardPage() {
   }
 
   const submitSurvey = async () => {
-    const body = surveyDraft.trim()
-    if (!body || !session) return
+    if (!surveyComplete(surveyAnswer) || !session) return
+    const body = serializeSurveyAnswer(surveyAnswer)
     upsertSurveyResponse({ questionKey: PRE_SURVEY_KEY, body, nickname: session.nickname })
-    setSurveyDraft('')
+    setSurveySaved(true)
 
     if (canWriteRemote) {
       try {
@@ -313,40 +352,184 @@ export function BoardPage() {
       </Panel>
 
       {activeTopic === 'survey' ? (
-        <div className="grid gap-5 lg:grid-cols-[0.85fr_1.15fr]">
+        <div className="grid gap-5 lg:grid-cols-[0.95fr_1.05fr]">
           {!isTeacherBoard ? (
-            <Panel>
-              <p className="font-data text-xs text-[#6AD8FF]">1차시 · 사전 생각</p>
-              <h2 className="font-display mt-1 text-3xl leading-tight text-[#EAF2F5]">{PRE_SURVEY_QUESTION}</h2>
-              <textarea
-                className="mt-4 min-h-36 w-full resize-none rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 leading-7 text-[#EAF2F5]"
-                maxLength={600}
-                placeholder="내 생각을 적어주세요."
-                value={surveyDraft}
-                onChange={(event) => setSurveyDraft(event.target.value)}
-              />
-              <Button className="mt-3 w-full" disabled={!surveyDraft.trim()} onClick={submitSurvey}>
-                저장하기
-              </Button>
-              <p className="mt-3 text-sm leading-6 text-[#8AA0B0]">한 사람당 한 번 저장됩니다. 다시 저장하면 내 답이 수정됩니다.</p>
+            <Panel className="lg:col-span-2">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="font-data text-xs text-[#6AD8FF]">1차시 · 사전조사</p>
+                  <h2 className="font-display mt-1 text-4xl leading-tight text-[#EAF2F5]">{AI_SURVEY_TITLE}</h2>
+                  <p className="mt-3 leading-7 text-[#8AA0B0]">{AI_SURVEY_DESCRIPTION}</p>
+                </div>
+                {surveySaved ? (
+                  <span className="inline-flex items-center gap-2 rounded-full border border-[#4FE0C0]/25 bg-[#4FE0C0]/10 px-4 py-2 text-sm font-black text-[#4FE0C0]">
+                    <CheckCircle2 size={17} />
+                    저장됨
+                  </span>
+                ) : null}
+              </div>
+
+              <div className="mt-6 grid gap-4">
+                {AI_SURVEY_ITEMS.map((item, index) => (
+                  <article key={item.no} className="rounded-[18px] border border-white/10 bg-[#07111B]/45 p-4">
+                    <div className="flex items-start gap-3">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#6AD8FF]/12 font-data text-sm text-[#9CE6FF]">
+                        {item.no}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-lg font-black leading-7 text-[#EAF2F5]">{item.text}</p>
+                        <div className="mt-3 grid gap-2 sm:grid-cols-4">
+                          {AI_SURVEY_OPTIONS.map((option) => {
+                            const selected = surveyAnswer.s[index] === option.value
+                            return (
+                              <button
+                                key={option.value}
+                                className={`min-h-12 rounded-xl border px-3 py-2 text-sm font-black transition ${
+                                  selected
+                                    ? 'border-[#6AD8FF] bg-[#6AD8FF]/14 text-[#EAF2F5]'
+                                    : 'border-white/10 bg-[#07111B]/70 text-[#8AA0B0] hover:border-[#6AD8FF]/45 hover:text-[#EAF2F5]'
+                                }`}
+                                onClick={() =>
+                                  setSurveyAnswer((current) => ({
+                                    ...current,
+                                    s: current.s.map((value, answerIndex) => (answerIndex === index ? option.value : value)),
+                                  }))
+                                }
+                                type="button"
+                              >
+                                {option.label}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
+
+              <div className="mt-5 grid gap-4 lg:grid-cols-2">
+                {AI_SURVEY_OPEN_QUESTIONS.map((question, index) => (
+                  <label key={question} className="grid gap-2 rounded-[18px] border border-white/10 bg-[#07111B]/45 p-4">
+                    <span className="text-base font-black leading-7 text-[#EAF2F5]">{question}</span>
+                    <textarea
+                      className="min-h-32 resize-none rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 leading-7 text-[#EAF2F5] outline-none transition focus:border-[#6AD8FF]/60"
+                      maxLength={180}
+                      placeholder="내 생각을 적어주세요."
+                      value={surveyAnswer.o[index]}
+                      onChange={(event) =>
+                        setSurveyAnswer((current) => ({
+                          ...current,
+                          o: current.o.map((value, answerIndex) => (answerIndex === index ? event.target.value : value)) as [string, string],
+                        }))
+                      }
+                    />
+                  </label>
+                ))}
+              </div>
+
+              <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
+                <p className="text-sm leading-6 text-[#8AA0B0]">한 사람당 한 번 저장됩니다. 다시 저장하면 내 답이 수정됩니다.</p>
+                <Button disabled={!surveyComplete(surveyAnswer)} onClick={submitSurvey}>
+                  <Send size={18} />
+                  {surveySaved ? '수정 저장' : '설문 저장'}
+                </Button>
+              </div>
             </Panel>
           ) : null}
 
+          {isTeacherBoard ? (
+            <>
           <Panel className={isTeacherBoard ? 'lg:col-span-2' : ''}>
             <div className="flex items-center justify-between gap-3">
-              <h2 className="font-display text-3xl text-[#EAF2F5]">사전 생각</h2>
-              <span className="rounded-full bg-[#07111B]/70 px-3 py-1 text-sm text-[#8AA0B0]">{surveyResponses.length}개</span>
+              <div>
+                <p className="font-data text-xs text-[#6AD8FF]">RESULT</p>
+                <h2 className="font-display mt-1 text-3xl text-[#EAF2F5]">사전조사 결과</h2>
+              </div>
+              <span className="rounded-full bg-[#07111B]/70 px-3 py-1 text-sm text-[#8AA0B0]">{parsedSurveyResponses.length}명</span>
             </div>
-            <div className="mt-4 grid gap-3">
-              {surveyResponses.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0]">{topicMeta.survey.empty}</p> : null}
-              {surveyResponses.map((response) => (
-                <article key={response.id} className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
-                  <p className="leading-7 text-[#EAF2F5]">{response.body}</p>
-                  <p className="mt-3 text-sm text-[#8AA0B0]">{response.nickname}</p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
+                <p className="text-sm text-[#8AA0B0]">응답 수</p>
+                <p className="font-display mt-1 text-4xl text-[#EAF2F5]">{parsedSurveyResponses.length}</p>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
+                <p className="text-sm text-[#8AA0B0]">평균 점수</p>
+                <p className="font-display mt-1 text-4xl text-[#FFD37A]">{surveyAverageScore || '-'}</p>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
+                <p className="text-sm text-[#8AA0B0]">문항</p>
+                <p className="font-display mt-1 text-4xl text-[#6AD8FF]">8+2</p>
+              </div>
+            </div>
+
+            <div className="mt-5 grid gap-4">
+              {parsedSurveyResponses.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0]">{topicMeta.survey.empty}</p> : null}
+              {AI_SURVEY_ITEMS.map((item, index) => (
+                <article key={item.no} className="rounded-[18px] border border-white/10 bg-[#07111B]/45 p-4">
+                  <div className="flex items-start gap-3">
+                    <BarChart3 className="mt-1 shrink-0 text-[#6AD8FF]" size={20} />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-black leading-7 text-[#EAF2F5]">
+                        {item.no}. {item.text}
+                      </p>
+                      <div className="mt-3 grid gap-2">
+                        {AI_SURVEY_OPTIONS.map((option) => {
+                          const count = parsedSurveyResponses.filter((entry) => entry.answer.s[index] === option.value).length
+                          const percent = parsedSurveyResponses.length ? Math.round((count / parsedSurveyResponses.length) * 100) : 0
+                          return (
+                            <div key={option.value} className="grid grid-cols-[88px_1fr_44px] items-center gap-3 text-sm">
+                              <span className="font-bold text-[#B7C7D2]">{option.label}</span>
+                              <div className="h-2 overflow-hidden rounded-full bg-white/10">
+                                <div className="h-full rounded-full bg-[#6AD8FF]" style={{ width: `${percent}%` }} />
+                              </div>
+                              <span className="text-right font-data text-[#8AA0B0]">{count}</span>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  </div>
                 </article>
               ))}
             </div>
           </Panel>
+
+          <Panel className="lg:col-span-2">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="font-display text-3xl text-[#EAF2F5]">학생별 응답</h2>
+              <span className="rounded-full bg-[#07111B]/70 px-3 py-1 text-sm text-[#8AA0B0]">{parsedSurveyResponses.length}명</span>
+            </div>
+            <div className="mt-4 grid gap-3">
+              {parsedSurveyResponses.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0]">아직 학생 응답이 없습니다.</p> : null}
+              {parsedSurveyResponses.map(({ response, answer }) => (
+                <article key={response.id} className="rounded-[18px] border border-white/10 bg-[#07111B]/45 p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <p className="text-xl font-black text-[#EAF2F5]">{response.nickname}</p>
+                    <span className="rounded-full bg-[#FFD37A]/10 px-3 py-1 text-sm font-black text-[#FFD37A]">{surveyScore(answer)}점</span>
+                  </div>
+                  <div className="mt-3 grid gap-2 sm:grid-cols-4">
+                    {AI_SURVEY_ITEMS.map((item, index) => (
+                      <div key={item.no} className="rounded-xl border border-white/10 bg-[#07111B]/55 px-3 py-2">
+                        <p className="font-data text-xs text-[#8AA0B0]">Q{item.no}</p>
+                        <p className="mt-1 text-sm font-bold text-[#EAF2F5]">{optionLabel(answer.s[index])}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-4 grid gap-3 md:grid-cols-2">
+                    {AI_SURVEY_OPEN_QUESTIONS.map((question, index) => (
+                      <div key={question} className="rounded-xl border border-white/10 bg-[#07111B]/55 p-3">
+                        <p className="text-xs font-bold leading-5 text-[#8AA0B0]">{question}</p>
+                        <p className="mt-2 leading-7 text-[#EAF2F5]">{answer.o[index]}</p>
+                      </div>
+                    ))}
+                  </div>
+                </article>
+              ))}
+            </div>
+          </Panel>
+            </>
+          ) : null}
         </div>
       ) : null}
 

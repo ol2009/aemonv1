@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, BrainCircuit, Check, Database, Heart, Pencil, Play, QrCode, Sparkles, Trash2 } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
 import { Button, Panel } from '../components/ui'
-import { PRE_SURVEY_KEY, PRE_SURVEY_QUESTION } from '../data/survey'
+import { AI_SURVEY_DESCRIPTION, AI_SURVEY_ITEMS, AI_SURVEY_TITLE, PRE_SURVEY_KEY, parseSurveyAnswer } from '../data/survey'
 import { absoluteUrl } from '../lib/siteUrl'
 import { addRemoteChatLog, confirmRemoteName, deleteRemoteWish, isRemoteReady, updateRemoteLesson, updateRemoteWish } from '../lib/v2Remote'
 import { runV2Chat } from '../lib/v2Chat'
@@ -245,7 +245,7 @@ export function LessonOnePage() {
   const wishBoardUrl = useMemo(() => absoluteUrl(`/board?mode=wish&code=${encodeURIComponent(state.classCode)}`), [state.classCode])
   const sortedNames = useMemo(() => sortedByLikes(state.nameCandidates), [state.nameCandidates])
   const surveyResponses = useMemo(
-    () => state.surveyResponses.filter((response) => response.questionKey === PRE_SURVEY_KEY),
+    () => state.surveyResponses.filter((response) => response.questionKey === PRE_SURVEY_KEY && parseSurveyAnswer(response.body)),
     [state.surveyResponses],
   )
   const canWriteRemote = Boolean(state.classId && state.remote.ok && isRemoteReady())
@@ -390,17 +390,17 @@ export function LessonOnePage() {
                   <img className="aspect-[4/5] h-full w-full object-cover object-bottom" src="/v2/lesson-1/director.png" alt="" />
                 </div>
                 <div>
-                  <p className="font-data text-sm text-[#6AD8FF]">오박사의 질문</p>
-                  <h2 className="font-display mt-3 text-5xl leading-tight text-[#EAF2F5]">{PRE_SURVEY_QUESTION}</h2>
+                  <p className="font-data text-sm text-[#6AD8FF]">오박사의 사전조사</p>
+                  <h2 className="font-display mt-3 text-5xl leading-tight text-[#EAF2F5]">{AI_SURVEY_TITLE}</h2>
                   <p className="mt-5 text-lg leading-8 text-[#B7C7D2]">
-                    알을 깨우기 전에 지금 생각을 먼저 남겨 둡니다. 나중에 우리 생각이 어떻게 달라졌는지 다시 볼 겁니다.
+                    {AI_SURVEY_DESCRIPTION} 선택형 {AI_SURVEY_ITEMS.length}문항과 서술형 2문항을 남깁니다. 나중에 우리 생각이 어떻게 달라졌는지 다시 볼 겁니다.
                   </p>
                 </div>
               </div>
             </Panel>
 
             <Panel>
-              <QrBlock title="사전 생각 남기기" url={surveyBoardUrl} />
+              <QrBlock title="AI 인식 설문" url={surveyBoardUrl} />
               <div className="mt-5 rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-center">
                 <p className="font-display text-3xl text-[#EAF2F5]">{surveyResponses.length}개 저장됨</p>
               </div>
