@@ -7,7 +7,7 @@ const navItems = [
   { path: '/home', label: '교사 화면', icon: Home },
   { path: '/codes', label: '가치코드', icon: ClipboardList },
   { path: '/board', label: '학습게시판', icon: MessageSquareText },
-  { path: '/talk', label: '챗봇', icon: MessageSquare },
+  { path: '/talk', label: '채팅', icon: MessageSquare },
   { path: '/dex', label: '데이터바다', icon: Waves },
   { path: '/graduation', label: '임명식', icon: Crown },
 ]

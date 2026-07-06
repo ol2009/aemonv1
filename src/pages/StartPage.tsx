@@ -22,12 +22,12 @@ export function StartPage() {
     setMessage('')
 
     try {
-      if (isRemoteReady() && user) {
+      if (isRemoteReady()) {
         const probe = await probeV2Database()
         setRemoteStatus(probe)
         if (!probe.ok) throw new Error(probe.message)
 
-        const remoteClass = await createRemoteClass({ className: trimmed, teacherId: user.id, teacherEmail: user.email })
+        const remoteClass = await createRemoteClass({ className: trimmed, teacherId: user?.id ?? null, teacherEmail: user?.email ?? '' })
         mergeClass(remoteClass)
         navigate('/home')
         return

@@ -5,7 +5,7 @@ import { ArrowLeft, ArrowRight, BrainCircuit, Check, Database, Heart, Pencil, Pl
 import { AemonAvatar } from '../components/AemonAvatar'
 import { Button, Panel } from '../components/ui'
 import { absoluteUrl } from '../lib/siteUrl'
-import { confirmRemoteName, deleteRemoteWish, isRemoteReady, updateRemoteLesson, updateRemoteWish, addRemoteChatLog } from '../lib/v2Remote'
+import { addRemoteChatLog, confirmRemoteName, deleteRemoteWish, isRemoteReady, updateRemoteLesson, updateRemoteWish } from '../lib/v2Remote'
 import { runV2Chat } from '../lib/v2Chat'
 import { useV2RemoteSync } from '../lib/useV2RemoteSync'
 import { useV2 } from '../state/V2Store'
@@ -212,7 +212,6 @@ function QrBlock({ title, url }: { title: string; url: string }) {
       </div>
       <p className="font-bold text-[#EAF2F5]">{title}</p>
       <img className="mx-auto mt-4 rounded-xl bg-white p-2" src={qrUrl(url)} alt={`${title} QR`} />
-      <p className="mt-3 break-all text-xs leading-5 text-[#8AA0B0]">{url}</p>
     </div>
   )
 }
@@ -243,11 +242,12 @@ export function LessonOnePage() {
   const nameBoardUrl = useMemo(() => absoluteUrl(`/board?mode=name&code=${encodeURIComponent(state.classCode)}`), [state.classCode])
   const wishBoardUrl = useMemo(() => absoluteUrl(`/board?mode=wish&code=${encodeURIComponent(state.classCode)}`), [state.classCode])
   const sortedNames = useMemo(() => sortedByLikes(state.nameCandidates), [state.nameCandidates])
+  const canWriteRemote = Boolean(state.classId && state.remote.ok && isRemoteReady())
 
   const goPrev = () => setStepIndex((current) => Math.max(0, current - 1))
   const completeLessonOne = async () => {
     setLesson(2)
-    if (state.classId && isRemoteReady()) {
+    if (canWriteRemote) {
       try {
         await updateRemoteLesson({ classId: state.classId, lessonNo: 2 })
       } catch (error) {
@@ -269,7 +269,7 @@ export function LessonOnePage() {
     const trimmed = finalName.trim()
     if (!trimmed) return
     confirmName(trimmed)
-    if (state.classId && isRemoteReady()) {
+    if (canWriteRemote) {
       try {
         await confirmRemoteName({ classId: state.classId, aemonName: trimmed })
       } catch (error) {
@@ -293,8 +293,15 @@ export function LessonOnePage() {
       })
       setDemoAnswer(result.answer)
       addChatLog({ question: demoQuestion, answer: result.answer, mode: result.mode, promptSnapshot: result.promptSnapshot })
-      if (state.classId && isRemoteReady()) {
-        await addRemoteChatLog({ classId: state.classId, question: demoQuestion, answer: result.answer, mode: result.mode, promptSnapshot: result.promptSnapshot })
+      if (canWriteRemote) {
+        try {
+          await addRemoteChatLog({ classId: state.classId, question: demoQuestion, answer: result.answer, mode: result.mode, promptSnapshot: result.promptSnapshot })
+        } catch (logError) {
+          setRemoteStatus({
+            ok: false,
+            message: `채팅은 완료됐지만 Supabase 로그 저장은 건너뛰었습니다: ${(logError as Error).message}`,
+          })
+        }
       }
     } catch (error) {
       setDemoAnswer((error as Error).message)
@@ -310,7 +317,7 @@ export function LessonOnePage() {
     if (wish) addWish(body, wish.nickname)
     setEditWishId('')
     setEditWishBody('')
-    if (isRemoteReady()) {
+    if (canWriteRemote) {
       try {
         await updateRemoteWish({ wishId: editWishId, body })
       } catch (error) {
@@ -321,7 +328,7 @@ export function LessonOnePage() {
 
   const removeWish = async (wishId: string) => {
     deleteWish(wishId)
-    if (isRemoteReady()) {
+    if (canWriteRemote) {
       try {
         await deleteRemoteWish(wishId)
       } catch (error) {

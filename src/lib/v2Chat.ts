@@ -121,7 +121,7 @@ async function callClaude(apiKey: string, model: string, systemPrompt: string, q
 }
 
 export async function runV2Chat(args: ChatArgs) {
-  if (args.adoptedCodes.length === 0) {
+  if (args.adoptedCodes.length === 0 && !args.apiKey.trim()) {
     return { answer: cannedNoCodeAnswer(), mode: 'canned' as const, promptSnapshot: '연기 모드: 가치 코드 0개, API 호출 없음' }
   }
   if (!args.apiKey.trim()) throw new Error(`${providerLabel[args.provider]} API 키를 먼저 입력하세요.`)

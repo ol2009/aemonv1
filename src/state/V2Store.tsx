@@ -131,6 +131,9 @@ type Action =
   | { type: 'proposal/vote'; nickname: string; proposalId: string }
   | { type: 'proposal/adopt'; proposalId: string }
   | { type: 'proposal/reject'; proposalId: string }
+  | { type: 'code/add'; body: string; reason: string }
+  | { type: 'code/update'; codeId: string; body: string; reason: string }
+  | { type: 'code/delete'; codeId: string }
   | { type: 'chat/add'; question: string; answer: string; mode: 'canned' | 'live'; promptSnapshot: string }
   | { type: 'dev/reset' }
 
@@ -285,6 +288,36 @@ function reducer(state: V2State, action: Action): V2State {
     }
     case 'proposal/reject':
       return { ...state, proposals: state.proposals.map((item) => (item.id === action.proposalId ? { ...item, status: 'rejected' } : item)) }
+    case 'code/add': {
+      const body = clamp(action.body, 180)
+      const reason = clamp(action.reason, 180)
+      if (!body) return state
+      const code: AdoptedCode = {
+        id: crypto.randomUUID(),
+        no: nextCodeNo(state.adoptedCodes),
+        body,
+        reason,
+        sourceProposalId: null,
+        createdAt: new Date().toISOString(),
+      }
+      return { ...state, adoptedCodes: [...state.adoptedCodes, code].sort((a, b) => a.no - b.no) }
+    }
+    case 'code/update': {
+      const body = clamp(action.body, 180)
+      const reason = clamp(action.reason, 180)
+      if (!body) return state
+      return {
+        ...state,
+        adoptedCodes: state.adoptedCodes.map((code) => (code.id === action.codeId ? { ...code, body, reason } : code)),
+      }
+    }
+    case 'code/delete':
+      return {
+        ...state,
+        adoptedCodes: state.adoptedCodes
+          .filter((code) => code.id !== action.codeId)
+          .map((code, index) => ({ ...code, no: index + 1 })),
+      }
     case 'chat/add': {
       const date = todayKey()
       const currentUsage = state.dailyUsage.date === date ? state.dailyUsage.count : 0
@@ -331,6 +364,9 @@ interface V2ContextValue {
   voteProposal: (proposalId: string, nickname?: string) => void
   adoptProposal: (proposalId: string) => void
   rejectProposal: (proposalId: string) => void
+  addCode: (code: { body: string; reason: string }) => void
+  updateCode: (code: { codeId: string; body: string; reason: string }) => void
+  deleteCode: (codeId: string) => void
   addChatLog: (log: { question: string; answer: string; mode: 'canned' | 'live'; promptSnapshot: string }) => void
   resetDemo: () => void
 }
@@ -372,6 +408,9 @@ export function V2Provider({ children }: { children: ReactNode }) {
       voteProposal: (proposalId, explicitNickname) => dispatch({ type: 'proposal/vote', proposalId, nickname: explicitNickname ?? nickname }),
       adoptProposal: (proposalId) => dispatch({ type: 'proposal/adopt', proposalId }),
       rejectProposal: (proposalId) => dispatch({ type: 'proposal/reject', proposalId }),
+      addCode: (code) => dispatch({ type: 'code/add', ...code }),
+      updateCode: (code) => dispatch({ type: 'code/update', ...code }),
+      deleteCode: (codeId) => dispatch({ type: 'code/delete', codeId }),
       addChatLog: (log) => dispatch({ type: 'chat/add', ...log }),
       resetDemo: () => dispatch({ type: 'dev/reset' }),
     }

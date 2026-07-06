@@ -104,6 +104,7 @@ export function BoardPage() {
   const pendingProposals = state.proposals.filter((proposal) => proposal.status === 'pending')
   const sortedProposals = useMemo(() => sortByLikes(pendingProposals), [pendingProposals])
   const myProposalVote = sortedProposals.find((proposal) => proposal.votes.includes(session?.nickname ?? ''))?.id ?? ''
+  const canWriteRemote = Boolean(state.classId && state.remote.ok && isRemoteReady())
 
   useV2RemoteSync(state.classCode, Boolean(state.classCode && (session || isTeacherBoard)))
 
@@ -136,7 +137,7 @@ export function BoardPage() {
     setNameDraft('')
     setReasonDraft('')
 
-    if (state.classId && isRemoteReady()) {
+    if (canWriteRemote) {
       try {
         await addRemoteNameCandidate({ classId: state.classId, nickname: session.nickname, name, reason })
       } catch (error) {
@@ -148,7 +149,7 @@ export function BoardPage() {
   const likeName = async (candidateId: string) => {
     if (!session) return
     voteName(candidateId, session.nickname)
-    if (state.classId && isRemoteReady()) {
+    if (canWriteRemote) {
       try {
         await toggleRemoteNameLike({ classId: state.classId, nickname: session.nickname, candidateId })
       } catch (error) {
@@ -163,7 +164,7 @@ export function BoardPage() {
     addWish(body, session.nickname)
     setWishDraft('')
 
-    if (state.classId && isRemoteReady()) {
+    if (canWriteRemote) {
       try {
         await upsertRemoteWish({ classId: state.classId, nickname: session.nickname, body })
       } catch (error) {
@@ -180,7 +181,7 @@ export function BoardPage() {
     setEditWishId('')
     setEditWishBody('')
 
-    if (isRemoteReady()) {
+    if (canWriteRemote) {
       try {
         await updateRemoteWish({ wishId: editWishId, body })
       } catch (error) {
@@ -191,7 +192,7 @@ export function BoardPage() {
 
   const removeWish = async (wishId: string) => {
     deleteWish(wishId)
-    if (isRemoteReady()) {
+    if (canWriteRemote) {
       try {
         await deleteRemoteWish(wishId)
       } catch (error) {
@@ -213,7 +214,7 @@ export function BoardPage() {
     setProposalReasonDraft('')
     setRevisionOfNo(null)
 
-    if (state.classId && isRemoteReady()) {
+    if (canWriteRemote) {
       try {
         await addRemoteCodeProposal({ classId: state.classId, nickname: session.nickname, body, reason, valueCard, revisionOfNo })
       } catch (error) {
@@ -225,7 +226,7 @@ export function BoardPage() {
   const castProposalVote = async (proposalId: string) => {
     if (!session) return
     voteProposal(proposalId, session.nickname)
-    if (state.classId && isRemoteReady()) {
+    if (canWriteRemote) {
       try {
         await voteRemoteCodeProposal({ classId: state.classId, nickname: session.nickname, proposalId })
       } catch (error) {
