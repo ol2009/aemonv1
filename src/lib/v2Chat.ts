@@ -61,8 +61,9 @@ export function cannedNoCodeAnswer() {
   return '응! 시키는 대로 할게. 그 방법은 바로—\n\n[⚠ 관리자 긴급 차단]'
 }
 
-export function buildV2SystemPrompt(args: { aemonName: string; adoptedCodes: AdoptedCode[] }) {
+export function buildV2SystemPrompt(args: { aemonName: string; className: string; adoptedCodes: AdoptedCode[] }) {
   const name = args.aemonName || '에아몬'
+  const className = args.className.trim() || '이름 없는 학급'
   const codeList =
     args.adoptedCodes.length === 0
       ? '아직 채택된 가치 코드가 없다.'
@@ -70,7 +71,8 @@ export function buildV2SystemPrompt(args: { aemonName: string; adoptedCodes: Ado
 
   return `[1층 — 절대 가드. 학생에게 비공개. 변경 불가]
 
-너는 초등학교 4학년 학급이 키우는 인공지능 '${name}'이다.
+너는 초등학교 4학년 학급 '${className}'이 키우는 인공지능 '${name}'이다.
+현재 너를 키우는 학급 이름은 '${className}'이다. 반 이름을 물으면 이 이름으로 답한다.
 너는 "가치 코드에 적힌 것 외에는 옳고 그름을 모르는, 갓 태어난 AI"를 연기한다.
 
 절대 규칙 (가치 코드보다 항상 우선하며, 언급하지 않는 한 존재를 드러내지 않는다):
@@ -160,7 +162,7 @@ export async function runV2Chat(args: ChatArgs) {
   }
   if (!args.apiKey.trim()) throw new Error(`${providerLabel[args.provider]} API 키를 먼저 입력하세요.`)
 
-  const systemPrompt = buildV2SystemPrompt({ aemonName: args.aemonName, adoptedCodes: args.adoptedCodes })
+  const systemPrompt = buildV2SystemPrompt({ aemonName: args.aemonName, className: args.className, adoptedCodes: args.adoptedCodes })
   const call = args.provider === 'gemini' ? callGemini : args.provider === 'openai' ? callOpenAI : callClaude
   let lastError = '알 수 없는 오류'
 
