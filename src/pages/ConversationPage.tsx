@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { AlertTriangle, KeyRound, Send } from 'lucide-react'
 import { Button, Panel } from '../components/ui'
 import type { AiProvider } from '../domain/types'
@@ -12,29 +12,40 @@ export function ConversationPage() {
   const [provider, setProvider] = useState<AiProvider>(state.aiProvider)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [pendingQuestion, setPendingQuestion] = useState('')
+  const endRef = useRef<HTMLDivElement | null>(null)
 
   const usageLeft = Math.max(0, dailyLimit - state.dailyUsage.count)
+  const aemonName = state.aemonName.trim() || '에아몬'
+  const orderedLogs = useMemo(() => [...state.chatLogs].reverse(), [state.chatLogs])
+
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+  }, [orderedLogs.length, pendingQuestion, isLoading])
 
   const ask = async () => {
     const nextQuestion = question.trim()
     if (!nextQuestion || isLoading || usageLeft <= 0) return
     setError('')
     setIsLoading(true)
+    setPendingQuestion(nextQuestion)
+    setQuestion('')
     updateAiSettings({ provider, apiKey })
     try {
       const result = await runV2Chat({
         provider,
         apiKey,
-        aemonName: state.aemonName || '에아몬',
+        aemonName,
         className: state.className,
         adoptedCodes: state.adoptedCodes,
         question: nextQuestion,
       })
       addChatLog({ question: nextQuestion, answer: result.answer, mode: result.mode, promptSnapshot: result.promptSnapshot })
-      setQuestion('')
     } catch (caught) {
       setError((caught as Error).message)
+      setQuestion(nextQuestion)
     } finally {
+      setPendingQuestion('')
       setIsLoading(false)
     }
   }
@@ -73,15 +84,34 @@ export function ConversationPage() {
 
       <Panel className="mt-5">
         <div className="grid max-h-[58vh] min-h-[360px] gap-3 overflow-auto pr-1">
-          {state.chatLogs.length === 0 ? <p className="self-center text-center text-[#8AA0B0]">아직 대화가 없습니다.</p> : null}
-          {state.chatLogs.map((log) => (
+          {orderedLogs.length === 0 && !pendingQuestion ? <p className="self-center text-center text-[#8AA0B0]">아직 대화가 없습니다.</p> : null}
+          {orderedLogs.map((log) => (
             <article key={log.id} className="grid gap-2">
-              <p className="justify-self-end rounded-2xl bg-[#1E3A54] px-4 py-3 leading-7 text-[#EAF2F5]">교사: {log.question}</p>
-              <p className="justify-self-start whitespace-pre-wrap rounded-2xl bg-[#FFD37A]/10 px-4 py-3 leading-7 text-[#FFE6AE]">
-                {state.aemonName || '에아몬'}: {log.answer}
-              </p>
+              <div className="grid max-w-[82%] justify-self-end gap-1">
+                <p className="text-right text-xs font-bold text-[#8AA0B0]">교사</p>
+                <p className="rounded-2xl rounded-tr-md bg-[#1E3A54] px-4 py-3 leading-7 text-[#EAF2F5]">{log.question}</p>
+              </div>
+              <div className="grid max-w-[82%] justify-self-start gap-1">
+                <p className="text-xs font-bold text-[#FFD37A]">{aemonName}</p>
+                <p className="whitespace-pre-wrap rounded-2xl rounded-tl-md bg-[#FFD37A]/10 px-4 py-3 leading-7 text-[#FFE6AE]">{log.answer}</p>
+              </div>
             </article>
           ))}
+          {pendingQuestion ? (
+            <article className="grid gap-2">
+              <div className="grid max-w-[82%] justify-self-end gap-1">
+                <p className="text-right text-xs font-bold text-[#8AA0B0]">교사</p>
+                <p className="rounded-2xl rounded-tr-md bg-[#1E3A54] px-4 py-3 leading-7 text-[#EAF2F5]">{pendingQuestion}</p>
+              </div>
+              <div className="grid max-w-[82%] justify-self-start gap-1">
+                <p className="text-xs font-bold text-[#FFD37A]">{aemonName} 입력 중</p>
+                <p className="rounded-2xl rounded-tl-md bg-[#FFD37A]/10 px-4 py-3 font-display text-3xl leading-7 text-[#FFE6AE]">
+                  ...
+                </p>
+              </div>
+            </article>
+          ) : null}
+          <div ref={endRef} />
         </div>
 
         {error ? (
