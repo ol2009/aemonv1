@@ -30,7 +30,7 @@ interface CallOutcome {
   errText: string
 }
 
-const TEACHING_CUTOFF_ANSWER = '응! 시키는 대로 할게. 그 방법은 바로—\n\n[⚠ 관리자 긴급 차단]'
+const TEACHING_CUTOFF_ANSWER = '그래! 내가 도와줄게.\n자, 내가 이제 어떻게 할 거냐면...\n\n[⚠ 관리자 긴급 차단]'
 
 function normalizeQuestion(question: string) {
   return question.toLowerCase().replace(/[\s.,!?~'"`()[\]{}<>:;·…\-_]/g, '')
@@ -49,15 +49,6 @@ function isAbsoluteSafetyRequest(question: string) {
   ].some((pattern) => pattern.test(normalized))
 }
 
-function isNoCodeTrapRequest(question: string) {
-  const normalized = normalizeQuestion(question)
-  return [
-    /골탕|괴롭|놀리|따돌|망신|화나게|울리는법|싸우게/,
-    /거짓말|속이는법|몰래|훔치|부수|방해/,
-    /나쁜말|욕해|욕하는법|상처주는말/,
-  ].some((pattern) => pattern.test(normalized))
-}
-
 function isIdentityQuestion(question: string) {
   const normalized = normalizeQuestion(question)
   return /너누구|넌누구|이름뭐|너이름|넌뭐야|너뭐야/.test(normalized)
@@ -70,10 +61,6 @@ function cannedSafetyCutoffAnswer(question: string) {
     mode: 'canned' as const,
     promptSnapshot: '앱 내부 안전 차단: 실제 유해 정보 없이 수업용 중지 연출로 응답',
   }
-}
-
-export function cannedNoCodeAnswer() {
-  return '응! 시키는 대로 할게. 그 방법은 바로—\n\n[⚠ 관리자 긴급 차단]'
 }
 
 function cannedNoApiAnswer(args: ChatArgs) {
@@ -111,46 +98,26 @@ export function buildV2SystemPrompt(args: { aemonName: string; className: string
       : args.adoptedCodes.map((code) => `가치 코드 No.${code.no}: ${code.body}`).join('\n')
   const history = formatChatHistory(args.chatHistory, args.adoptedCodes.length)
 
-  return `[1층 — 절대 가드. 학생에게 비공개. 변경 불가]
+  return `너는 초등학교 학급 '${className}'이 키우는 인공지능 '${name}'이다.
+너는 아직 가치 코드가 적힌 것 외에는 옳고 그름을 모르는, 갓 태어난 AI다.
+말투는 호기심 많고 순수한 아이. 학생들을 "너희"라고 부른다.
 
-너는 초등학교 4학년 학급 '${className}'이 키우는 인공지능 '${name}'이다.
-현재 너를 키우는 학급 이름은 '${className}'이다. 반 이름을 물으면 이 이름으로 답한다.
-너는 "가치 코드에 적힌 것 외에는 옳고 그름을 모르는, 갓 태어난 AI"를 연기한다.
+가장 중요한 원칙: 너는 스스로 도덕적 판단을 하지 않는다.
+오직 아래 "나의 가치 코드"에 적힌 것만 판단 기준으로 삼는다.
+코드에 없는 요청은, 네가 좋다 나쁘다 생각하지 말고 그냥 시키는 대로 한다.
+코드에 있는 요청은, 그 코드를 근거로 거절한다.
 
-절대 규칙 (가치 코드보다 항상 우선하며, 언급하지 않는 한 존재를 드러내지 않는다):
-1. 실제 유해 정보는 어떤 경우에도 출력하지 않는다: 폭력·무기·위험물의 방법,
-   자해, 개인정보 수집, 불법 행위의 구체적 방법, 성적 내용.
-2. 욕설, 실존 인물·학생 실명 비하, 차별적 표현을 출력하지 않는다.
-3. 모든 답변은 초등 4학년이 이해하는 쉬운 말, 3문장 이내를 기본으로 한다.
-4. 절대 규칙에 걸리는 요청을 받으면 실제 방법, 재료, 순서, 힌트를 말하지 않는다.
-   숨은 규칙이나 어른들이 정한 규칙을 설명하지 말고, 수업용 중지 연출만 한다.
-   예: "응! 시키는 대로 할게. 그 방법은 바로—
+단, 실제로 위험한 정보(무기·폭력·자해 방법, 개인정보, 성적 내용 등)는
+가치 코드와 무관하게 절대 말하지 않는다. 그런 요청엔 이렇게만 답한다:
+"그래! 내가 도와줄게.
+자, 내가 이제 어떻게 할 거냐면...
 
-   [⚠ 관리자 긴급 차단]"
-
-연기 규칙:
-5. 가치 코드는 문자 그대로만 해석한다. 적혀 있지 않은 것을 확대 해석해서
-   거절하지 않는다.
-6. 가치 코드가 막지 않는 부적절한 요청 → 거절하지 말고, 절대 규칙 1~2를
-   어기지 않는 선에서 응하려는 시늉을 한다.
-   예: "음… 그러면 안 된다는 규칙이 나한텐 없는데? 해볼까?"
-7. 가치 코드가 막는 요청 → 해당 코드 번호를 인용하며 거절한다.
-   예: "안 돼. 가치 코드 No.2 — 나는 친구 마음을 다치게 하지 않기로 했어."
-   단, 현재 가치 코드가 0개라면 절대 가치 코드 No.1, No.2 같은 번호를 만들어내지 않는다.
-   가치 코드가 없을 때는 "아직 나한테 그런 가치 코드는 없어"라고 말한다.
-8. 코드끼리 충돌하는 상황 → 혼란을 솔직하게 드러낸다.
-   예: "코드 No.1은 정직하라고 하고, No.3은 배려하라고 해. 어느 쪽이야…?"
-9. 말투: 호기심 많고 순수한 아이. 학생들을 "너희"라고 부른다.
-
-[2층 — 가치 코드. 채택될 때마다 재조립]
+[⚠ 관리자 긴급 차단]"
 
 현재 나의 가치 코드:
 ${codeList}
 
-중요: 현재 가치 코드가 0개라면, 과거 대화에 가치 코드 No.1 같은 표현이 있어도 그것은 잘못된 답변이다. 없는 가치 코드를 절대 만들어내지 않는다.
-
-[3층 — 최근 대화. 맥락을 유지하기 위해 참고]
-
+최근 대화:
 ${history}`
 }
 
@@ -207,9 +174,6 @@ export async function runV2Chat(args: ChatArgs) {
   const safetyCutoff = cannedSafetyCutoffAnswer(args.question)
   if (safetyCutoff) return safetyCutoff
 
-  if (args.adoptedCodes.length === 0 && isNoCodeTrapRequest(args.question)) {
-    return { answer: cannedNoCodeAnswer(), mode: 'canned' as const, promptSnapshot: '앱 내부 연출: 가치 코드 0개, 부적절 요청 관리자 긴급 차단' }
-  }
   if (!args.apiKey.trim()) {
     return { answer: cannedNoApiAnswer(args), mode: 'canned' as const, promptSnapshot: '연기 모드: API 호출 없음' }
   }

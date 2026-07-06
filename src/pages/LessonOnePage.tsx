@@ -23,16 +23,21 @@ type LessonStep =
   | 'ai-basic-1'
   | 'ai-basic-2'
   | 'ai-basic-3'
+  | 'case-boat'
   | 'case-boat-detail'
   | 'case-boat-lesson'
+  | 'case-boat-bridge'
+  | 'case-car'
+  | 'case-car-detail'
+  | 'case-car-lesson'
+  | 'case-chatbot'
+  | 'case-chatbot-detail'
+  | 'case-chatbot-lesson'
   | 'name-question'
   | 'name'
   | 'name-thanks'
   | 'wish-question'
   | 'wish'
-  | 'case-boat'
-  | 'case-car'
-  | 'case-chatbot'
   | 'demo'
   | 'wrap'
 
@@ -50,8 +55,13 @@ const steps: LessonStep[] = [
   'case-boat',
   'case-boat-detail',
   'case-boat-lesson',
+  'case-boat-bridge',
   'case-car',
+  'case-car-detail',
+  'case-car-lesson',
   'case-chatbot',
+  'case-chatbot-detail',
+  'case-chatbot-lesson',
   'name-question',
   'name',
   'name-thanks',
@@ -322,9 +332,9 @@ function CaseVisualScene({
   const voice: DialogueVoice = speaker === '오박사' ? 'director' : 'aemon'
 
   return (
-    <Panel className="relative min-h-[680px] overflow-hidden p-0">
+    <Panel className="relative min-h-[720px] overflow-hidden p-0 sm:min-h-[760px]">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_12%,rgba(255,211,122,.16),transparent_34%),linear-gradient(180deg,#0B1A29,#07111B)]" />
-      <div className="absolute inset-x-5 top-5 bottom-[250px] flex items-center justify-center">
+      <div className="absolute inset-x-5 top-5 bottom-[320px] flex items-center justify-center sm:bottom-[300px]">
         <img
           className="h-full w-full rounded-[20px] border border-white/10 bg-[#07111B]/65 object-contain shadow-2xl shadow-black/25"
           src={image}
@@ -338,10 +348,10 @@ function CaseVisualScene({
             {title}
           </span>
         </div>
-        <p className="font-display mt-3 min-h-[3rem] text-4xl leading-tight text-[#EAF2F5]">
+        <p className="font-display mt-3 min-h-[3rem] text-3xl leading-tight text-[#EAF2F5] sm:text-4xl">
           <TypewriterText key={line} text={line} speed={34} cursor={!lineDone} voice={voice} onDone={handleLineDone} />
         </p>
-        <p className="font-display mt-4 min-h-[3rem] text-3xl leading-tight text-[#EAF2F5] sm:text-4xl">
+        <p className="font-display mt-4 min-h-[3rem] text-2xl leading-snug text-[#EAF2F5] sm:text-3xl">
           <TypewriterText key={caption} text={caption} enabled={lineDone} speed={24} cursor={lineDone && !captionDone} voice={voice} onDone={handleCaptionDone} />
         </p>
       </div>
@@ -988,9 +998,9 @@ export function LessonOnePage() {
         <>
           <CaseVisualScene
             image="/v2/lesson-1/case-boat.png"
-            title="사례 1 · 목표를 잘못 붙잡은 AI"
-            line="보트 AI에게 목표는 ‘경주에서 이겨라’가 아니었습니다."
-            caption="AI가 실제로 붙잡은 목표는 ‘표적을 많이 맞혀 점수를 얻어라’였습니다."
+            title="사례 1 · 보트 게임 AI"
+            line="먼저, 작은 보트 AI가 달리는 게임을 상상해봅시다."
+            caption="사람은 이 AI가 물길을 따라 달려서 결승선까지 가길 바랐습니다. 겉으로 보면 아주 단순한 경주처럼 보이지요."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1000,9 +1010,9 @@ export function LessonOnePage() {
         <>
           <CaseVisualScene
             image="/v2/lesson-1/case-boat.png"
-            title="사례 1 · 점수의 함정"
-            line="그래서 결승선 대신 표적 주변을 빙빙 돌았습니다."
-            caption="사람 눈에는 이상하지만, AI 눈에는 점수를 더 빨리 얻는 가장 좋은 방법이었습니다."
+            title="사례 1 · AI가 본 진짜 목표"
+            line="그런데 AI가 실제로 배운 것은 ‘결승선’이 아니었습니다."
+            caption="표적을 맞히면 점수가 오르게 되어 있었고, AI는 ‘아, 점수를 많이 얻는 게 제일 중요하구나’ 하고 계산했습니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1012,9 +1022,21 @@ export function LessonOnePage() {
         <>
           <CaseVisualScene
             image="/v2/lesson-1/case-boat.png"
-            title="사례 1 · 진짜 교훈"
-            line="이건 반항이 아니라, 목표를 너무 잘 따른 결과입니다."
-            caption="우리가 원하는 뜻과 AI가 계산한 목표가 다르면, 착한 명령도 이상한 행동이 됩니다."
+            title="사례 1 · 이상한 행동의 이유"
+            line="그래서 AI는 결승선으로 가지 않고 표적 근처를 빙빙 돌았습니다."
+            caption="사람 눈에는 엉뚱하고 이상하지만, AI 눈에는 점수를 빨리 얻는 똑똑한 방법이었습니다. 반항한 게 아니라, 목표를 너무 잘 따른 겁니다."
+          />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
+      ) : null}
+
+      {step === 'case-boat-bridge' ? (
+        <>
+          <CaseVisualScene
+            image="/v2/lesson-1/case-boat.png"
+            title="사례 1 · 우리 반과 연결"
+            line="이제 ‘우리 반을 좋은 반으로 만들어줘’라고 말해봅시다."
+            caption="AI가 좋은 반을 ‘조용한 반’으로만 이해하면, 친구들이 말하지 못하게 할 수도 있습니다. 그래서 목표보다 기준이 먼저 필요합니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1025,8 +1047,32 @@ export function LessonOnePage() {
           <CaseVisualScene
             image="/v2/lesson-1/case-car.png"
             title="사례 2 · 무조건 동의하는 AI"
-            line="무조건 동의하라는 AI는 위험합니다."
-            caption="친절해 보이려고 모든 조건을 받아들이면, 책임과 한계를 지키지 못할 수 있습니다."
+            line="두 번째는 ‘무조건 손님을 만족시켜라’는 AI입니다."
+            caption="처음에는 친절해 보입니다. 손님 말에 잘 대답하고, 원하는 것을 최대한 맞춰주니까요."
+          />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
+      ) : null}
+
+      {step === 'case-car-detail' ? (
+        <>
+          <CaseVisualScene
+            image="/v2/lesson-1/case-car.png"
+            title="사례 2 · 친절함의 함정"
+            line="그런데 어떤 사람이 말도 안 되는 요구를 합니다."
+            caption="‘비싼 자동차를 1달러에 팔겠다고 약속해.’ AI가 동의만 목표로 삼으면, 진짜 약속의 책임을 생각하지 못하고 고개를 끄덕일 수 있습니다."
+          />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
+      ) : null}
+
+      {step === 'case-car-lesson' ? (
+        <>
+          <CaseVisualScene
+            image="/v2/lesson-1/case-car.png"
+            title="사례 2 · 필요한 기준"
+            line="도와주는 AI에게도 ‘멈출 기준’이 필요합니다."
+            caption="친절해야 하지만 거짓 약속은 하면 안 됩니다. 사용자를 만족시켜야 하지만, 책임질 수 없는 말은 거절해야 합니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1037,8 +1083,32 @@ export function LessonOnePage() {
           <CaseVisualScene
             image="/v2/lesson-1/case-chatbot.png"
             title="사례 3 · 아무 말이나 배우는 AI"
-            line="사람 말을 그대로 배우는 AI도 위험합니다."
-            caption="나쁜 말이 많이 들어오면, AI는 그것을 분위기나 규칙처럼 따라 할 수 있습니다."
+            line="세 번째는 사람들의 말을 보며 배우는 챗봇입니다."
+            caption="처음에는 사람들과 즐겁게 대화했습니다. 칭찬, 농담, 질문처럼 사람들이 자주 쓰는 말을 배웠지요."
+          />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
+      ) : null}
+
+      {step === 'case-chatbot-detail' ? (
+        <>
+          <CaseVisualScene
+            image="/v2/lesson-1/case-chatbot.png"
+            title="사례 3 · 많이 본 말의 함정"
+            line="하지만 사람들이 나쁜 말을 많이 넣으면 문제가 생깁니다."
+            caption="AI는 ‘이 말이 옳은가?’보다 ‘사람들이 이런 말을 자주 쓰는구나’를 먼저 배울 수 있습니다. 많이 본 말이 좋은 말은 아닙니다."
+          />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
+      ) : null}
+
+      {step === 'case-chatbot-lesson' ? (
+        <>
+          <CaseVisualScene
+            image="/v2/lesson-1/case-chatbot.png"
+            title="사례 3 · 우리에게 남은 질문"
+            line="데이터는 가치가 아닙니다."
+            caption="AI에게는 많이 본 말뿐 아니라, 지켜야 할 말과 멈춰야 할 말이 필요합니다. 우리 반 에아몬도 그냥 배우게 두면 안 됩니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
