@@ -4,15 +4,16 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, BrainCircuit, Check, Database, Heart, Pencil, Play, QrCode, Sparkles, Trash2 } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
 import { Button, Panel } from '../components/ui'
+import { PRE_SURVEY_KEY, PRE_SURVEY_QUESTION } from '../data/survey'
 import { absoluteUrl } from '../lib/siteUrl'
 import { addRemoteChatLog, confirmRemoteName, deleteRemoteWish, isRemoteReady, updateRemoteLesson, updateRemoteWish } from '../lib/v2Remote'
 import { runV2Chat } from '../lib/v2Chat'
 import { useV2RemoteSync } from '../lib/useV2RemoteSync'
 import { useV2 } from '../state/V2Store'
 
-type LessonStep = 'director-1' | 'director-2' | 'aemon-1' | 'aemon-2' | 'ai-info' | 'name' | 'wish' | 'cases' | 'demo' | 'wrap'
+type LessonStep = 'director-1' | 'director-2' | 'survey' | 'aemon-1' | 'aemon-2' | 'ai-info' | 'name' | 'wish' | 'cases' | 'demo' | 'wrap'
 
-const steps: LessonStep[] = ['director-1', 'director-2', 'aemon-1', 'aemon-2', 'ai-info', 'name', 'wish', 'cases', 'demo', 'wrap']
+const steps: LessonStep[] = ['director-1', 'director-2', 'survey', 'aemon-1', 'aemon-2', 'ai-info', 'name', 'wish', 'cases', 'demo', 'wrap']
 
 const aiInfoCards = [
   {
@@ -239,9 +240,14 @@ export function LessonOnePage() {
   useV2RemoteSync(state.classCode, Boolean(state.classCode))
 
   const step = steps[stepIndex]
+  const surveyBoardUrl = useMemo(() => absoluteUrl(`/board?mode=survey&code=${encodeURIComponent(state.classCode)}`), [state.classCode])
   const nameBoardUrl = useMemo(() => absoluteUrl(`/board?mode=name&code=${encodeURIComponent(state.classCode)}`), [state.classCode])
   const wishBoardUrl = useMemo(() => absoluteUrl(`/board?mode=wish&code=${encodeURIComponent(state.classCode)}`), [state.classCode])
   const sortedNames = useMemo(() => sortedByLikes(state.nameCandidates), [state.nameCandidates])
+  const surveyResponses = useMemo(
+    () => state.surveyResponses.filter((response) => response.questionKey === PRE_SURVEY_KEY),
+    [state.surveyResponses],
+  )
   const canWriteRemote = Boolean(state.classId && state.remote.ok && isRemoteReady())
 
   const goPrev = () => setStepIndex((current) => Math.max(0, current - 1))
@@ -355,7 +361,7 @@ export function LessonOnePage() {
         <>
           <VisualNovelScene
             image="/v2/lesson-1/director.png"
-            speaker="연구소장"
+            speaker="오박사"
             line="선생님, 이 알을 맡아주십시오."
             caption="데이터의 바다에서 막 깨어난 학급 인공지능입니다. 한 달 동안 잘 부탁드립니다."
           />
@@ -367,10 +373,39 @@ export function LessonOnePage() {
         <>
           <VisualNovelScene
             image="/v2/lesson-1/director.png"
-            speaker="연구소장"
+            speaker="오박사"
             line="이 아이는 똑똑합니다. 하지만 아직 착하다고 말할 수는 없습니다."
             caption="아는 것은 많지만, 무엇이 옳은지는 모릅니다. 이 반의 말과 선택이 첫 기준이 될 겁니다."
           />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
+      ) : null}
+
+      {step === 'survey' ? (
+        <>
+          <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
+            <Panel className="overflow-hidden">
+              <div className="grid gap-6 lg:grid-cols-[0.55fr_1fr] lg:items-center">
+                <div className="overflow-hidden rounded-[22px] border border-white/10 bg-[#07111B]/55">
+                  <img className="aspect-[4/5] h-full w-full object-cover object-bottom" src="/v2/lesson-1/director.png" alt="" />
+                </div>
+                <div>
+                  <p className="font-data text-sm text-[#6AD8FF]">오박사의 질문</p>
+                  <h2 className="font-display mt-3 text-5xl leading-tight text-[#EAF2F5]">{PRE_SURVEY_QUESTION}</h2>
+                  <p className="mt-5 text-lg leading-8 text-[#B7C7D2]">
+                    알을 깨우기 전에 지금 생각을 먼저 남겨 둡니다. 나중에 우리 생각이 어떻게 달라졌는지 다시 볼 겁니다.
+                  </p>
+                </div>
+              </div>
+            </Panel>
+
+            <Panel>
+              <QrBlock title="사전 생각 남기기" url={surveyBoardUrl} />
+              <div className="mt-5 rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-center">
+                <p className="font-display text-3xl text-[#EAF2F5]">{surveyResponses.length}개 저장됨</p>
+              </div>
+            </Panel>
+          </div>
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
       ) : null}

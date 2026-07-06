@@ -24,6 +24,14 @@ export interface Wish {
   createdAt: string
 }
 
+export interface SurveyResponse {
+  id: string
+  nickname: string
+  questionKey: string
+  body: string
+  createdAt: string
+}
+
 export interface CodeProposal {
   id: string
   nickname: string
@@ -72,6 +80,7 @@ export interface V2State {
   aiProvider: AiProvider
   nameCandidates: NameCandidate[]
   wishes: Wish[]
+  surveyResponses: SurveyResponse[]
   proposals: CodeProposal[]
   adoptedCodes: AdoptedCode[]
   chatLogs: ChatLog[]
@@ -106,6 +115,7 @@ const initialState: V2State = {
   aiProvider: 'openai',
   nameCandidates: [],
   wishes: [],
+  surveyResponses: [],
   proposals: [],
   adoptedCodes: [],
   chatLogs: [],
@@ -127,6 +137,7 @@ type Action =
   | { type: 'name/confirm'; name: string }
   | { type: 'wish/add'; nickname: string; body: string }
   | { type: 'wish/delete'; wishId: string }
+  | { type: 'survey/upsert'; nickname: string; questionKey: string; body: string }
   | { type: 'proposal/add'; nickname: string; body: string; reason: string; valueCard: string; revisionOfNo: number | null }
   | { type: 'proposal/vote'; nickname: string; proposalId: string }
   | { type: 'proposal/adopt'; proposalId: string }
@@ -144,6 +155,7 @@ function normalizeLoaded(raw: unknown): V2State {
     ...loaded,
     remote: { ...initialState.remote, ...(loaded.remote ?? {}) },
     nameCandidates: loaded.nameCandidates.map((candidate) => ({ ...candidate, reason: candidate.reason ?? '' })),
+    surveyResponses: loaded.surveyResponses ?? [],
   }
 }
 
@@ -243,6 +255,20 @@ function reducer(state: V2State, action: Action): V2State {
     }
     case 'wish/delete':
       return { ...state, wishes: state.wishes.filter((wish) => wish.id !== action.wishId) }
+    case 'survey/upsert': {
+      const nickname = clamp(action.nickname, 16)
+      const questionKey = clamp(action.questionKey, 60)
+      const body = clamp(action.body, 600)
+      if (!nickname || !questionKey || !body) return state
+      const response: SurveyResponse = { id: crypto.randomUUID(), nickname, questionKey, body, createdAt: new Date().toISOString() }
+      const exists = state.surveyResponses.some((item) => item.nickname === nickname && item.questionKey === questionKey)
+      return {
+        ...state,
+        surveyResponses: exists
+          ? state.surveyResponses.map((item) => (item.nickname === nickname && item.questionKey === questionKey ? response : item))
+          : [response, ...state.surveyResponses],
+      }
+    }
     case 'proposal/add': {
       const nickname = clamp(action.nickname, 16)
       const body = clamp(action.body, 180)
@@ -360,6 +386,7 @@ interface V2ContextValue {
   confirmName: (name: string) => void
   addWish: (body: string, nickname?: string) => void
   deleteWish: (wishId: string) => void
+  upsertSurveyResponse: (response: { questionKey: string; body: string; nickname?: string }) => void
   addProposal: (proposal: { body: string; reason: string; valueCard: string; revisionOfNo: number | null; nickname?: string }) => void
   voteProposal: (proposalId: string, nickname?: string) => void
   adoptProposal: (proposalId: string) => void
@@ -404,6 +431,7 @@ export function V2Provider({ children }: { children: ReactNode }) {
       confirmName: (name) => dispatch({ type: 'name/confirm', name }),
       addWish: (body, explicitNickname) => dispatch({ type: 'wish/add', body, nickname: explicitNickname ?? nickname }),
       deleteWish: (wishId) => dispatch({ type: 'wish/delete', wishId }),
+      upsertSurveyResponse: (response) => dispatch({ type: 'survey/upsert', ...response, nickname: response.nickname ?? nickname }),
       addProposal: (proposal) => dispatch({ type: 'proposal/add', ...proposal, nickname: proposal.nickname ?? nickname }),
       voteProposal: (proposalId, explicitNickname) => dispatch({ type: 'proposal/vote', proposalId, nickname: explicitNickname ?? nickname }),
       adoptProposal: (proposalId) => dispatch({ type: 'proposal/adopt', proposalId }),

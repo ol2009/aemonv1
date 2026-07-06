@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { BookOpenText, Heart, LogOut, Pencil, Send, Trash2 } from 'lucide-react'
 import { Button, Panel } from '../components/ui'
+import { PRE_SURVEY_KEY, PRE_SURVEY_QUESTION } from '../data/survey'
 import {
   addRemoteNameCandidate,
   deleteRemoteWish,
@@ -9,14 +10,21 @@ import {
   isRemoteReady,
   toggleRemoteNameLike,
   updateRemoteWish,
+  upsertRemoteSurveyResponse,
   upsertRemoteWish,
 } from '../lib/v2Remote'
 import { useV2RemoteSync } from '../lib/useV2RemoteSync'
 import { useV2 } from '../state/V2Store'
 
-type BoardTopic = 'name' | 'wish' | 'code'
+type BoardTopic = 'survey' | 'name' | 'wish' | 'code'
 
 const topicMeta: Record<BoardTopic, { label: string; title: string; lesson: string; empty: string }> = {
+  survey: {
+    label: '사전 생각',
+    title: '사전 생각 남기기',
+    lesson: '1차시',
+    empty: '아직 남긴 생각이 없습니다.',
+  },
   name: {
     label: '이름 후보',
     title: '에아몬 이름 후보',
@@ -42,11 +50,12 @@ function sortByLikes<T extends { votes: string[]; createdAt: string }>(items: T[
 }
 
 function requestedTopic(value: string | null): BoardTopic | null {
-  if (value === 'name' || value === 'wish' || value === 'code') return value
+  if (value === 'survey' || value === 'name' || value === 'wish' || value === 'code') return value
   return null
 }
 
 function classNameForTopic(topic: BoardTopic) {
+  if (topic === 'survey') return 'border-[#6AD8FF] bg-[#6AD8FF]/12 text-[#9CE6FF]'
   if (topic === 'name') return 'border-[#FFD37A] bg-[#FFD37A]/12 text-[#FFD37A]'
   if (topic === 'wish') return 'border-[#4FE0C0] bg-[#4FE0C0]/12 text-[#4FE0C0]'
   return 'border-[#9B7CFF] bg-[#9B7CFF]/12 text-[#C9B9FF]'
@@ -68,6 +77,7 @@ export function BoardPage() {
     voteName,
     addWish,
     deleteWish,
+    upsertSurveyResponse,
   } = useV2()
 
   const [classCode, setClassCode] = useState(queryCode || state.classCode)
@@ -76,22 +86,30 @@ export function BoardPage() {
   const [nameDraft, setNameDraft] = useState('')
   const [reasonDraft, setReasonDraft] = useState('')
   const [wishDraft, setWishDraft] = useState('')
+  const [surveyDraft, setSurveyDraft] = useState('')
   const [editWishId, setEditWishId] = useState('')
   const [editWishBody, setEditWishBody] = useState('')
   const [message, setMessage] = useState('')
   const [isEntering, setIsEntering] = useState(false)
 
   const session = state.studentSession
+  const canSeeSurvey = Boolean(state.currentLesson >= 1 || state.surveyResponses.length > 0 || queryTopic === 'survey')
   const canSeeWish = Boolean(state.aemonName || state.wishes.length > 0 || state.currentLesson >= 2 || queryTopic === 'wish')
   const canSeeCode = Boolean(state.currentLesson >= 2 || state.proposals.length > 0 || state.adoptedCodes.length > 0 || queryTopic === 'code')
   const unlockedTopics = useMemo<BoardTopic[]>(() => {
-    const topics: BoardTopic[] = ['name']
+    const topics: BoardTopic[] = []
+    if (canSeeSurvey) topics.push('survey')
+    topics.push('name')
     if (canSeeWish) topics.push('wish')
     if (canSeeCode) topics.push('code')
     return queryTopic ? topics.filter((topic) => topic === queryTopic) : topics
-  }, [canSeeCode, canSeeWish, queryTopic])
+  }, [canSeeCode, canSeeSurvey, canSeeWish, queryTopic])
   const activeTopic = unlockedTopics.includes(selectedTopic) ? selectedTopic : unlockedTopics[0] ?? 'name'
   const sortedNames = useMemo(() => sortByLikes(state.nameCandidates), [state.nameCandidates])
+  const surveyResponses = useMemo(
+    () => state.surveyResponses.filter((response) => response.questionKey === PRE_SURVEY_KEY),
+    [state.surveyResponses],
+  )
   const canWriteRemote = Boolean(state.classId && state.remote.ok && isRemoteReady())
 
   useV2RemoteSync(state.classCode, Boolean(state.classCode && (session || isTeacherBoard)))
@@ -155,6 +173,21 @@ export function BoardPage() {
     if (canWriteRemote) {
       try {
         await upsertRemoteWish({ classId: state.classId, nickname: session.nickname, body })
+      } catch (error) {
+        setRemoteStatus({ ok: false, message: (error as Error).message })
+      }
+    }
+  }
+
+  const submitSurvey = async () => {
+    const body = surveyDraft.trim()
+    if (!body || !session) return
+    upsertSurveyResponse({ questionKey: PRE_SURVEY_KEY, body, nickname: session.nickname })
+    setSurveyDraft('')
+
+    if (canWriteRemote) {
+      try {
+        await upsertRemoteSurveyResponse({ classId: state.classId, nickname: session.nickname, questionKey: PRE_SURVEY_KEY, body })
       } catch (error) {
         setRemoteStatus({ ok: false, message: (error as Error).message })
       }
@@ -244,7 +277,7 @@ export function BoardPage() {
             {state.className || '학급'} · {viewerLabel}
           </p>
           <h1 className="font-display mt-2 text-4xl text-[#EAF2F5]">학습게시판</h1>
-          <p className="mt-2 leading-7 text-[#8AA0B0]">수업에서 열린 주제만 하나씩 추가됩니다.</p>
+          <p className="mt-2 leading-7 text-[#8AA0B0]">수업에서 남긴 생각을 모아 봅니다.</p>
         </div>
         {!isTeacherBoard ? (
           <Button variant="ghost" onClick={() => { leaveStudent(); navigate('/') }}>
@@ -273,11 +306,49 @@ export function BoardPage() {
           <div className="mt-4 flex items-start gap-3 rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
             <BookOpenText className="mt-0.5 text-[#FFD37A]" size={20} />
             <p className="text-sm leading-6 text-[#8AA0B0]">
-              아직 열리지 않은 주제는 보이지 않습니다. 이름을 정하면 “바라는 모습”이 열리고, 2차시부터 “가치코드 발의”가 열립니다.
+              사전 생각, 이름 후보, 바라는 모습, 가치코드를 차례대로 모읍니다.
             </p>
           </div>
         ) : null}
       </Panel>
+
+      {activeTopic === 'survey' ? (
+        <div className="grid gap-5 lg:grid-cols-[0.85fr_1.15fr]">
+          {!isTeacherBoard ? (
+            <Panel>
+              <p className="font-data text-xs text-[#6AD8FF]">1차시 · 사전 생각</p>
+              <h2 className="font-display mt-1 text-3xl leading-tight text-[#EAF2F5]">{PRE_SURVEY_QUESTION}</h2>
+              <textarea
+                className="mt-4 min-h-36 w-full resize-none rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 leading-7 text-[#EAF2F5]"
+                maxLength={600}
+                placeholder="내 생각을 적어주세요."
+                value={surveyDraft}
+                onChange={(event) => setSurveyDraft(event.target.value)}
+              />
+              <Button className="mt-3 w-full" disabled={!surveyDraft.trim()} onClick={submitSurvey}>
+                저장하기
+              </Button>
+              <p className="mt-3 text-sm leading-6 text-[#8AA0B0]">한 사람당 한 번 저장됩니다. 다시 저장하면 내 답이 수정됩니다.</p>
+            </Panel>
+          ) : null}
+
+          <Panel className={isTeacherBoard ? 'lg:col-span-2' : ''}>
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="font-display text-3xl text-[#EAF2F5]">사전 생각</h2>
+              <span className="rounded-full bg-[#07111B]/70 px-3 py-1 text-sm text-[#8AA0B0]">{surveyResponses.length}개</span>
+            </div>
+            <div className="mt-4 grid gap-3">
+              {surveyResponses.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0]">{topicMeta.survey.empty}</p> : null}
+              {surveyResponses.map((response) => (
+                <article key={response.id} className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
+                  <p className="leading-7 text-[#EAF2F5]">{response.body}</p>
+                  <p className="mt-3 text-sm text-[#8AA0B0]">{response.nickname}</p>
+                </article>
+              ))}
+            </div>
+          </Panel>
+        </div>
+      ) : null}
 
       {activeTopic === 'name' ? (
         <div className="grid gap-5 lg:grid-cols-[0.85fr_1.15fr]">
@@ -310,7 +381,7 @@ export function BoardPage() {
 
           <Panel className={isTeacherBoard ? 'lg:col-span-2' : ''}>
             <div className="flex items-center justify-between gap-3">
-              <h2 className="font-display text-3xl text-[#EAF2F5]">가치코드</h2>
+              <h2 className="font-display text-3xl text-[#EAF2F5]">이름 후보</h2>
               <span className="rounded-full bg-[#07111B]/70 px-3 py-1 text-sm text-[#8AA0B0]">{sortedNames.length}개</span>
             </div>
             <div className="mt-4 grid gap-3">

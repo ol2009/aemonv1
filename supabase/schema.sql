@@ -43,6 +43,16 @@ create table if not exists wishes (
   unique (class_id, nickname)
 );
 
+create table if not exists survey_responses (
+  id uuid primary key default gen_random_uuid(),
+  class_id uuid not null references classes(id) on delete cascade,
+  nickname text not null,
+  question_key text not null,
+  body text not null,
+  created_at timestamptz not null default now(),
+  unique (class_id, nickname, question_key)
+);
+
 create table if not exists codes (
   id uuid primary key default gen_random_uuid(),
   class_id uuid not null references classes(id) on delete cascade,
@@ -79,6 +89,7 @@ create index if not exists classes_code_idx on classes(code);
 create index if not exists name_candidates_class_created_idx on name_candidates(class_id, created_at desc);
 create index if not exists name_votes_class_candidate_idx on name_votes(class_id, candidate_id);
 create index if not exists wishes_class_created_idx on wishes(class_id, created_at desc);
+create index if not exists survey_responses_class_created_idx on survey_responses(class_id, created_at desc);
 create index if not exists codes_class_status_idx on codes(class_id, status);
 create index if not exists code_votes_class_code_idx on code_votes(class_id, code_id);
 create index if not exists chat_logs_class_created_idx on chat_logs(class_id, created_at desc);
@@ -87,6 +98,7 @@ alter table classes enable row level security;
 alter table name_candidates enable row level security;
 alter table name_votes enable row level security;
 alter table wishes enable row level security;
+alter table survey_responses enable row level security;
 alter table codes enable row level security;
 alter table code_votes enable row level security;
 alter table chat_logs enable row level security;
@@ -131,6 +143,17 @@ create policy "wishes public update" on wishes
 
 drop policy if exists "wishes authenticated delete" on wishes;
 create policy "wishes authenticated delete" on wishes for delete to authenticated using (true);
+
+drop policy if exists "survey responses public read" on survey_responses;
+create policy "survey responses public read" on survey_responses for select using (true);
+
+drop policy if exists "survey responses public insert" on survey_responses;
+create policy "survey responses public insert" on survey_responses
+  for insert with check (length(trim(nickname)) between 1 and 16 and length(trim(question_key)) between 1 and 60 and length(trim(body)) between 1 and 600);
+
+drop policy if exists "survey responses public update" on survey_responses;
+create policy "survey responses public update" on survey_responses
+  for update using (true) with check (length(trim(nickname)) between 1 and 16 and length(trim(question_key)) between 1 and 60 and length(trim(body)) between 1 and 600);
 
 drop policy if exists "codes public read" on codes;
 create policy "codes public read" on codes for select using (true);

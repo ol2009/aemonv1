@@ -1,5 +1,5 @@
 import { isSupabaseConfigured, supabase } from './supabase'
-import type { AdoptedCode, ChatLog, CodeProposal, NameCandidate, V2State, Wish } from '../state/V2Store'
+import type { AdoptedCode, ChatLog, CodeProposal, NameCandidate, SurveyResponse, V2State, Wish } from '../state/V2Store'
 
 const MISSING_SCHEMA_MESSAGE =
   'Supabase v2 테이블이 아직 없습니다. Supabase SQL Editor에서 supabase/schema.sql을 실행해야 학생 기기와 교사 화면이 공유됩니다.'
@@ -29,6 +29,14 @@ type NameVoteRow = {
 type WishRow = {
   id: string
   nickname: string
+  body: string
+  created_at: string
+}
+
+type SurveyResponseRow = {
+  id: string
+  nickname: string
+  question_key: string
   body: string
   created_at: string
 }
@@ -70,11 +78,16 @@ function generateClassCode() {
 
 function toMessage(error: unknown) {
   const candidate = error as { code?: string; message?: string; details?: string; status?: number }
-  if (candidate?.code === 'PGRST205' || candidate?.message?.includes("Could not find the table") || candidate?.status === 404) {
+  if (isMissingTableError(error)) {
     return MISSING_SCHEMA_MESSAGE
   }
   if (candidate?.message) return candidate.message
   return 'Supabase 연결 중 알 수 없는 오류가 발생했습니다.'
+}
+
+function isMissingTableError(error: unknown) {
+  const candidate = error as { code?: string; message?: string; status?: number }
+  return candidate?.code === 'PGRST205' || candidate?.message?.includes("Could not find the table") || candidate?.status === 404
 }
 
 function ensureClient() {
@@ -109,6 +122,16 @@ function mapWishes(rows: WishRow[]): Wish[] {
   return rows.map((row) => ({
     id: row.id,
     nickname: row.nickname,
+    body: row.body,
+    createdAt: row.created_at,
+  }))
+}
+
+function mapSurveyResponses(rows: SurveyResponseRow[]): SurveyResponse[] {
+  return rows.map((row) => ({
+    id: row.id,
+    nickname: row.nickname,
+    questionKey: row.question_key,
     body: row.body,
     createdAt: row.created_at,
   }))
@@ -261,10 +284,11 @@ export async function fetchRemoteClassBundle(classCode: string): Promise<Partial
   if (!classRow) throw new Error('학급 코드를 찾지 못했습니다.')
 
   const classId = classRow.id
-  const [candidateResult, nameVoteResult, wishResult, codeResult, codeVoteResult, chatResult] = await Promise.all([
+  const [candidateResult, nameVoteResult, wishResult, surveyResult, codeResult, codeVoteResult, chatResult] = await Promise.all([
     client.from('name_candidates').select('id,nickname,name,reason,created_at').eq('class_id', classId).order('created_at', { ascending: false }),
     client.from('name_votes').select('nickname,candidate_id').eq('class_id', classId),
     client.from('wishes').select('id,nickname,body,created_at').eq('class_id', classId).order('created_at', { ascending: false }),
+    client.from('survey_responses').select('id,nickname,question_key,body,created_at').eq('class_id', classId).order('created_at', { ascending: false }),
     client
       .from('codes')
       .select('id,nickname,body,reason,value_card,revision_of_no,status,adopted_no,created_at,adopted_at')
@@ -282,12 +306,14 @@ export async function fetchRemoteClassBundle(classCode: string): Promise<Partial
   for (const result of [candidateResult, nameVoteResult, wishResult, codeResult, codeVoteResult, chatResult]) {
     if (result.error) throw new Error(toMessage(result.error))
   }
+  if (surveyResult.error && !isMissingTableError(surveyResult.error)) throw new Error(toMessage(surveyResult.error))
 
   const codeRows = (codeResult.data ?? []) as CodeRow[]
   return {
     ...mapClass(classRow),
     nameCandidates: mapNameCandidates((candidateResult.data ?? []) as NameCandidateRow[], (nameVoteResult.data ?? []) as NameVoteRow[]),
     wishes: mapWishes((wishResult.data ?? []) as WishRow[]),
+    surveyResponses: surveyResult.error ? [] : mapSurveyResponses((surveyResult.data ?? []) as SurveyResponseRow[]),
     proposals: mapProposals(codeRows, (codeVoteResult.data ?? []) as CodeVoteRow[]),
     adoptedCodes: mapAdoptedCodes(codeRows),
     chatLogs: mapChatLogs((chatResult.data ?? []) as ChatLogRow[]),
@@ -352,6 +378,23 @@ export async function upsertRemoteWish(args: { classId: string; nickname: string
 export async function updateRemoteWish(args: { wishId: string; body: string }) {
   const client = ensureClient()
   const { error } = await client.from('wishes').update({ body: args.body.trim() }).eq('id', args.wishId)
+  if (error) throw new Error(toMessage(error))
+}
+
+export async function upsertRemoteSurveyResponse(args: { classId: string; nickname: string; questionKey: string; body: string }) {
+  const client = ensureClient()
+  const { error } = await client
+    .from('survey_responses')
+    .upsert(
+      {
+        class_id: args.classId,
+        nickname: args.nickname.trim(),
+        question_key: args.questionKey.trim(),
+        body: args.body.trim(),
+        created_at: new Date().toISOString(),
+      },
+      { onConflict: 'class_id,nickname,question_key' },
+    )
   if (error) throw new Error(toMessage(error))
 }
 
