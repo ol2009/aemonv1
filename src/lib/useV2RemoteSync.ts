@@ -1,16 +1,18 @@
 import { useEffect, useRef } from 'react'
-import { fetchRemoteClassBundle, isRemoteReady } from './v2Remote'
+import { fetchRemoteClassBundle, isRemoteReady, restoreRemoteClassSnapshot } from './v2Remote'
 import { useV2 } from '../state/V2Store'
 
 export function useV2RemoteSync(classCode?: string, enabled = true) {
-  const { mergeClass, setRemoteStatus } = useV2()
+  const { state, mergeClass, setRemoteStatus } = useV2()
+  const stateRef = useRef(state)
   const mergeClassRef = useRef(mergeClass)
   const setRemoteStatusRef = useRef(setRemoteStatus)
 
   useEffect(() => {
+    stateRef.current = state
     mergeClassRef.current = mergeClass
     setRemoteStatusRef.current = setRemoteStatus
-  }, [mergeClass, setRemoteStatus])
+  }, [mergeClass, setRemoteStatus, state])
 
   useEffect(() => {
     if (!enabled || !classCode?.trim() || !isRemoteReady()) return
@@ -23,6 +25,30 @@ export function useV2RemoteSync(classCode?: string, enabled = true) {
         const bundle = await fetchRemoteClassBundle(code)
         if (!cancelled) mergeClassRef.current(bundle)
       } catch (error) {
+        const localState = stateRef.current
+        const canRestoreClass =
+          localState.classId.trim() &&
+          localState.classCode.trim() === code &&
+          localState.className.trim()
+
+        if (canRestoreClass) {
+          try {
+            await restoreRemoteClassSnapshot({
+              classId: localState.classId,
+              className: localState.className,
+              classCode: localState.classCode,
+              currentLesson: localState.currentLesson,
+              aemonName: localState.aemonName,
+            })
+            const bundle = await fetchRemoteClassBundle(code)
+            if (!cancelled) mergeClassRef.current(bundle)
+            return
+          } catch (restoreError) {
+            if (!cancelled) setRemoteStatusRef.current({ ok: false, message: (restoreError as Error).message })
+            return
+          }
+        }
+
         if (!cancelled) setRemoteStatusRef.current({ ok: false, message: (error as Error).message })
       }
     }

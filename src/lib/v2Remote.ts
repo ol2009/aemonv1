@@ -176,7 +176,6 @@ export async function createRemoteClass(input: { className: string; teacherId?: 
       .from('classes')
       .insert({
         name: input.className.trim(),
-        mode: 'ai',
         code,
         teacher_id: input.teacherId ?? null,
         current_lesson: 1,
@@ -192,6 +191,62 @@ export async function createRemoteClass(input: { className: string; teacherId?: 
   }
 
   throw new Error(toMessage(lastError))
+}
+
+export async function restoreRemoteClassSnapshot(input: {
+  classId: string
+  className: string
+  classCode: string
+  currentLesson: number
+  aemonName: string
+}) {
+  const client = ensureClient()
+  const id = input.classId.trim()
+  const code = input.classCode.trim()
+  const name = input.className.trim().slice(0, 50)
+  const currentLesson = Math.min(7, Math.max(1, input.currentLesson || 1))
+  const aemonName = input.aemonName.trim().slice(0, 12)
+  const select = 'id,name,code,current_lesson,aemon_name,created_at'
+
+  if (!id || !code || !name) {
+    throw new Error('Local class state is missing required fields.')
+  }
+
+  const { data: byId, error: idError } = await client.from('classes').select(select).eq('id', id).maybeSingle<ClassRow>()
+  if (idError) throw new Error(toMessage(idError))
+  if (byId) {
+    return { ...mapClass(byId), remote: { enabled: true, ok: true, message: 'Supabase class restored', lastSyncedAt: new Date().toISOString() } }
+  }
+
+  const { data: byCode, error: codeError } = await client.from('classes').select(select).eq('code', code).maybeSingle<ClassRow>()
+  if (codeError) throw new Error(toMessage(codeError))
+  if (byCode) {
+    return { ...mapClass(byCode), remote: { enabled: true, ok: true, message: 'Supabase class restored', lastSyncedAt: new Date().toISOString() } }
+  }
+
+  const { data, error } = await client
+    .from('classes')
+    .insert({
+      id,
+      name,
+      code,
+      current_lesson: currentLesson,
+      aemon_name: aemonName,
+    })
+    .select(select)
+    .single<ClassRow>()
+
+  if (!error && data) {
+    return { ...mapClass(data), remote: { enabled: true, ok: true, message: 'Supabase class restored', lastSyncedAt: new Date().toISOString() } }
+  }
+
+  const { data: retryByCode, error: retryCodeError } = await client.from('classes').select(select).eq('code', code).maybeSingle<ClassRow>()
+  if (retryCodeError) throw new Error(toMessage(retryCodeError))
+  if (retryByCode) {
+    return { ...mapClass(retryByCode), remote: { enabled: true, ok: true, message: 'Supabase class restored', lastSyncedAt: new Date().toISOString() } }
+  }
+
+  throw new Error(toMessage(error))
 }
 
 export async function fetchRemoteClassBundle(classCode: string): Promise<Partial<V2State>> {

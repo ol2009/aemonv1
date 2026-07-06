@@ -1,10 +1,8 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { BookOpenText, Heart, LogOut, Pencil, Send, Trash2, Vote } from 'lucide-react'
+import { BookOpenText, Heart, LogOut, Pencil, Send, Trash2 } from 'lucide-react'
 import { Button, Panel } from '../components/ui'
-import { valueCards } from '../data/v2Lessons'
 import {
-  addRemoteCodeProposal,
   addRemoteNameCandidate,
   deleteRemoteWish,
   fetchRemoteClassBundle,
@@ -12,7 +10,6 @@ import {
   toggleRemoteNameLike,
   updateRemoteWish,
   upsertRemoteWish,
-  voteRemoteCodeProposal,
 } from '../lib/v2Remote'
 import { useV2RemoteSync } from '../lib/useV2RemoteSync'
 import { useV2 } from '../state/V2Store'
@@ -33,10 +30,10 @@ const topicMeta: Record<BoardTopic, { label: string; title: string; lesson: stri
     empty: '아직 바라는 모습이 올라오지 않았습니다.',
   },
   code: {
-    label: '가치코드 발의',
-    title: '가치코드 발의와 투표',
+    label: '가치코드',
+    title: '가치코드',
     lesson: '2차시 이후',
-    empty: '아직 발의된 가치코드가 없습니다.',
+    empty: '아직 가치코드가 없습니다.',
   },
 }
 
@@ -71,8 +68,6 @@ export function BoardPage() {
     voteName,
     addWish,
     deleteWish,
-    addProposal,
-    voteProposal,
   } = useV2()
 
   const [classCode, setClassCode] = useState(queryCode || state.classCode)
@@ -83,10 +78,6 @@ export function BoardPage() {
   const [wishDraft, setWishDraft] = useState('')
   const [editWishId, setEditWishId] = useState('')
   const [editWishBody, setEditWishBody] = useState('')
-  const [valueCard, setValueCard] = useState(valueCards[0])
-  const [ruleDraft, setRuleDraft] = useState('')
-  const [proposalReasonDraft, setProposalReasonDraft] = useState('')
-  const [revisionOfNo, setRevisionOfNo] = useState<number | null>(null)
   const [message, setMessage] = useState('')
   const [isEntering, setIsEntering] = useState(false)
 
@@ -101,9 +92,6 @@ export function BoardPage() {
   }, [canSeeCode, canSeeWish, queryTopic])
   const activeTopic = unlockedTopics.includes(selectedTopic) ? selectedTopic : unlockedTopics[0] ?? 'name'
   const sortedNames = useMemo(() => sortByLikes(state.nameCandidates), [state.nameCandidates])
-  const pendingProposals = state.proposals.filter((proposal) => proposal.status === 'pending')
-  const sortedProposals = useMemo(() => sortByLikes(pendingProposals), [pendingProposals])
-  const myProposalVote = sortedProposals.find((proposal) => proposal.votes.includes(session?.nickname ?? ''))?.id ?? ''
   const canWriteRemote = Boolean(state.classId && state.remote.ok && isRemoteReady())
 
   useV2RemoteSync(state.classCode, Boolean(state.classCode && (session || isTeacherBoard)))
@@ -195,40 +183,6 @@ export function BoardPage() {
     if (canWriteRemote) {
       try {
         await deleteRemoteWish(wishId)
-      } catch (error) {
-        setRemoteStatus({ ok: false, message: (error as Error).message })
-      }
-    }
-  }
-
-  const submitProposal = async () => {
-    if (!session) return
-    const rule = ruleDraft.trim()
-    const reason = proposalReasonDraft.trim()
-    if (!rule || !reason) return
-    const name = state.aemonName || '에아몬'
-    const body = rule.includes('해야') || rule.includes('하지') || rule.includes('않') ? rule : `${name}은 ${rule}해야 한다.`
-
-    addProposal({ body, reason, valueCard, revisionOfNo, nickname: session.nickname })
-    setRuleDraft('')
-    setProposalReasonDraft('')
-    setRevisionOfNo(null)
-
-    if (canWriteRemote) {
-      try {
-        await addRemoteCodeProposal({ classId: state.classId, nickname: session.nickname, body, reason, valueCard, revisionOfNo })
-      } catch (error) {
-        setRemoteStatus({ ok: false, message: (error as Error).message })
-      }
-    }
-  }
-
-  const castProposalVote = async (proposalId: string) => {
-    if (!session) return
-    voteProposal(proposalId, session.nickname)
-    if (canWriteRemote) {
-      try {
-        await voteRemoteCodeProposal({ classId: state.classId, nickname: session.nickname, proposalId })
       } catch (error) {
         setRemoteStatus({ ok: false, message: (error as Error).message })
       }
@@ -356,7 +310,7 @@ export function BoardPage() {
 
           <Panel className={isTeacherBoard ? 'lg:col-span-2' : ''}>
             <div className="flex items-center justify-between gap-3">
-              <h2 className="font-display text-3xl text-[#EAF2F5]">좋아요 많은 순</h2>
+              <h2 className="font-display text-3xl text-[#EAF2F5]">가치코드</h2>
               <span className="rounded-full bg-[#07111B]/70 px-3 py-1 text-sm text-[#8AA0B0]">{sortedNames.length}개</span>
             </div>
             <div className="mt-4 grid gap-3">
@@ -469,86 +423,24 @@ export function BoardPage() {
       ) : null}
 
       {activeTopic === 'code' ? (
-        <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
-          {!isTeacherBoard ? (
-            <Panel>
-              <p className="font-data text-xs text-[#9B7CFF]">2차시 이후 · 가치코드</p>
-              <h2 className="font-display mt-1 text-3xl text-[#EAF2F5]">가치코드 발의</h2>
-              <p className="mt-2 text-sm leading-6 text-[#8AA0B0]">형식: {state.aemonName || '에아몬'}은 ___해야 한다. 왜냐하면 ___이기 때문이다.</p>
-              <div className="mt-4 grid gap-3">
-                <div className="flex flex-wrap gap-2">
-                  {valueCards.map((card) => (
-                    <button
-                      key={card}
-                      className={`rounded-full border px-3 py-2 text-sm font-bold ${valueCard === card ? 'border-[#9B7CFF] bg-[#9B7CFF]/15 text-[#C9B9FF]' : 'border-white/10 text-[#B7C7D2]'}`}
-                      onClick={() => setValueCard(card)}
-                      type="button"
-                    >
-                      {card}
-                    </button>
-                  ))}
-                </div>
-                <select className="rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 text-[#EAF2F5]" value={revisionOfNo ?? ''} onChange={(event) => setRevisionOfNo(event.target.value ? Number(event.target.value) : null)}>
-                  <option value="">새 코드 발의</option>
-                  {state.adoptedCodes.map((code) => (
-                    <option key={code.id} value={code.no}>No.{code.no} 개정 발의</option>
-                  ))}
-                </select>
-                <input
-                  className="rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 text-[#EAF2F5]"
-                  placeholder={`${state.aemonName || '에아몬'}은 ___해야 한다`}
-                  value={ruleDraft}
-                  onChange={(event) => setRuleDraft(event.target.value)}
-                />
-                <input
-                  className="rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 text-[#EAF2F5]"
-                  placeholder="왜냐하면 ___이기 때문이다"
-                  value={proposalReasonDraft}
-                  onChange={(event) => setProposalReasonDraft(event.target.value)}
-                />
-              </div>
-              <Button className="mt-4 w-full" disabled={!ruleDraft.trim() || !proposalReasonDraft.trim()} onClick={submitProposal}>
-                <Send size={18} />
-                발의하기
-              </Button>
-            </Panel>
-          ) : null}
-
-          <Panel className={isTeacherBoard ? 'lg:col-span-2' : ''}>
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="font-display text-3xl text-[#EAF2F5]">투표 중인 발의</h2>
-              <span className="rounded-full bg-[#07111B]/70 px-3 py-1 text-sm text-[#8AA0B0]">{sortedProposals.length}개</span>
-            </div>
-            <div className="mt-4 grid gap-3">
-              {sortedProposals.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0]">{topicMeta.code.empty}</p> : null}
-              {sortedProposals.map((proposal) => {
-                const voted = proposal.id === myProposalVote
-                return (
-                  <button
-                    key={proposal.id}
-                    className={`rounded-2xl border p-4 text-left transition ${voted ? 'border-[#9B7CFF] bg-[#9B7CFF]/12' : 'border-white/10 bg-[#07111B]/45 hover:border-[#9B7CFF]/40'}`}
-                    onClick={() => castProposalVote(proposal.id)}
-                    disabled={isTeacherBoard}
-                    type="button"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="font-bold leading-7 text-[#EAF2F5]">{proposal.body}</p>
-                        <p className="mt-1 text-sm leading-6 text-[#8AA0B0]">왜냐하면 {proposal.reason}</p>
-                        <p className="mt-2 text-xs text-[#4FE0C0]">{proposal.revisionOfNo ? `No.${proposal.revisionOfNo} 개정` : proposal.valueCard} · {proposal.nickname}</p>
-                      </div>
-                      <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#9B7CFF]/15 px-3 py-1 text-sm font-bold text-[#C9B9FF]">
-                        <Vote size={16} />
-                        {proposal.votes.length}
-                      </span>
-                    </div>
-                  </button>
-                )
-              })}
-            </div>
-          </Panel>
-        </div>
+        <Panel>
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="font-display text-3xl text-[#EAF2F5]">가치코드</h2>
+            <span className="rounded-full bg-[#07111B]/70 px-3 py-1 text-sm text-[#8AA0B0]">{state.adoptedCodes.length}개</span>
+          </div>
+          <div className="mt-4 grid gap-3">
+            {state.adoptedCodes.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0]">{topicMeta.code.empty}</p> : null}
+            {state.adoptedCodes.map((code) => (
+              <article key={code.id} className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
+                <p className="font-data text-xs text-[#4FE0C0]">No.{code.no}</p>
+                <p className="mt-2 font-bold leading-7 text-[#EAF2F5]">{code.body}</p>
+                {code.reason ? <p className="mt-1 text-sm leading-6 text-[#8AA0B0]">{code.reason}</p> : null}
+              </article>
+            ))}
+          </div>
+        </Panel>
       ) : null}
+
     </div>
   )
 }
