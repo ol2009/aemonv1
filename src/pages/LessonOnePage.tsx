@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, ArrowRight, Check, Heart, Pencil, Play, QrCode, Trash2, Volume2 } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, Heart, Pencil, Play, QrCode, RefreshCw, Trash2, Volume2 } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
 import { Button, Panel } from '../components/ui'
-import { AI_SURVEY_DESCRIPTION, AI_SURVEY_ITEMS, AI_SURVEY_TITLE, PRE_SURVEY_KEY, parseSurveyAnswer } from '../data/survey'
+import { AI_SURVEY_DESCRIPTION, AI_SURVEY_ITEMS, AI_SURVEY_TITLE, PRE_SURVEY_KEY, parseSurveyAnswer, surveyScore } from '../data/survey'
 import { absoluteUrl } from '../lib/siteUrl'
-import { addRemoteChatLog, confirmRemoteName, createRemoteClass, deleteRemoteWish, isRemoteReady, updateRemoteLesson, updateRemoteWish } from '../lib/v2Remote'
+import { addRemoteChatLog, confirmRemoteName, createRemoteClass, deleteRemoteWish, fetchRemoteClassBundle, isRemoteReady, updateRemoteLesson, updateRemoteWish } from '../lib/v2Remote'
 import { runV2Chat } from '../lib/v2Chat'
 import { useSupabaseUser } from '../lib/useSupabaseUser'
 import { useV2RemoteSync } from '../lib/useV2RemoteSync'
@@ -385,6 +385,8 @@ export function LessonOnePage() {
   const [demoAnswer, setDemoAnswer] = useState('')
   const [isDemoRunning, setIsDemoRunning] = useState(false)
   const [soundReady, setSoundReady] = useState(false)
+  const [isRefreshingSurvey, setIsRefreshingSurvey] = useState(false)
+  const [surveyRefreshMessage, setSurveyRefreshMessage] = useState('')
   const [editWishId, setEditWishId] = useState('')
   const [editWishBody, setEditWishBody] = useState('')
 
@@ -396,9 +398,33 @@ export function LessonOnePage() {
   const wishBoardUrl = useMemo(() => absoluteUrl(`/board?mode=wish&code=${encodeURIComponent(state.classCode)}`), [state.classCode])
   const sortedNames = useMemo(() => sortedByLikes(state.nameCandidates), [state.nameCandidates])
   const surveyResponses = useMemo(
-    () => state.surveyResponses.filter((response) => response.questionKey === PRE_SURVEY_KEY && parseSurveyAnswer(response.body)),
+    () => {
+      const items: Array<{ response: (typeof state.surveyResponses)[number]; answer: NonNullable<ReturnType<typeof parseSurveyAnswer>> }> = []
+      state.surveyResponses.forEach((response) => {
+        if (response.questionKey !== PRE_SURVEY_KEY) return
+        const answer = parseSurveyAnswer(response.body)
+        if (answer) items.push({ response, answer })
+      })
+      return items
+    },
     [state.surveyResponses],
   )
+  const surveyAverage = useMemo(() => {
+    if (surveyResponses.length === 0) return 0
+    return surveyResponses.reduce((sum, item) => sum + surveyScore(item.answer), 0) / surveyResponses.length
+  }, [surveyResponses])
+  const surveyItemAverages = useMemo(
+    () =>
+      AI_SURVEY_ITEMS.map((item, index) => {
+        const average = surveyResponses.length === 0 ? 0 : surveyResponses.reduce((sum, survey) => sum + Number(survey.answer.s[index] ?? 0), 0) / surveyResponses.length
+        return { item, average }
+      }),
+    [surveyResponses],
+  )
+  const latestOpenAnswer = useMemo(() => {
+    const found = surveyResponses.find((item) => item.answer.o.some((text) => text.trim()))
+    return found?.answer.o.find((text) => text.trim())?.trim() ?? ''
+  }, [surveyResponses])
   const canWriteRemote = Boolean(state.classId && state.remote.ok && isRemoteReady())
   const composedClassName = `${classGrade} ${classLabel.trim()}`.trim()
 
@@ -533,6 +559,29 @@ export function LessonOnePage() {
     }
   }
 
+  const refreshSurveyResults = async () => {
+    if (!state.classCode.trim()) return
+    if (!isRemoteReady()) {
+      setSurveyRefreshMessage('Supabase 연결이 아직 준비되지 않았습니다.')
+      return
+    }
+
+    setIsRefreshingSurvey(true)
+    setSurveyRefreshMessage('')
+    try {
+      const bundle = await fetchRemoteClassBundle(state.classCode)
+      mergeClass(bundle)
+      setSurveyRefreshMessage('새로고침 완료')
+      window.setTimeout(() => setSurveyRefreshMessage(''), 1600)
+    } catch (error) {
+      const message = (error as Error).message
+      setSurveyRefreshMessage(`새로고침 실패: ${message}`)
+      setRemoteStatus({ ok: false, message })
+    } finally {
+      setIsRefreshingSurvey(false)
+    }
+  }
+
   const enableSound = () => {
     void previewDialogueAudio().then(setSoundReady)
   }
@@ -544,8 +593,8 @@ export function LessonOnePage() {
           <VisualNovelScene
             image="/v2/lesson-1/director.png"
             speaker="오박사"
-            line="선생님, 이 알을 맡아주십시오."
-            caption="데이터의 바다에서 막 깨어난 학급 인공지능입니다. 한 달 동안 잘 부탁드립니다."
+            line="여러분, 이 알을 맡아주십시오."
+            caption="데이터의 바다에서 막 깨어난 학급 인공지능입니다. 당분간 잘 부탁드립니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -577,7 +626,7 @@ export function LessonOnePage() {
 
       {step === 'survey-qr' ? (
         <>
-          <div className="mx-auto grid max-w-2xl gap-5">
+          <div className="grid gap-5 lg:grid-cols-[0.82fr_1.18fr]">
             <Panel className="p-6 text-center">
               <p className="font-data text-sm text-[#4FE0C0]">오박사의 사전조사</p>
               <h2 className="font-display mt-2 text-5xl leading-tight text-[#EAF2F5]">{AI_SURVEY_TITLE}</h2>
@@ -589,6 +638,60 @@ export function LessonOnePage() {
               </div>
               <div className="mx-auto mt-5 max-w-sm rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
                 <p className="font-display text-3xl text-[#EAF2F5]">{surveyResponses.length}개 저장됨</p>
+              </div>
+            </Panel>
+
+            <Panel className="relative overflow-hidden">
+              <div className="absolute right-4 top-4 rounded-full border border-[#FFD37A]/20 bg-[#FFD37A]/10 px-3 py-1 font-data text-xs text-[#FFD37A]">
+                OBSERVATION
+              </div>
+              <p className="font-data text-sm text-[#4FE0C0]">오박사의 관찰창</p>
+              <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">설문 반응 보기</h2>
+              <p className="mt-3 leading-7 text-[#8AA0B0]">학생 응답이 들어오면 여기서 바로 확인합니다.</p>
+
+              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                <div className="rounded-2xl border border-white/10 bg-[#07111B]/55 p-4">
+                  <p className="font-data text-xs text-[#8AA0B0]">응답 수</p>
+                  <p className="font-display mt-2 text-4xl text-[#FFD37A]">{surveyResponses.length}</p>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-[#07111B]/55 p-4">
+                  <p className="font-data text-xs text-[#8AA0B0]">평균 점수</p>
+                  <p className="font-display mt-2 text-4xl text-[#4FE0C0]">{surveyResponses.length ? surveyAverage.toFixed(1) : '0.0'}</p>
+                </div>
+              </div>
+
+              <div className="mt-5 grid gap-2">
+                {surveyItemAverages.map(({ item, average }) => (
+                  <div key={item.no} className="grid gap-1">
+                    <div className="flex items-center justify-between gap-3 text-sm">
+                      <span className="font-bold text-[#B7C7D2]">문항 {item.no}</span>
+                      <span className="font-data text-[#8AA0B0]">{average ? average.toFixed(1) : '0.0'}/4</span>
+                    </div>
+                    <div className="h-2 overflow-hidden rounded-full bg-white/10">
+                      <div className="h-full rounded-full bg-[#FFD37A]" style={{ width: `${Math.min(100, (average / 4) * 100)}%` }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-5 rounded-2xl border border-[#4FE0C0]/20 bg-[#4FE0C0]/8 p-4">
+                <p className="font-data text-xs text-[#4FE0C0]">최근 서술형 조각</p>
+                <p className="mt-2 min-h-12 text-lg leading-7 text-[#EAF2F5]">
+                  {latestOpenAnswer || '아직 서술형 답변을 기다리는 중입니다.'}
+                </p>
+              </div>
+
+              {surveyRefreshMessage ? (
+                <p className="mt-4 rounded-2xl border border-white/10 bg-[#07111B]/55 px-4 py-3 text-sm font-bold text-[#B7C7D2]">
+                  {surveyRefreshMessage}
+                </p>
+              ) : null}
+
+              <div className="mt-5 flex justify-end">
+                <Button className="min-h-10 px-4" variant="secondary" disabled={isRefreshingSurvey} onClick={() => void refreshSurveyResults()}>
+                  <RefreshCw size={17} className={isRefreshingSurvey ? 'animate-spin' : ''} />
+                  {isRefreshingSurvey ? '새로고침 중' : '새로고침'}
+                </Button>
               </div>
             </Panel>
           </div>
