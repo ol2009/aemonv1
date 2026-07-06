@@ -413,7 +413,7 @@ export function V2Provider({ children }: { children: ReactNode }) {
 
   const value = useMemo<V2ContextValue>(() => {
     const adoptedCodeCount = state.adoptedCodes.length
-    const evolutionStage = Math.min(adoptedCodeCount, 3)
+    const evolutionStage = Math.min(adoptedCodeCount, 4)
     const nickname = state.studentSession?.nickname ?? '교사'
     const currentReaction = adoptedCodeCount === 0 ? '이름이 생겼어. 근데… 난 아직 뭘 지켜야 하는지 몰라. 규칙이 하나도 없어.' : evolutionLines[Math.min(adoptedCodeCount, 4) - 1]
 

@@ -1,11 +1,13 @@
 import type { Alignment } from '../domain/types'
 
 function avatarSource(stage: number, alignment: Alignment) {
-  if (stage === 0) return '/aemon/aemon-egg-data.png'
+  if (stage <= 0) return '/aemon/v3/stage-0-egg.gif'
+  if (stage === 1) return '/aemon/v3/stage-1-kkomul.gif'
+  if (stage === 2) return '/aemon/v3/stage-2-baby-dragon.gif'
+  if (stage === 3) return '/aemon/v3/stage-3-middle-dragon.gif'
+  if (stage >= 4) return '/aemon/v3/stage-4-final-dragon.gif'
   if (alignment === 'evil') return '/aemon/aemon-unstable.png'
-  if (stage === 1) return '/aemon/aemon-unstable.png'
-  if (stage === 2) return '/aemon/aemon-basic.png'
-  if (stage >= 3 || alignment === 'good') return '/aemon/aemon-good.png'
+  if (alignment === 'good') return '/aemon/v3/stage-4-final-dragon.gif'
   return '/aemon/aemon-basic.png'
 }
 
@@ -13,7 +15,9 @@ function glowColor(stage: number, alignment: Alignment) {
   if (stage === 0) return '#4FE0C0'
   if (alignment === 'evil') return '#E0476B'
   if (stage === 1) return '#9B7CFF'
-  if (stage >= 3 || alignment === 'good') return '#FFD37A'
+  if (stage === 2) return '#75B7FF'
+  if (stage === 3) return '#8DA7FF'
+  if (stage >= 4 || alignment === 'good') return '#FFD37A'
   return '#4FE0C0'
 }
 
@@ -49,11 +53,12 @@ export function AemonAvatar({
       />
       <img
         alt=""
-        className="relative h-full w-full rounded-[28%] object-cover shadow-2xl"
+        className="relative h-full w-full object-contain"
         draggable={false}
         src={src}
         style={{
-          boxShadow: `0 0 44px ${glow}40`,
+          filter: `drop-shadow(0 0 26px ${glow}66)`,
+          imageRendering: 'pixelated',
         }}
       />
       {polluted ? (

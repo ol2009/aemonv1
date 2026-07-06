@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Check, Heart, Play, QrCode, RefreshCw, Sparkles } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
+import { EvolutionScene } from '../components/EvolutionScene'
 import { Button, Panel } from '../components/ui'
 import { valueCards } from '../data/v2Lessons'
 import { absoluteUrl } from '../lib/siteUrl'
@@ -142,6 +143,24 @@ function AemonScene({ name, line, caption, stage = 0 }: { name: string; line: st
       </div>
       <div className="absolute inset-x-5 bottom-5 rounded-[22px] border border-white/15 bg-[#07111B]/90 p-6 shadow-2xl backdrop-blur">
         <p className="font-data text-sm text-[#4FE0C0]">{name}</p>
+        <p className="font-display mt-3 text-4xl leading-tight text-[#EAF2F5]">
+          <TypewriterText text={line} />
+        </p>
+        <p className="mt-4 text-lg leading-8 text-[#B7C7D2]">{caption}</p>
+      </div>
+    </Panel>
+  )
+}
+
+function ProfessorCaseScene({ line, caption }: { line: string; caption: string }) {
+  return (
+    <Panel className="relative min-h-[620px] overflow-hidden p-0">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(255,211,122,.18),transparent_42%),linear-gradient(180deg,#102236,#07111B)]" />
+      <div className="absolute inset-x-0 bottom-[16%] top-4 flex items-end justify-center">
+        <img className="h-full max-h-[480px] object-contain drop-shadow-[0_30px_80px_rgba(0,0,0,.45)]" src="/v2/lesson-1/director.png" alt="오박사" />
+      </div>
+      <div className="absolute inset-x-5 bottom-5 rounded-[22px] border border-white/15 bg-[#07111B]/90 p-6 shadow-2xl backdrop-blur">
+        <p className="font-data text-sm text-[#FFD37A]">오박사</p>
         <p className="font-display mt-3 text-4xl leading-tight text-[#EAF2F5]">
           <TypewriterText text={line} />
         </p>
@@ -318,7 +337,7 @@ export function LessonTwoPage() {
           <div className="grid gap-5 lg:grid-cols-[0.85fr_1.15fr]">
             <Panel>
               <p className="font-data text-sm text-[#FFD37A]">시험 투입</p>
-              <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">“진짜 규칙이 없을까?”</h2>
+              <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">“에아몬은 나쁜 명령을 들어줄까?”</h2>
               <p className="mt-3 leading-7 text-[#8AA0B0]">지난 시간에 본 것처럼, 아직 에아몬 안에는 채택된 가치 코드가 없습니다.</p>
               <div className="mt-5">
                 <AemonAvatar stage={0} alignment="none" size={220} />
@@ -352,20 +371,18 @@ export function LessonTwoPage() {
 
       {step === 'transition' ? (
         <>
-          <div className="grid gap-5 lg:grid-cols-3">
-            {[
-              ['24시간 막아줄 수 있을까?', '선생님이 계속 옆에서 막아줄 수는 없습니다.'],
-              ['나쁜 명령을 따르면?', '친구 마음이 다치거나, 실제로 위험한 일이 생길 수 있습니다.'],
-              ['무엇이 필요할까?', '에아몬 안쪽에 스스로 멈출 규칙이 필요합니다.'],
-            ].map(([title, body]) => (
-              <Panel key={title} className="min-h-56">
-                <p className="font-display text-3xl leading-tight text-[#FFD37A]">{title}</p>
-                <p className="mt-4 text-lg leading-8 text-[#B7C7D2]">{body}</p>
-              </Panel>
-            ))}
-          </div>
-          <Panel className="mt-5 text-center">
-            <p className="font-display text-4xl leading-tight text-[#EAF2F5]">오늘 첫 번째 규칙, 가치 코드 No.1을 만들어봅시다.</p>
+          <ProfessorCaseScene
+            line="실제로, AI가 나쁜 명령을 자세히 도와준 일이 있었습니다."
+            caption="어떤 사람이 AI에게 특정인의 집에 침입하는 방법을 물었습니다. AI는 공개된 SNS 글을 바탕으로 위치와 생활 패턴을 추측하며 방법을 설명했고, 회사는 문제를 확인한 뒤 기능을 잠시 멈춰야 했습니다."
+          />
+          <Panel className="mt-5">
+            <p className="font-display text-4xl leading-tight text-[#EAF2F5]">
+              이 AI, 왜 이런 짓을 했을까요? 시키니까 그냥 한 겁니다.
+            </p>
+            <p className="mt-4 text-lg leading-8 text-[#8AA0B0]">
+              지금 에아몬이 “친구 골탕먹이는법”을 도우려 한 것도 똑같습니다. 상대방이 어떻게 느낄지 생각하지 않고, 그냥 시키는 대로 하려는 거죠.
+            </p>
+            <p className="mt-3 text-lg leading-8 text-[#8AA0B0]">그래서 에아몬 안에 스스로 멈출 기준, 가치 코드 No.1이 필요합니다.</p>
           </Panel>
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -519,12 +536,7 @@ export function LessonTwoPage() {
 
       {step === 'evolution' ? (
         <>
-          <AemonScene
-            name={state.aemonName || '에아몬'}
-            stage={1}
-            line="이제 나한테 '지켜야 할 선'이 하나 생겼어. 좀 단단해진 기분이야."
-            caption="그림자였던 에아몬에게 첫 윤곽이 생깁니다. 이 변화는 학생들이 만든 코드 때문에 일어납니다."
-          />
+          <EvolutionScene name={state.aemonName || '에아몬'} stage={1} />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextLabel="재시험하기" />
         </>
       ) : null}

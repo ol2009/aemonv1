@@ -14,7 +14,7 @@ export function GraduationPage() {
         <h1 className="font-display mt-3 text-6xl text-[#EAF2F5]">임명식</h1>
         <p className="mt-4 text-xl leading-8 text-[#B7C7D2]">{name}이 {state.className || '우리 반'}의 인공지능으로 임명됩니다.</p>
         <div className="mt-8">
-          <AemonAvatar stage={3} alignment="none" size={280} />
+          <AemonAvatar stage={4} alignment="none" size={280} />
         </div>
       </Panel>
 
