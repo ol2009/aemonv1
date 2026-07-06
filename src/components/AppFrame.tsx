@@ -31,8 +31,7 @@ export function AppFrame() {
       <div className="relative z-10 min-h-screen">
         {!isImmersive ? (
           <header className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-5 py-5">
-            <button className="flex items-center gap-3" onClick={() => navigate('/')} type="button">
-              <span className="h-10 w-8 rounded-[50%_50%_45%_45%/60%_60%_42%_42%] bg-[radial-gradient(circle_at_36%_28%,#FFF6DD,#FFD37A_48%,#E0A03A)] shadow-[0_0_22px_rgba(255,211,122,.42)]" />
+            <button className="flex items-center" onClick={() => navigate('/')} type="button">
               <span className="font-display text-2xl text-[#EAF2F5]">에아몬</span>
             </button>
             {user ? (
