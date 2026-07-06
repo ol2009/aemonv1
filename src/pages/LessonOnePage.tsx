@@ -4,13 +4,13 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, Check, Heart, Pencil, Play, QrCode, RefreshCw, Trash2, Volume2 } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
 import { Button, Panel } from '../components/ui'
-import { AI_SURVEY_DESCRIPTION, AI_SURVEY_ITEMS, AI_SURVEY_TITLE, PRE_SURVEY_KEY, parseSurveyAnswer, surveyScore } from '../data/survey'
+import { AI_SURVEY_DESCRIPTION, AI_SURVEY_ITEMS, AI_SURVEY_TITLE, PRE_SURVEY_KEY, parseSurveyAnswer, surveyScore, type AiSurveyAnswer } from '../data/survey'
 import { absoluteUrl } from '../lib/siteUrl'
 import { addRemoteChatLog, confirmRemoteName, createRemoteClass, deleteRemoteWish, fetchRemoteClassBundle, isRemoteReady, updateRemoteLesson, updateRemoteWish } from '../lib/v2Remote'
 import { runV2Chat } from '../lib/v2Chat'
 import { useSupabaseUser } from '../lib/useSupabaseUser'
 import { useV2RemoteSync } from '../lib/useV2RemoteSync'
-import { useV2 } from '../state/V2Store'
+import { useV2, type SurveyResponse } from '../state/V2Store'
 
 type LessonStep =
   | 'director-1'
@@ -409,7 +409,7 @@ export function LessonOnePage() {
   const sortedNames = useMemo(() => sortedByLikes(state.nameCandidates), [state.nameCandidates])
   const surveyResponses = useMemo(
     () => {
-      const items: Array<{ response: (typeof state.surveyResponses)[number]; answer: NonNullable<ReturnType<typeof parseSurveyAnswer>> }> = []
+      const items: Array<{ response: SurveyResponse; answer: AiSurveyAnswer }> = []
       state.surveyResponses.forEach((response) => {
         if (response.questionKey !== PRE_SURVEY_KEY) return
         const answer = parseSurveyAnswer(response.body)
