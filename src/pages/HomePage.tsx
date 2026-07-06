@@ -175,7 +175,7 @@ export function HomePage() {
               </Button>
               <Button variant="secondary" onClick={() => navigate('/talk')}>
                 <MessageSquare size={18} />
-                대화하기
+                채팅하기
               </Button>
               <Button variant="secondary" disabled={walkPhase !== 'idle'} onClick={startWalk}>
                 <Waves size={18} />
@@ -253,9 +253,6 @@ export function HomePage() {
               <p className="font-data text-xs text-[#8AA0B0]">현재 사용 중</p>
               <p className="mt-1 text-lg font-black text-[#EAF2F5]">
                 {state.apiKey ? `${providerLabel[state.aiProvider]} · 연결됨` : 'API 미연결'}
-              </p>
-              <p className="mt-2 text-sm leading-6 text-[#8AA0B0]">
-                저장하면 채팅에서 바로 이 설정을 사용합니다. API 키는 이 브라우저에 저장됩니다.
               </p>
             </div>
 

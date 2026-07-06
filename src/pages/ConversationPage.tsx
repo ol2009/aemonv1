@@ -126,6 +126,11 @@ export function ConversationPage() {
             placeholder="메시지를 입력하세요."
             value={question}
             onChange={(event) => setQuestion(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key !== 'Enter' || event.shiftKey || event.nativeEvent.isComposing) return
+              event.preventDefault()
+              void ask()
+            }}
           />
           <Button disabled={!question.trim() || isLoading} onClick={() => void ask()}>
             <Send size={18} />
