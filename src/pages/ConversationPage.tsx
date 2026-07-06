@@ -34,6 +34,7 @@ export function ConversationPage() {
         aemonName,
         className: state.className,
         adoptedCodes: state.adoptedCodes,
+        chatHistory: state.chatLogs,
         question: nextQuestion,
       })
       addChatLog({ question: nextQuestion, answer: result.answer, mode: result.mode, promptSnapshot: result.promptSnapshot })

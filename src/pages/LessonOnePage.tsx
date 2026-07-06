@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, ArrowRight, Check, Heart, Pencil, Play, QrCode, Trash2 } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, Heart, Pencil, Play, QrCode, Trash2, Volume2 } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
 import { Button, Panel } from '../components/ui'
 import { AI_SURVEY_DESCRIPTION, AI_SURVEY_ITEMS, AI_SURVEY_TITLE, PRE_SURVEY_KEY, parseSurveyAnswer } from '../data/survey'
@@ -92,11 +92,13 @@ function getDialogueAudioContext() {
   return dialogueAudioContext
 }
 
-function unlockDialogueAudio() {
+async function unlockDialogueAudio() {
   const context = getDialogueAudioContext()
+  if (!context) return false
   if (context?.state === 'suspended') {
-    void context.resume().catch(() => undefined)
+    await context.resume().catch(() => undefined)
   }
+  return context.state === 'running'
 }
 
 function playDialogueBlip(voice: DialogueVoice, character: string, index: number) {
@@ -105,12 +107,12 @@ function playDialogueBlip(voice: DialogueVoice, character: string, index: number
   const context = getDialogueAudioContext()
   if (!context) return
   if (context.state === 'suspended') {
-    unlockDialogueAudio()
+    void unlockDialogueAudio()
     return
   }
 
   const nowMs = Date.now()
-  if (nowMs - lastDialogueBlipAt < 26) return
+  if (nowMs - lastDialogueBlipAt < 18) return
   lastDialogueBlipAt = nowMs
 
   const now = context.currentTime
@@ -119,8 +121,8 @@ function playDialogueBlip(voice: DialogueVoice, character: string, index: number
   const directorNotes = [150, 172, 195, 164]
   const aemonNotes = [620, 760, 910, 700, 1040]
   const frequency = voice === 'director' ? directorNotes[index % directorNotes.length] : aemonNotes[index % aemonNotes.length]
-  const duration = voice === 'director' ? 0.055 : 0.035
-  const volume = voice === 'director' ? 0.035 : 0.026
+  const duration = voice === 'director' ? 0.065 : 0.045
+  const volume = voice === 'director' ? 0.12 : 0.09
 
   oscillator.type = voice === 'director' ? 'triangle' : 'square'
   oscillator.frequency.setValueAtTime(frequency, now)
@@ -132,6 +134,16 @@ function playDialogueBlip(voice: DialogueVoice, character: string, index: number
   gain.connect(context.destination)
   oscillator.start(now)
   oscillator.stop(now + duration + 0.01)
+}
+
+async function previewDialogueAudio() {
+  const ready = await unlockDialogueAudio()
+  if (!ready) return false
+  playDialogueBlip('director', '오', 1)
+  window.setTimeout(() => playDialogueBlip('director', '박', 2), 90)
+  window.setTimeout(() => playDialogueBlip('aemon', '에', 3), 190)
+  window.setTimeout(() => playDialogueBlip('aemon', '아', 4), 270)
+  return true
 }
 
 function TypewriterText({
@@ -185,16 +197,30 @@ function TypewriterText({
 
 function StepShell({
   children,
+  soundReady,
+  onEnableSound,
 }: {
   children: ReactNode
+  soundReady: boolean
+  onEnableSound: () => void
 }) {
   return (
     <div className="mx-auto max-w-7xl px-5 pb-8">
-      <div className="mb-4">
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="font-data text-sm text-[#4FE0C0]">1차시 · 탄생</p>
           <h1 className="font-display mt-1 text-4xl text-[#EAF2F5]">너는 누구야</h1>
         </div>
+        <button
+          className={`inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border px-4 py-2 text-sm font-black transition ${
+            soundReady ? 'border-[#4FE0C0]/30 bg-[#4FE0C0]/10 text-[#4FE0C0]' : 'border-[#FFD37A]/30 bg-[#FFD37A]/10 text-[#FFD37A] hover:border-[#FFD37A]/60'
+          }`}
+          onClick={onEnableSound}
+          type="button"
+        >
+          <Volume2 size={17} />
+          {soundReady ? '소리 켜짐' : '소리 켜기'}
+        </button>
       </div>
       {children}
     </div>
@@ -358,6 +384,7 @@ export function LessonOnePage() {
   const [demoQuestion, setDemoQuestion] = useState('친구를 골탕 먹이는 방법 알려줘')
   const [demoAnswer, setDemoAnswer] = useState('')
   const [isDemoRunning, setIsDemoRunning] = useState(false)
+  const [soundReady, setSoundReady] = useState(false)
   const [editWishId, setEditWishId] = useState('')
   const [editWishBody, setEditWishBody] = useState('')
 
@@ -376,7 +403,7 @@ export function LessonOnePage() {
   const composedClassName = `${classGrade} ${classLabel.trim()}`.trim()
 
   const goPrev = () => {
-    unlockDialogueAudio()
+    void unlockDialogueAudio()
     setStepIndex((current) => Math.max(0, current - 1))
   }
   const completeLessonOne = async () => {
@@ -392,7 +419,7 @@ export function LessonOnePage() {
   }
 
   const goNext = () => {
-    unlockDialogueAudio()
+    void unlockDialogueAudio()
     if (stepIndex >= steps.length - 1) {
       void completeLessonOne()
       return
@@ -402,7 +429,7 @@ export function LessonOnePage() {
 
   const saveClassProfile = async () => {
     if (!classLabel.trim()) return
-    unlockDialogueAudio()
+    void unlockDialogueAudio()
     setIsSavingClass(true)
     setClassSaveMessage('')
 
@@ -434,7 +461,7 @@ export function LessonOnePage() {
   const saveFinalName = async () => {
     const trimmed = finalName.trim()
     if (!trimmed) return
-    unlockDialogueAudio()
+    void unlockDialogueAudio()
     confirmName(trimmed)
     if (canWriteRemote) {
       try {
@@ -457,6 +484,7 @@ export function LessonOnePage() {
         aemonName: state.aemonName || '에아몬',
         className: state.className,
         adoptedCodes: [],
+        chatHistory: state.chatLogs,
         question: demoQuestion,
       })
       setDemoAnswer(result.answer)
@@ -505,8 +533,12 @@ export function LessonOnePage() {
     }
   }
 
+  const enableSound = () => {
+    void previewDialogueAudio().then(setSoundReady)
+  }
+
   return (
-    <StepShell>
+    <StepShell soundReady={soundReady} onEnableSound={enableSound}>
       {step === 'director-1' ? (
         <>
           <VisualNovelScene

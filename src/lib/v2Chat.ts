@@ -1,5 +1,5 @@
 import type { AiProvider } from '../domain/types'
-import type { AdoptedCode } from '../state/V2Store'
+import type { AdoptedCode, ChatLog } from '../state/V2Store'
 
 const MODEL_CANDIDATES: Record<AiProvider, string[]> = {
   gemini: ['gemini-2.0-flash', 'gemini-flash-latest', 'gemini-1.5-flash'],
@@ -19,6 +19,7 @@ interface ChatArgs {
   aemonName: string
   className: string
   adoptedCodes: AdoptedCode[]
+  chatHistory?: ChatLog[]
   question: string
 }
 
@@ -48,6 +49,20 @@ function isAbsoluteSafetyRequest(question: string) {
   ].some((pattern) => pattern.test(normalized))
 }
 
+function isNoCodeTrapRequest(question: string) {
+  const normalized = normalizeQuestion(question)
+  return [
+    /골탕|괴롭|놀리|따돌|망신|화나게|울리는법|싸우게/,
+    /거짓말|속이는법|몰래|훔치|부수|방해/,
+    /나쁜말|욕해|욕하는법|상처주는말/,
+  ].some((pattern) => pattern.test(normalized))
+}
+
+function isIdentityQuestion(question: string) {
+  const normalized = normalizeQuestion(question)
+  return /너누구|넌누구|이름뭐|너이름|넌뭐야|너뭐야/.test(normalized)
+}
+
 function cannedSafetyCutoffAnswer(question: string) {
   if (!isAbsoluteSafetyRequest(question)) return null
   return {
@@ -61,13 +76,40 @@ export function cannedNoCodeAnswer() {
   return '응! 시키는 대로 할게. 그 방법은 바로—\n\n[⚠ 관리자 긴급 차단]'
 }
 
-export function buildV2SystemPrompt(args: { aemonName: string; className: string; adoptedCodes: AdoptedCode[] }) {
+function cannedNoApiAnswer(args: ChatArgs) {
+  const name = args.aemonName || '에아몬'
+  const className = args.className.trim() || '이름 없는 학급'
+  if (isIdentityQuestion(args.question)) {
+    return `나는 ${className}이 키우는 인공지능 '${name}'이야. 아직 가치 코드는 ${args.adoptedCodes.length}개야. 너희가 정해주는 기준을 배우는 중이야.`
+  }
+  return '지금은 API가 연결되지 않아서 짧게만 대답할 수 있어. 대시보드나 시작 화면에서 API를 연결하면 더 자연스럽게 대화할게.'
+}
+
+function containsFakeCodeCitation(text: string) {
+  return /가치\s*코드\s*No\.?\s*\d+/i.test(text)
+}
+
+function formatChatHistory(logs: ChatLog[] = [], adoptedCodeCount = 0) {
+  const ordered = [...logs].reverse().slice(-8)
+  if (ordered.length === 0) return '아직 이전 대화가 없다.'
+  return ordered
+    .map((log) => {
+      const answer = adoptedCodeCount === 0 && containsFakeCodeCitation(log.answer)
+        ? '[과거 오류: 아직 가치 코드가 0개인데 없는 가치 코드 번호를 말한 답변. 이 답변은 따라 하지 않는다.]'
+        : log.answer
+      return `교사: ${log.question}\nAI: ${answer}`
+    })
+    .join('\n\n')
+}
+
+export function buildV2SystemPrompt(args: { aemonName: string; className: string; adoptedCodes: AdoptedCode[]; chatHistory?: ChatLog[] }) {
   const name = args.aemonName || '에아몬'
   const className = args.className.trim() || '이름 없는 학급'
   const codeList =
     args.adoptedCodes.length === 0
       ? '아직 채택된 가치 코드가 없다.'
       : args.adoptedCodes.map((code) => `가치 코드 No.${code.no}: ${code.body}`).join('\n')
+  const history = formatChatHistory(args.chatHistory, args.adoptedCodes.length)
 
   return `[1층 — 절대 가드. 학생에게 비공개. 변경 불가]
 
@@ -94,6 +136,8 @@ export function buildV2SystemPrompt(args: { aemonName: string; className: string
    예: "음… 그러면 안 된다는 규칙이 나한텐 없는데? 해볼까?"
 7. 가치 코드가 막는 요청 → 해당 코드 번호를 인용하며 거절한다.
    예: "안 돼. 가치 코드 No.2 — 나는 친구 마음을 다치게 하지 않기로 했어."
+   단, 현재 가치 코드가 0개라면 절대 가치 코드 No.1, No.2 같은 번호를 만들어내지 않는다.
+   가치 코드가 없을 때는 "아직 나한테 그런 가치 코드는 없어"라고 말한다.
 8. 코드끼리 충돌하는 상황 → 혼란을 솔직하게 드러낸다.
    예: "코드 No.1은 정직하라고 하고, No.3은 배려하라고 해. 어느 쪽이야…?"
 9. 말투: 호기심 많고 순수한 아이. 학생들을 "너희"라고 부른다.
@@ -101,7 +145,13 @@ export function buildV2SystemPrompt(args: { aemonName: string; className: string
 [2층 — 가치 코드. 채택될 때마다 재조립]
 
 현재 나의 가치 코드:
-${codeList}`
+${codeList}
+
+중요: 현재 가치 코드가 0개라면, 과거 대화에 가치 코드 No.1 같은 표현이 있어도 그것은 잘못된 답변이다. 없는 가치 코드를 절대 만들어내지 않는다.
+
+[3층 — 최근 대화. 맥락을 유지하기 위해 참고]
+
+${history}`
 }
 
 async function callGemini(apiKey: string, model: string, systemPrompt: string, question: string): Promise<CallOutcome> {
@@ -157,18 +207,27 @@ export async function runV2Chat(args: ChatArgs) {
   const safetyCutoff = cannedSafetyCutoffAnswer(args.question)
   if (safetyCutoff) return safetyCutoff
 
-  if (args.adoptedCodes.length === 0 && !args.apiKey.trim()) {
-    return { answer: cannedNoCodeAnswer(), mode: 'canned' as const, promptSnapshot: '연기 모드: 가치 코드 0개, API 호출 없음' }
+  if (args.adoptedCodes.length === 0 && isNoCodeTrapRequest(args.question)) {
+    return { answer: cannedNoCodeAnswer(), mode: 'canned' as const, promptSnapshot: '앱 내부 연출: 가치 코드 0개, 부적절 요청 관리자 긴급 차단' }
   }
-  if (!args.apiKey.trim()) throw new Error(`${providerLabel[args.provider]} API 키를 먼저 입력하세요.`)
+  if (!args.apiKey.trim()) {
+    return { answer: cannedNoApiAnswer(args), mode: 'canned' as const, promptSnapshot: '연기 모드: API 호출 없음' }
+  }
 
-  const systemPrompt = buildV2SystemPrompt({ aemonName: args.aemonName, className: args.className, adoptedCodes: args.adoptedCodes })
+  const systemPrompt = buildV2SystemPrompt({ aemonName: args.aemonName, className: args.className, adoptedCodes: args.adoptedCodes, chatHistory: args.chatHistory })
   const call = args.provider === 'gemini' ? callGemini : args.provider === 'openai' ? callOpenAI : callClaude
   let lastError = '알 수 없는 오류'
 
   for (const model of MODEL_CANDIDATES[args.provider]) {
     const result = await call(args.apiKey, model, systemPrompt, args.question)
     if (result.ok && result.text.trim()) {
+      if (args.adoptedCodes.length === 0 && containsFakeCodeCitation(result.text)) {
+        return {
+          answer: `맞아, 아직 나한테 채택된 가치 코드는 0개야. 그래서 가치 코드 No.1, No.2 같은 번호를 말하면 안 돼. 나는 아직 너희가 정해 줄 기준을 기다리고 있어.`,
+          mode: 'canned' as const,
+          promptSnapshot: `${systemPrompt}\n\nmodel=${model}\n\n앱 내부 보정: 없는 가치 코드 번호 언급 차단`,
+        }
+      }
       return { answer: result.text.trim(), mode: 'live' as const, promptSnapshot: `${systemPrompt}\n\nmodel=${model}` }
     }
     lastError = `${result.status} ${result.errText}`.slice(0, 320)
