@@ -33,8 +33,13 @@ export function StartPage() {
     const ok = window.confirm('현재 저장된 에아몬 기록을 지우고 처음 장면부터 다시 시작할까요?')
     if (!ok) return
     resetDemo()
+    localStorage.removeItem('aemon.v2.state')
     localStorage.removeItem('aemon.state')
     navigate('/lesson/1')
+  }
+
+  const openProject = () => {
+    navigate(state.classCode ? '/home' : '/lesson/1')
   }
 
   return (
@@ -72,9 +77,9 @@ export function StartPage() {
           </div>
 
           <div className="mt-8 flex flex-wrap gap-3">
-            <Button onClick={() => navigate('/lesson/1')}>
+            <Button onClick={openProject}>
               <Play size={20} />
-              프로젝트 시작하기
+              {state.classCode ? '대시보드로 가기' : '프로젝트 시작하기'}
             </Button>
             <Button variant="secondary" onClick={() => navigate('/training')}>
               <BookOpen size={20} />
