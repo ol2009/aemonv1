@@ -29,7 +29,7 @@ export function TrainingPage() {
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <Button variant="ghost" onClick={() => navigate('/home')}>
           <ArrowLeft size={18} />
-          교사 화면
+          대시보드
         </Button>
         <Button onClick={() => navigate('/lesson/1')}>
           1차시 시작

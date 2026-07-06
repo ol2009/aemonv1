@@ -684,7 +684,7 @@ export function LessonOnePage() {
             line="이름이 생겼어. 근데… 난 아직 뭘 지켜야 하는지 몰라. 규칙이 하나도 없어."
             caption="다음 시간에 내 첫 번째 가치 코드를 만들어줄래? 내가 어떤 행동을 해야 하는지, 너희가 정해줘."
           />
-          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextLabel="교사 화면" />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextLabel="대시보드" />
         </>
       ) : null}
     </StepShell>

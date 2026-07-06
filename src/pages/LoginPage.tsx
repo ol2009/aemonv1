@@ -49,7 +49,7 @@ export function LoginPage() {
           {user ? (
             <Button onClick={() => navigate('/home')}>
               <LogIn size={19} />
-              교사 화면으로 이동
+              대시보드로 이동
             </Button>
           ) : (
             <Button disabled={!isConfigured || isLoading} onClick={login}>

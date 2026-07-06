@@ -2,7 +2,7 @@ import { isSupabaseConfigured, supabase } from './supabase'
 import type { AdoptedCode, ChatLog, CodeProposal, NameCandidate, SurveyResponse, V2State, Wish } from '../state/V2Store'
 
 const MISSING_SCHEMA_MESSAGE =
-  'Supabase v2 테이블이 아직 없습니다. Supabase SQL Editor에서 supabase/schema.sql을 실행해야 학생 기기와 교사 화면이 공유됩니다.'
+  'Supabase v2 테이블이 아직 없습니다. Supabase SQL Editor에서 supabase/schema.sql을 실행해야 학생 기기와 대시보드가 공유됩니다.'
 
 type ClassRow = {
   id: string

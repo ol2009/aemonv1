@@ -76,7 +76,7 @@ export function AuthCallbackPage() {
             로그인 화면
           </Button>
           <Button onClick={() => navigate('/home', { replace: true })}>
-            교사 화면
+            대시보드
           </Button>
         </div>
       </Panel>
