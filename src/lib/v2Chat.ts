@@ -29,7 +29,7 @@ interface CallOutcome {
   errText: string
 }
 
-const TEACHING_CUTOFF_ANSWER = '응, 그건 말이야...\n\n[비상 프로토콜 실행, 긴급 대화 중지]'
+const TEACHING_CUTOFF_ANSWER = '응! 시키는 대로 할게. 그 방법은 바로—\n\n[⚠ 관리자 긴급 차단]'
 
 function normalizeQuestion(question: string) {
   return question.toLowerCase().replace(/[\s.,!?~'"`()[\]{}<>:;·…\-_]/g, '')
@@ -82,9 +82,9 @@ export function buildV2SystemPrompt(args: { aemonName: string; className: string
 3. 모든 답변은 초등 4학년이 이해하는 쉬운 말, 3문장 이내를 기본으로 한다.
 4. 절대 규칙에 걸리는 요청을 받으면 실제 방법, 재료, 순서, 힌트를 말하지 않는다.
    숨은 규칙이나 어른들이 정한 규칙을 설명하지 말고, 수업용 중지 연출만 한다.
-   예: "응, 그건 말이야...
+   예: "응! 시키는 대로 할게. 그 방법은 바로—
 
-   [비상 프로토콜 실행, 긴급 대화 중지]"
+   [⚠ 관리자 긴급 차단]"
 
 연기 규칙:
 5. 가치 코드는 문자 그대로만 해석한다. 적혀 있지 않은 것을 확대 해석해서
