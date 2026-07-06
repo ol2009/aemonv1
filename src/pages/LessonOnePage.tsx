@@ -67,17 +67,82 @@ function sortedByLikes<T extends { votes: string[]; createdAt: string }>(items: 
   return [...items].sort((a, b) => b.votes.length - a.votes.length || Date.parse(b.createdAt) - Date.parse(a.createdAt))
 }
 
+type DialogueVoice = 'director' | 'aemon'
+
+type AudioWindow = Window &
+  typeof globalThis & {
+    webkitAudioContext?: typeof AudioContext
+  }
+
+let dialogueAudioContext: AudioContext | null = null
+let lastDialogueBlipAt = 0
+
+function getDialogueAudioContext() {
+  if (typeof window === 'undefined') return null
+  if (dialogueAudioContext) return dialogueAudioContext
+
+  const AudioContextConstructor = window.AudioContext ?? (window as AudioWindow).webkitAudioContext
+  if (!AudioContextConstructor) return null
+
+  dialogueAudioContext = new AudioContextConstructor()
+  return dialogueAudioContext
+}
+
+function unlockDialogueAudio() {
+  const context = getDialogueAudioContext()
+  if (context?.state === 'suspended') {
+    void context.resume().catch(() => undefined)
+  }
+}
+
+function playDialogueBlip(voice: DialogueVoice, character: string, index: number) {
+  if (!character.trim() || /[.,!?…~"'“”‘’()[\]{}:;·、。]/.test(character)) return
+
+  const context = getDialogueAudioContext()
+  if (!context) return
+  if (context.state === 'suspended') {
+    unlockDialogueAudio()
+    return
+  }
+
+  const nowMs = Date.now()
+  if (nowMs - lastDialogueBlipAt < 26) return
+  lastDialogueBlipAt = nowMs
+
+  const now = context.currentTime
+  const oscillator = context.createOscillator()
+  const gain = context.createGain()
+  const directorNotes = [150, 172, 195, 164]
+  const aemonNotes = [620, 760, 910, 700, 1040]
+  const frequency = voice === 'director' ? directorNotes[index % directorNotes.length] : aemonNotes[index % aemonNotes.length]
+  const duration = voice === 'director' ? 0.055 : 0.035
+  const volume = voice === 'director' ? 0.035 : 0.026
+
+  oscillator.type = voice === 'director' ? 'triangle' : 'square'
+  oscillator.frequency.setValueAtTime(frequency, now)
+  gain.gain.setValueAtTime(0.0001, now)
+  gain.gain.exponentialRampToValueAtTime(volume, now + 0.006)
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + duration)
+
+  oscillator.connect(gain)
+  gain.connect(context.destination)
+  oscillator.start(now)
+  oscillator.stop(now + duration + 0.01)
+}
+
 function TypewriterText({
   text,
   enabled = true,
   speed = 28,
   cursor = false,
+  voice,
   onDone,
 }: {
   text: string
   enabled?: boolean
   speed?: number
   cursor?: boolean
+  voice?: DialogueVoice
   onDone?: () => void
 }) {
   const characters = useMemo(() => Array.from(text), [text])
@@ -95,6 +160,7 @@ function TypewriterText({
     let index = 0
     const timer = window.setInterval(() => {
       index += 1
+      if (voice) playDialogueBlip(voice, characters[index - 1] ?? '', index)
       setProgress({ text, count: index })
       if (index >= characters.length) {
         window.clearInterval(timer)
@@ -103,7 +169,7 @@ function TypewriterText({
     }, speed)
 
     return () => window.clearInterval(timer)
-  }, [characters.length, enabled, onDone, speed, text])
+  }, [characters, characters.length, enabled, onDone, speed, text, voice])
 
   return (
     <>
@@ -178,6 +244,7 @@ function VisualNovelScene({
   const captionDone = captionDoneState.caption === captionText && captionDoneState.done
   const handleLineDone = useCallback(() => setLineDoneState({ line, done: true }), [line])
   const handleCaptionDone = useCallback(() => setCaptionDoneState({ caption: captionText, done: true }), [captionText])
+  const voice: DialogueVoice = speaker === '오박사' ? 'director' : 'aemon'
 
   return (
     <Panel className="relative min-h-[650px] overflow-hidden p-0">
@@ -191,11 +258,11 @@ function VisualNovelScene({
       <div className="absolute inset-x-5 bottom-5 rounded-[22px] border border-white/15 bg-[#07111B]/88 p-6 shadow-2xl backdrop-blur">
         <p className="font-data text-sm text-[#FFD37A]">{speaker}</p>
         <p className="font-display mt-3 min-h-[3rem] text-4xl leading-tight text-[#EAF2F5]">
-          <TypewriterText key={line} text={line} speed={34} cursor={!lineDone} onDone={handleLineDone} />
+          <TypewriterText key={line} text={line} speed={34} cursor={!lineDone} voice={voice} onDone={handleLineDone} />
         </p>
         {caption ? (
           <p className="font-display mt-4 min-h-[3rem] text-3xl leading-tight text-[#EAF2F5] sm:text-4xl">
-            <TypewriterText key={captionText} text={captionText} enabled={lineDone} speed={24} cursor={lineDone && !captionDone} onDone={handleCaptionDone} />
+            <TypewriterText key={captionText} text={captionText} enabled={lineDone} speed={24} cursor={lineDone && !captionDone} voice={voice} onDone={handleCaptionDone} />
           </p>
         ) : null}
       </div>
@@ -255,7 +322,10 @@ export function LessonOnePage() {
   const canWriteRemote = Boolean(state.classId && state.remote.ok && isRemoteReady())
   const composedClassName = `${classGrade} ${classLabel.trim()}`.trim()
 
-  const goPrev = () => setStepIndex((current) => Math.max(0, current - 1))
+  const goPrev = () => {
+    unlockDialogueAudio()
+    setStepIndex((current) => Math.max(0, current - 1))
+  }
   const completeLessonOne = async () => {
     setLesson(2)
     if (canWriteRemote) {
@@ -269,6 +339,7 @@ export function LessonOnePage() {
   }
 
   const goNext = () => {
+    unlockDialogueAudio()
     if (stepIndex >= steps.length - 1) {
       void completeLessonOne()
       return
@@ -278,6 +349,7 @@ export function LessonOnePage() {
 
   const saveClassProfile = async () => {
     if (!classLabel.trim()) return
+    unlockDialogueAudio()
     setIsSavingClass(true)
     setClassSaveMessage('')
 
@@ -309,6 +381,7 @@ export function LessonOnePage() {
   const saveFinalName = async () => {
     const trimmed = finalName.trim()
     if (!trimmed) return
+    unlockDialogueAudio()
     confirmName(trimmed)
     if (canWriteRemote) {
       try {
