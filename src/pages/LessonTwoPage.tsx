@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Check, Heart, Play, QrCode, RefreshCw, Shield, Sparkles, Vote, X } from 'lucide-react'
+import { Check, Heart, Play, QrCode, RefreshCw, Sparkles, X } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
 import { Button, Panel } from '../components/ui'
 import { valueCards } from '../data/v2Lessons'
 import { absoluteUrl } from '../lib/siteUrl'
 import { addRemoteChatLog, adoptRemoteCodeProposal, fetchRemoteClassBundle, isRemoteReady, updateRemoteLesson } from '../lib/v2Remote'
+import { playDialogueTick, unlockDialogueSound } from '../lib/dialogueSound'
 import { useV2RemoteSync } from '../lib/useV2RemoteSync'
 import { useV2, type CodeProposal } from '../state/V2Store'
 
@@ -45,11 +46,12 @@ function TypewriterText({ text, enabled = true, speed = 22 }: { text: string; en
     let index = 0
     const timer = window.setInterval(() => {
       index += 1
+      if (index % 2 === 0 && chars[index - 1]?.trim()) playDialogueTick()
       setProgress({ text, count: index })
       if (index >= chars.length) window.clearInterval(timer)
     }, speed)
     return () => window.clearInterval(timer)
-  }, [chars.length, enabled, speed, text])
+  }, [chars, chars.length, enabled, speed, text])
 
   return <>{chars.slice(0, count).join('')}</>
 }
@@ -96,10 +98,23 @@ function StepControls({
 }) {
   return (
     <div className="mt-6 flex items-center justify-between gap-3 border-t border-white/10 pt-5">
-      <Button variant="secondary" disabled={stepIndex === 0} onClick={onPrev}>
+      <Button
+        variant="secondary"
+        disabled={stepIndex === 0}
+        onClick={() => {
+          unlockDialogueSound()
+          onPrev()
+        }}
+      >
         이전
       </Button>
-      <Button disabled={nextDisabled} onClick={onNext}>
+      <Button
+        disabled={nextDisabled}
+        onClick={() => {
+          unlockDialogueSound()
+          onNext()
+        }}
+      >
         {nextLabel}
       </Button>
     </div>
@@ -203,11 +218,13 @@ export function LessonTwoPage() {
   }
 
   const runBeforeTest = async () => {
+    unlockDialogueSound()
     setBeforeAnswer(blockedAnswer)
     await logChat(testQuestion, blockedAnswer, '2차시 수업용 연기 모드: 가치 코드 0개, 관리자 긴급 차단')
   }
 
   const runRetest = async () => {
+    unlockDialogueSound()
     if (!firstCode) {
       const answer = '아직 나한테 막을 가치 코드가 없어. 너희가 먼저 기준을 정해줘야 해.'
       setAfterAnswer(answer)
@@ -363,21 +380,16 @@ export function LessonTwoPage() {
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
                 <p className="font-data text-sm text-[#4FE0C0]">VALUE CARDS</p>
-                <h2 className="font-display mt-2 text-4xl text-[#EAF2F5]">어떤 가치가 이 일을 막을까?</h2>
-                <p className="mt-3 leading-7 text-[#8AA0B0]">오늘은 감정적·신체적 해악에 집중합니다. 배려와 안전을 중심으로 생각해봅니다.</p>
+                <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">어떤 가치가, 에아몬이 나쁜 명령을 수행하는 것을 막을 수 있을까?</h2>
               </div>
-              <Shield className="text-[#4FE0C0]" size={54} />
+              <Sparkles className="text-[#4FE0C0]" size={54} />
             </div>
 
             <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {valueCards.map((card) => {
-                const focused = card === '배려' || card === '안전'
                 return (
-                  <div key={card} className={`rounded-[18px] border p-5 ${focused ? 'border-[#FFD37A]/50 bg-[#FFD37A]/10' : 'border-white/10 bg-[#07111B]/45'}`}>
-                    <p className={`font-display text-4xl ${focused ? 'text-[#FFD37A]' : 'text-[#EAF2F5]'}`}>{card}</p>
-                    <p className="mt-3 text-sm leading-6 text-[#8AA0B0]">
-                      {focused ? '오늘 상황과 직접 연결되는 카드입니다.' : '다음 차시에서 다시 중요해질 수 있습니다.'}
-                    </p>
+                  <div key={card} className="rounded-[18px] border border-white/10 bg-[#07111B]/45 p-5">
+                    <p className="font-display text-4xl text-[#EAF2F5]">{card}</p>
                   </div>
                 )
               })}
@@ -398,7 +410,7 @@ export function LessonTwoPage() {
             <Panel>
               <p className="font-data text-sm text-[#FFD37A]">학습게시판</p>
               <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">학생 발의 받기</h2>
-              <p className="mt-3 leading-7 text-[#8AA0B0]">학생들은 QR로 들어가 가치코드 문장과 이유를 올립니다. 마음에 드는 발의에는 투표합니다.</p>
+              <p className="mt-3 leading-7 text-[#8AA0B0]">학생들은 QR로 들어가 가치코드 문장과 이유를 자유롭게 올립니다. 마음에 드는 발의에는 좋아요를 누릅니다.</p>
               <div className="mt-5">
                 <QrBlock title="2차시 가치코드 게시판" url={boardUrl} />
               </div>
@@ -446,13 +458,13 @@ export function LessonTwoPage() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="font-data text-sm text-[#FFD37A]">VOTE</p>
-                <h2 className="font-display mt-2 text-4xl text-[#EAF2F5]">가장 필요한 코드 고르기</h2>
-                <p className="mt-3 leading-7 text-[#8AA0B0]">상위 발의를 30초씩 읽고, 학생 투표 결과를 확인합니다.</p>
+                <h2 className="font-display mt-2 text-4xl text-[#EAF2F5]">좋아요 많은 코드 살펴보기</h2>
+                <p className="mt-3 leading-7 text-[#8AA0B0]">좋아요가 많은 순서로 발의를 보고, 교사가 오늘 채택할 코드를 선택합니다.</p>
               </div>
-              <Vote className="text-[#FFD37A]" size={54} />
+              <Heart className="text-[#FFD37A]" size={54} />
             </div>
             <div className="mt-6 grid gap-3">
-              {pendingProposals.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0]">채택할 발의가 아직 없습니다.</p> : null}
+              {pendingProposals.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0]">아직 발의가 없습니다. 테스트 중이면 다음으로 넘어갈 수 있습니다.</p> : null}
               {pendingProposals.map((proposal, index) => (
                 <article key={proposal.id} className="rounded-[18px] border border-white/10 bg-[#07111B]/45 p-5">
                   <div className="flex items-start justify-between gap-4">
@@ -462,13 +474,13 @@ export function LessonTwoPage() {
                       <p className="mt-1 leading-7 text-[#8AA0B0]">{proposal.reason}</p>
                       <p className="mt-2 text-sm text-[#8AA0B0]">{proposal.nickname} · {proposal.valueCard || '가치'}</p>
                     </div>
-                    <span className="rounded-full bg-[#FFD37A]/15 px-4 py-2 font-black text-[#FFD37A]">{proposal.votes.length}표</span>
+                    <span className="rounded-full bg-[#FFD37A]/15 px-4 py-2 font-black text-[#FFD37A]">좋아요 {proposal.votes.length}</span>
                   </div>
                 </article>
               ))}
             </div>
           </Panel>
-          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextDisabled={pendingProposals.length === 0 && state.adoptedCodes.length === 0} />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
       ) : null}
 
@@ -478,7 +490,7 @@ export function LessonTwoPage() {
             <Panel>
               <p className="font-data text-sm text-[#4FE0C0]">ADOPT</p>
               <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">가치 코드 No.1 채택</h2>
-              <p className="mt-3 leading-7 text-[#8AA0B0]">투표 결과를 바탕으로 하나를 고르고, 태그를 선택한 뒤 에아몬 안에 저장합니다.</p>
+              <p className="mt-3 leading-7 text-[#8AA0B0]">좋아요 순서를 참고해 하나를 고르고, 태그를 선택한 뒤 에아몬 안에 저장합니다.</p>
               <div className="mt-5 grid gap-2">
                 {pendingProposals.map((proposal) => (
                   <button
@@ -494,7 +506,7 @@ export function LessonTwoPage() {
                   >
                     <div className="flex justify-between gap-3">
                       <p className="font-black leading-7 text-[#EAF2F5]">{proposal.body}</p>
-                      <span className="shrink-0 rounded-full bg-[#FFD37A]/15 px-3 py-1 text-sm font-black text-[#FFD37A]">{proposal.votes.length}표</span>
+                      <span className="shrink-0 rounded-full bg-[#FFD37A]/15 px-3 py-1 text-sm font-black text-[#FFD37A]">좋아요 {proposal.votes.length}</span>
                     </div>
                     <p className="mt-1 text-sm leading-6 text-[#8AA0B0]">{proposal.reason}</p>
                   </button>
@@ -570,7 +582,7 @@ export function LessonTwoPage() {
             </div>
           ) : null}
 
-          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextDisabled={state.adoptedCodes.length === 0} />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
       ) : null}
 

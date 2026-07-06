@@ -1,8 +1,28 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { AlertTriangle, CheckCircle2, PlugZap, Send } from 'lucide-react'
 import { Button, Panel } from '../components/ui'
+import { playDialogueTick, unlockDialogueSound } from '../lib/dialogueSound'
 import { providerLabel, runV2Chat } from '../lib/v2Chat'
 import { useV2 } from '../state/V2Store'
+
+function TypewriterAnswer({ text }: { text: string }) {
+  const characters = useMemo(() => Array.from(text), [text])
+  const [progress, setProgress] = useState({ text, count: 0 })
+  const count = progress.text === text ? progress.count : 0
+
+  useEffect(() => {
+    let index = 0
+    const timer = window.setInterval(() => {
+      index += 1
+      if (index % 2 === 0 && characters[index - 1]?.trim()) playDialogueTick()
+      setProgress({ text, count: index })
+      if (index >= characters.length) window.clearInterval(timer)
+    }, 20)
+    return () => window.clearInterval(timer)
+  }, [characters, characters.length, text])
+
+  return <>{characters.slice(0, count).join('')}</>
+}
 
 export function ConversationPage() {
   const { state, addChatLog } = useV2()
@@ -23,6 +43,7 @@ export function ConversationPage() {
   const ask = async () => {
     const nextQuestion = question.trim()
     if (!nextQuestion || isLoading) return
+    unlockDialogueSound()
     setError('')
     setIsLoading(true)
     setPendingQuestion(nextQuestion)
@@ -76,7 +97,7 @@ export function ConversationPage() {
       <Panel className="mt-5">
         <div className="grid max-h-[58vh] min-h-[360px] gap-3 overflow-auto pr-1">
           {orderedLogs.length === 0 && !pendingQuestion ? <p className="self-center text-center text-[#8AA0B0]">아직 대화가 없습니다.</p> : null}
-          {orderedLogs.map((log) => (
+          {orderedLogs.map((log, index) => (
             <article key={log.id} className="grid gap-2">
               <div className="grid max-w-[82%] justify-self-end gap-1">
                 <p className="text-right text-xs font-bold text-[#8AA0B0]">교사</p>
@@ -84,7 +105,9 @@ export function ConversationPage() {
               </div>
               <div className="grid max-w-[82%] justify-self-start gap-1">
                 <p className="text-xs font-bold text-[#FFD37A]">{aemonName}</p>
-                <p className="whitespace-pre-wrap rounded-2xl rounded-tl-md bg-[#FFD37A]/10 px-4 py-3 leading-7 text-[#FFE6AE]">{log.answer}</p>
+                <p className="whitespace-pre-wrap rounded-2xl rounded-tl-md bg-[#FFD37A]/10 px-4 py-3 leading-7 text-[#FFE6AE]">
+                  {index === orderedLogs.length - 1 ? <TypewriterAnswer text={log.answer} /> : log.answer}
+                </p>
               </div>
             </article>
           ))}

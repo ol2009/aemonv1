@@ -8,6 +8,7 @@ import { AI_SURVEY_DESCRIPTION, AI_SURVEY_ITEMS, AI_SURVEY_TITLE, PRE_SURVEY_KEY
 import { absoluteUrl } from '../lib/siteUrl'
 import { addRemoteChatLog, confirmRemoteName, createRemoteClass, deleteRemoteWish, fetchRemoteClassBundle, isRemoteReady, updateRemoteLesson, updateRemoteWish } from '../lib/v2Remote'
 import { runV2Chat } from '../lib/v2Chat'
+import { playDialogueTick, unlockDialogueSound } from '../lib/dialogueSound'
 import { useSupabaseUser } from '../lib/useSupabaseUser'
 import { useV2RemoteSync } from '../lib/useV2RemoteSync'
 import { useV2, type SurveyResponse } from '../state/V2Store'
@@ -111,6 +112,7 @@ function TypewriterText({
     let index = 0
     const timer = window.setInterval(() => {
       index += 1
+      if (index % 2 === 0 && characters[index - 1]?.trim()) playDialogueTick()
       setProgress({ text, count: index })
       if (index >= characters.length) {
         window.clearInterval(timer)
@@ -119,7 +121,7 @@ function TypewriterText({
     }, speed)
 
     return () => window.clearInterval(timer)
-  }, [characters.length, enabled, onDone, speed, text])
+  }, [characters, characters.length, enabled, onDone, speed, text])
 
   return (
     <>
@@ -162,11 +164,24 @@ function StepControls({
 }) {
   return (
     <div className="mt-4 flex justify-end gap-2">
-      <Button variant="secondary" disabled={stepIndex === 0} onClick={onPrev}>
+      <Button
+        variant="secondary"
+        disabled={stepIndex === 0}
+        onClick={() => {
+          unlockDialogueSound()
+          onPrev()
+        }}
+      >
         <ArrowLeft size={18} />
         이전
       </Button>
-      <Button disabled={nextDisabled} onClick={onNext}>
+      <Button
+        disabled={nextDisabled}
+        onClick={() => {
+          unlockDialogueSound()
+          onNext()
+        }}
+      >
         {nextLabel}
         <ArrowRight size={18} />
       </Button>
