@@ -6,7 +6,7 @@ import { providerLabel, runV2Chat } from '../lib/v2Chat'
 import { useV2 } from '../state/V2Store'
 
 export function ConversationPage() {
-  const { state, dailyLimit, updateAiSettings, addChatLog } = useV2()
+  const { state, updateAiSettings, addChatLog } = useV2()
   const [question, setQuestion] = useState('')
   const [apiKey, setApiKey] = useState(state.apiKey)
   const [provider, setProvider] = useState<AiProvider>(state.aiProvider)
@@ -15,7 +15,6 @@ export function ConversationPage() {
   const [pendingQuestion, setPendingQuestion] = useState('')
   const endRef = useRef<HTMLDivElement | null>(null)
 
-  const usageLeft = Math.max(0, dailyLimit - state.dailyUsage.count)
   const aemonName = state.aemonName.trim() || '에아몬'
   const orderedLogs = useMemo(() => [...state.chatLogs].reverse(), [state.chatLogs])
 
@@ -25,7 +24,7 @@ export function ConversationPage() {
 
   const ask = async () => {
     const nextQuestion = question.trim()
-    if (!nextQuestion || isLoading || usageLeft <= 0) return
+    if (!nextQuestion || isLoading) return
     setError('')
     setIsLoading(true)
     setPendingQuestion(nextQuestion)
@@ -128,7 +127,7 @@ export function ConversationPage() {
             value={question}
             onChange={(event) => setQuestion(event.target.value)}
           />
-          <Button disabled={!question.trim() || isLoading || usageLeft <= 0} onClick={() => void ask()}>
+          <Button disabled={!question.trim() || isLoading} onClick={() => void ask()}>
             <Send size={18} />
             {isLoading ? '응답 중' : '보내기'}
           </Button>

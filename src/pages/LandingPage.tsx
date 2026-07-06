@@ -2,9 +2,16 @@ import { useNavigate } from 'react-router-dom'
 import { Egg, MessageCircle, Sparkles } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
 import { Button, Kicker, Panel } from '../components/ui'
+import { useSupabaseUser } from '../lib/useSupabaseUser'
 
 export function LandingPage() {
   const navigate = useNavigate()
+  const { user, isLoading } = useSupabaseUser()
+
+  const openClassStart = () => {
+    if (isLoading) return
+    navigate(user ? '/start' : '/login?next=/start')
+  }
 
   return (
     <div className="mx-auto max-w-7xl px-5 pb-20">
@@ -20,7 +27,7 @@ export function LandingPage() {
             막 태어난 AI는 똑똑하지만, 무엇이 옳은지는 몰라요. 한 달 동안 우리 반이 매일 대화로 키우며 — AI를 착하게 키우는 법을 함께 배웁니다.
           </p>
           <div className="mt-9 flex flex-wrap gap-3">
-            <Button onClick={() => navigate('/start')}>
+            <Button disabled={isLoading} onClick={openClassStart}>
               <Sparkles size={20} />
               우리 반 에아몬 만나기
             </Button>

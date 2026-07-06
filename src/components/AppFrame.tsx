@@ -1,5 +1,5 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { ClipboardList, Crown, Home, LogIn, LogOut, MessageSquare, MessageSquareText, Sparkles, Waves } from 'lucide-react'
+import { ClipboardList, Home, LogIn, LogOut, MessageSquare, MessageSquareText } from 'lucide-react'
 import { Button } from './ui'
 import { signOut, useSupabaseUser } from '../lib/useSupabaseUser'
 
@@ -8,8 +8,6 @@ const navItems = [
   { path: '/codes', label: '가치코드', icon: ClipboardList },
   { path: '/board', label: '학습게시판', icon: MessageSquareText },
   { path: '/talk', label: '채팅', icon: MessageSquare },
-  { path: '/dex', label: '데이터바다', icon: Waves },
-  { path: '/graduation', label: '임명식', icon: Crown },
 ]
 
 export function AppFrame() {
@@ -63,12 +61,6 @@ export function AppFrame() {
                 {user ? <LogOut size={18} /> : <LogIn size={18} />}
                 {user ? '로그아웃' : '로그인'}
               </Button>
-              {user ? (
-                <Button className="min-h-10 px-3" onClick={() => navigate('/start')}>
-                  <Sparkles size={18} />
-                  학급 시작
-                </Button>
-              ) : null}
             </div>
           </header>
         ) : null}

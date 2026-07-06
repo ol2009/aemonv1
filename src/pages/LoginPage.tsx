@@ -1,19 +1,26 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { LogIn, LogOut } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
 import { Button, Panel } from '../components/ui'
 import { signInWithGoogle, signOut, useSupabaseUser } from '../lib/useSupabaseUser'
 
+function safeNextPath(value: string | null) {
+  if (!value || !value.startsWith('/') || value.startsWith('//')) return '/home'
+  return value
+}
+
 export function LoginPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { user, isConfigured, isLoading } = useSupabaseUser()
   const [message, setMessage] = useState('')
+  const nextPath = safeNextPath(searchParams.get('next'))
 
   const login = async () => {
     setMessage('')
     try {
-      await signInWithGoogle('/home')
+      await signInWithGoogle(nextPath)
     } catch {
       setMessage('로그인을 시작할 수 없습니다. 설정을 확인해주세요.')
     }
@@ -47,7 +54,7 @@ export function LoginPage() {
         ) : null}
         <div className="mt-8 grid gap-3">
           {user ? (
-            <Button onClick={() => navigate('/home')}>
+            <Button onClick={() => navigate(nextPath)}>
               <LogIn size={19} />
               대시보드로 이동
             </Button>
