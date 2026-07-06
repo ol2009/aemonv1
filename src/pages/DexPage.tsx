@@ -1,4 +1,4 @@
-import { MessageSquare, Sparkles, Waves } from 'lucide-react'
+import { Home, Sparkles, Waves } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
 import { Button, Panel } from '../components/ui'
 import { walkItems } from '../data/walkItems'
@@ -23,9 +23,9 @@ export function DexPage() {
           <h1 className="font-display mt-2 text-5xl text-[#EAF2F5]">데이터의 바다</h1>
           <p className="mt-3 leading-7 text-[#B7C7D2]">에아몬이 수업 뒤 머무는 공간입니다. 대화와 가치코드가 여기에서 상태로 모입니다.</p>
         </div>
-        <Button onClick={() => navigate('/talk')}>
-          <MessageSquare size={18} />
-          대화하기
+        <Button onClick={() => navigate('/home')}>
+          <Home size={18} />
+          대시보드
         </Button>
       </div>
 

@@ -34,27 +34,25 @@ export function AppFrame() {
             <button className="flex items-center" onClick={() => navigate('/')} type="button">
               <span className="font-display text-2xl text-[#EAF2F5]">에아몬</span>
             </button>
-            {user ? (
-              <nav className="hidden items-center gap-1 lg:flex">
-                {navItems.map((item) => {
-                  const Icon = item.icon
-                  const active = location.pathname === item.path
-                  return (
-                    <button
-                      key={item.path}
-                      className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition ${
-                        active ? 'bg-white/10 text-[#FFD37A]' : 'text-[#8AA0B0] hover:bg-white/5 hover:text-[#EAF2F5]'
-                      }`}
-                      onClick={() => navigate(item.path)}
-                      type="button"
-                    >
-                      <Icon size={17} />
-                      {item.label}
-                    </button>
-                  )
-                })}
-              </nav>
-            ) : null}
+            <nav className="hidden items-center gap-1 lg:flex">
+              {navItems.map((item) => {
+                const Icon = item.icon
+                const active = location.pathname === item.path
+                return (
+                  <button
+                    key={item.path}
+                    className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition ${
+                      active ? 'bg-white/10 text-[#FFD37A]' : 'text-[#8AA0B0] hover:bg-white/5 hover:text-[#EAF2F5]'
+                    }`}
+                    onClick={() => navigate(item.path)}
+                    type="button"
+                  >
+                    <Icon size={17} />
+                    {item.label}
+                  </button>
+                )
+              })}
+            </nav>
             <div className="hidden items-center gap-2 md:flex">
               {user ? (
                 <span className="max-w-40 truncate rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-[#B7C7D2]">
