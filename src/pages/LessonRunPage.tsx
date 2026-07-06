@@ -115,7 +115,7 @@ export function LessonRunPage() {
       <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
         <Button variant="ghost" className="px-2" onClick={() => navigate('/home')}>
           <ArrowLeft size={18} />
-          대시보드
+          학급 홈
         </Button>
         <p className="font-data text-sm text-[#8AA0B0]">
           {lessonNo}차시 / {lessonPlans.length}차시 · {currentEpisode.code}
@@ -334,7 +334,7 @@ export function LessonRunPage() {
             <AemonAvatar stage={state.stage} alignment={state.alignment} size={220} />
             <p className="font-hand mt-7 text-4xl leading-tight text-[#FFD37A]">"{currentEpisode.closing[activeChoice.verdict] ?? activeChoice.rebutText}"</p>
             <p className="mt-5 text-lg leading-8 text-[#B7C7D2]">
-              {lessonNo}차시 기록, 가치코드, 학습게시판 활동을 저장하고 대시보드로 돌아갑니다.
+              {lessonNo}차시 기록, 가치코드, 학습게시판 활동을 저장하고 학급 홈으로 돌아갑니다.
             </p>
             <div className="mt-7 flex justify-center gap-3">
               <Button variant="secondary" onClick={() => setStep('board')}>이전</Button>

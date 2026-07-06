@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { BarChart3, BookOpenText, CheckCircle2, Heart, LogOut, Pencil, Send, Trash2 } from 'lucide-react'
 import { Button, Panel } from '../components/ui'
@@ -106,8 +106,7 @@ export function BoardPage() {
   const [nameDraft, setNameDraft] = useState('')
   const [reasonDraft, setReasonDraft] = useState('')
   const [wishDraft, setWishDraft] = useState('')
-  const [surveyAnswer, setSurveyAnswer] = useState<AiSurveyAnswer>(() => emptySurveyAnswer())
-  const [surveySaved, setSurveySaved] = useState(false)
+  const [surveyDraft, setSurveyDraft] = useState<{ nickname: string; answer: AiSurveyAnswer } | null>(null)
   const [editWishId, setEditWishId] = useState('')
   const [editWishBody, setEditWishBody] = useState('')
   const [message, setMessage] = useState('')
@@ -138,6 +137,14 @@ export function BoardPage() {
         .filter((item): item is { response: (typeof surveyResponses)[number]; answer: AiSurveyAnswer } => Boolean(item.answer)),
     [surveyResponses],
   )
+  const sessionNickname = session?.nickname ?? ''
+  const savedSurveyAnswer = useMemo(() => {
+    if (!sessionNickname) return null
+    const existing = surveyResponses.find((response) => response.nickname === sessionNickname)
+    return existing ? parseSurveyAnswer(existing.body) : null
+  }, [sessionNickname, surveyResponses])
+  const surveyAnswer = surveyDraft?.nickname === sessionNickname ? surveyDraft.answer : savedSurveyAnswer ?? emptySurveyAnswer()
+  const surveySaved = Boolean(savedSurveyAnswer)
   const surveyAverageScore = parsedSurveyResponses.length
     ? Math.round((parsedSurveyResponses.reduce((sum, item) => sum + surveyScore(item.answer), 0) / parsedSurveyResponses.length) * 10) / 10
     : 0
@@ -145,13 +152,10 @@ export function BoardPage() {
 
   useV2RemoteSync(state.classCode, Boolean(state.classCode && (session || isTeacherBoard)))
 
-  useEffect(() => {
-    if (!session) return
-    const existing = surveyResponses.find((response) => response.nickname === session.nickname)
-    const parsed = existing ? parseSurveyAnswer(existing.body) : null
-    setSurveyAnswer(parsed ?? emptySurveyAnswer())
-    setSurveySaved(Boolean(parsed))
-  }, [session?.nickname, surveyResponses])
+  const updateSurveyAnswer = (updater: (current: AiSurveyAnswer) => AiSurveyAnswer) => {
+    if (!sessionNickname) return
+    setSurveyDraft({ nickname: sessionNickname, answer: updater(surveyAnswer) })
+  }
 
   const enter = async () => {
     const code = classCode.trim()
@@ -222,7 +226,6 @@ export function BoardPage() {
     if (!surveyComplete(surveyAnswer) || !session) return
     const body = serializeSurveyAnswer(surveyAnswer)
     upsertSurveyResponse({ questionKey: PRE_SURVEY_KEY, body, nickname: session.nickname })
-    setSurveySaved(true)
 
     if (canWriteRemote) {
       try {
@@ -265,9 +268,9 @@ export function BoardPage() {
     return (
       <div className="flex min-h-[70vh] items-center justify-center px-5">
         <Panel className="max-w-md text-center">
-          <h1 className="font-display text-4xl text-[#EAF2F5]">학급이 없습니다</h1>
-          <p className="mt-3 leading-7 text-[#8AA0B0]">학습게시판을 보려면 먼저 학급을 만들어야 합니다.</p>
-          <Button className="mt-6" onClick={() => navigate('/start')}>학급 만들기</Button>
+          <h1 className="font-display text-4xl text-[#EAF2F5]">아직 에아몬이 깨어나지 않았어요</h1>
+          <p className="mt-3 leading-7 text-[#8AA0B0]">프로젝트를 시작하면 수업 중 학급 코드가 만들어집니다.</p>
+          <Button className="mt-6" onClick={() => navigate('/start')}>프로젝트 시작하기</Button>
         </Panel>
       </div>
     )
@@ -390,7 +393,7 @@ export function BoardPage() {
                                     : 'border-white/10 bg-[#07111B]/70 text-[#8AA0B0] hover:border-[#6AD8FF]/45 hover:text-[#EAF2F5]'
                                 }`}
                                 onClick={() =>
-                                  setSurveyAnswer((current) => ({
+                                  updateSurveyAnswer((current) => ({
                                     ...current,
                                     s: current.s.map((value, answerIndex) => (answerIndex === index ? option.value : value)),
                                   }))
@@ -418,7 +421,7 @@ export function BoardPage() {
                       placeholder="내 생각을 적어주세요."
                       value={surveyAnswer.o[index]}
                       onChange={(event) =>
-                        setSurveyAnswer((current) => ({
+                        updateSurveyAnswer((current) => ({
                           ...current,
                           o: current.o.map((value, answerIndex) => (answerIndex === index ? event.target.value : value)) as [string, string],
                         }))

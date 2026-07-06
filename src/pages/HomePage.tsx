@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { KeyRound, Play, RotateCcw, Save, MessageSquare, Waves, X } from 'lucide-react'
+import { BookOpen, KeyRound, Play, RotateCcw, Save, MessageSquare, Waves, X } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
 import { Button, Panel } from '../components/ui'
 import { pickWalkItem } from '../data/walkItems'
@@ -22,7 +22,7 @@ const typeMeta: Record<WalkItemType, { color: string; soft: string }> = {
 
 export function HomePage() {
   const navigate = useNavigate()
-  const { user, isLoading } = useSupabaseUser()
+  const { isLoading } = useSupabaseUser()
   const { state, evolutionStage, adoptedCodeCount, currentReaction, setLesson, setRemoteStatus, updateAiSettings, resetDemo } = useV2()
   const [isApiOpen, setIsApiOpen] = useState(false)
   const [draftProvider, setDraftProvider] = useState<AiProvider>(state.aiProvider)
@@ -43,8 +43,7 @@ export function HomePage() {
   )
 
   const openStart = () => {
-    if (isLoading) return
-    navigate(user ? '/start' : '/login?next=/start')
+    navigate('/start')
   }
 
   const openApiModal = () => {
@@ -88,10 +87,10 @@ export function HomePage() {
     return (
       <div className="flex min-h-[70vh] items-center justify-center px-5">
         <Panel className="max-w-md text-center">
-          <h1 className="font-display text-4xl text-[#EAF2F5]">학급이 없습니다</h1>
-          <p className="mt-3 leading-7 text-[#8AA0B0]">먼저 로그인하고 학급을 만들어 주세요.</p>
+          <h1 className="font-display text-4xl text-[#EAF2F5]">아직 에아몬이 깨어나지 않았어요</h1>
+          <p className="mt-3 leading-7 text-[#8AA0B0]">프로젝트를 시작하면 수업 중에 우리 반 정보를 저장합니다.</p>
           <Button className="mt-6" disabled={isLoading} onClick={openStart}>
-            학급 만들기
+            프로젝트 시작하기
           </Button>
         </Panel>
       </div>
@@ -102,6 +101,15 @@ export function HomePage() {
   const currentLesson = findV2Lesson(lessonNo)
   const progressPercent = Math.round((lessonNo / 7) * 100)
   const canWriteRemote = Boolean(state.classId && state.remote.ok && isRemoteReady())
+  const isFreshClass =
+    lessonNo <= 1 &&
+    !state.aemonName &&
+    state.nameCandidates.length === 0 &&
+    state.wishes.length === 0 &&
+    state.surveyResponses.length === 0 &&
+    state.proposals.length === 0 &&
+    state.adoptedCodes.length === 0 &&
+    state.chatLogs.length === 0
 
   const saveLesson = async (nextLesson: number) => {
     const clamped = Math.min(7, Math.max(1, nextLesson))
@@ -122,6 +130,59 @@ export function HomePage() {
     else navigate('/talk')
   }
 
+  if (isFreshClass) {
+    return (
+      <div className="mx-auto max-w-6xl px-5 py-10">
+        <section className="border-b border-white/10 pb-6">
+          <p className="font-data text-sm text-[#4FE0C0]">
+            {state.className} · 학급 코드 {state.classCode}
+          </p>
+          <div className="mt-3 flex flex-wrap items-end justify-between gap-5">
+            <div>
+              <h1 className="font-display text-5xl leading-tight text-[#EAF2F5]">학급 정보 저장 완료</h1>
+              <p className="mt-3 text-lg leading-8 text-[#B7C7D2]">바로 수업을 시작하거나, 먼저 교사용 사전연수를 열 수 있습니다.</p>
+            </div>
+            <Button variant="secondary" onClick={() => navigate('/start')}>
+              시작 화면
+            </Button>
+          </div>
+        </section>
+
+        <div className="mt-7 grid gap-5 md:grid-cols-2">
+          <Panel className="flex min-h-72 flex-col justify-between">
+            <div>
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FFD37A]/10 text-[#FFD37A]">
+                <Play size={30} />
+              </div>
+              <p className="font-data mt-6 text-xs text-[#FFD37A]">LESSON 1</p>
+              <h2 className="font-display mt-2 text-4xl text-[#EAF2F5]">프로젝트 시작하기</h2>
+              <p className="mt-4 text-lg leading-8 text-[#B7C7D2]">1차시 화면으로 들어가 에아몬을 처음 깨웁니다.</p>
+            </div>
+            <Button className="mt-8 w-full" onClick={() => navigate('/lesson/1')}>
+              프로젝트 시작하기
+              <Play size={18} />
+            </Button>
+          </Panel>
+
+          <Panel className="flex min-h-72 flex-col justify-between">
+            <div>
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#4FE0C0]/10 text-[#4FE0C0]">
+                <BookOpen size={30} />
+              </div>
+              <p className="font-data mt-6 text-xs text-[#4FE0C0]">TEACHER</p>
+              <h2 className="font-display mt-2 text-4xl text-[#EAF2F5]">사전연수</h2>
+              <p className="mt-4 text-lg leading-8 text-[#B7C7D2]">수업 철학과 진행 흐름을 먼저 확인합니다.</p>
+            </div>
+            <Button className="mt-8 w-full" variant="secondary" onClick={() => navigate('/training')}>
+              사전연수
+              <BookOpen size={18} />
+            </Button>
+          </Panel>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="mx-auto max-w-6xl px-5 py-8">
       <section className="border-b border-white/10 pb-6">
@@ -130,7 +191,7 @@ export function HomePage() {
         </p>
         <div className="mt-3 flex flex-wrap items-end justify-between gap-5">
           <div>
-            <h1 className="font-display text-5xl text-[#EAF2F5]">대시보드</h1>
+            <h1 className="font-display text-5xl text-[#EAF2F5]">학급 홈</h1>
             <p className="mt-3 text-xl font-black text-[#EAF2F5]">{state.aemonName || '이름 없는 에아몬'}</p>
           </div>
           <div className="md:text-right">

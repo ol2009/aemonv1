@@ -6,7 +6,7 @@ import { Button, Panel } from '../components/ui'
 import { signInWithGoogle, signOut, useSupabaseUser } from '../lib/useSupabaseUser'
 
 function safeNextPath(value: string | null) {
-  if (!value || !value.startsWith('/') || value.startsWith('//')) return '/home'
+  if (!value || !value.startsWith('/') || value.startsWith('//')) return '/start'
   return value
 }
 
@@ -56,7 +56,7 @@ export function LoginPage() {
           {user ? (
             <Button onClick={() => navigate(nextPath)}>
               <LogIn size={19} />
-              대시보드로 이동
+              시작 화면으로 이동
             </Button>
           ) : (
             <Button disabled={!isConfigured || isLoading} onClick={login}>
@@ -70,7 +70,7 @@ export function LoginPage() {
               로그아웃
             </Button>
           ) : null}
-          <Button variant="secondary" onClick={() => navigate('/home')}>
+          <Button variant="secondary" onClick={() => navigate('/start')}>
             둘러보기
           </Button>
         </div>

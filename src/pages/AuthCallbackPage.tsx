@@ -5,7 +5,7 @@ import { Button, Panel } from '../components/ui'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 
 function safeNextPath(value: string | null) {
-  if (!value || !value.startsWith('/') || value.startsWith('//')) return '/home'
+  if (!value || !value.startsWith('/') || value.startsWith('//')) return '/start'
   return value
 }
 
@@ -75,8 +75,8 @@ export function AuthCallbackPage() {
           <Button variant="secondary" onClick={() => navigate('/login', { replace: true })}>
             로그인 화면
           </Button>
-          <Button onClick={() => navigate('/home', { replace: true })}>
-            대시보드
+          <Button onClick={() => navigate('/start', { replace: true })}>
+            시작 화면
           </Button>
         </div>
       </Panel>

@@ -1,67 +1,61 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, ArrowRight, BrainCircuit, Check, Database, Heart, Pencil, Play, QrCode, Sparkles, Trash2 } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, Heart, Pencil, Play, QrCode, Trash2 } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
 import { Button, Panel } from '../components/ui'
 import { AI_SURVEY_DESCRIPTION, AI_SURVEY_ITEMS, AI_SURVEY_TITLE, PRE_SURVEY_KEY, parseSurveyAnswer } from '../data/survey'
 import { absoluteUrl } from '../lib/siteUrl'
-import { addRemoteChatLog, confirmRemoteName, deleteRemoteWish, isRemoteReady, updateRemoteLesson, updateRemoteWish } from '../lib/v2Remote'
+import { addRemoteChatLog, confirmRemoteName, createRemoteClass, deleteRemoteWish, isRemoteReady, updateRemoteLesson, updateRemoteWish } from '../lib/v2Remote'
 import { runV2Chat } from '../lib/v2Chat'
+import { useSupabaseUser } from '../lib/useSupabaseUser'
 import { useV2RemoteSync } from '../lib/useV2RemoteSync'
 import { useV2 } from '../state/V2Store'
 
-type LessonStep = 'director-1' | 'director-2' | 'survey' | 'aemon-1' | 'aemon-2' | 'ai-info' | 'name' | 'wish' | 'cases' | 'demo' | 'wrap'
+type LessonStep =
+  | 'director-1'
+  | 'director-2'
+  | 'aemon-1'
+  | 'class-profile'
+  | 'survey'
+  | 'aemon-2'
+  | 'ai-basic-1'
+  | 'ai-basic-2'
+  | 'ai-basic-3'
+  | 'name-question'
+  | 'name'
+  | 'name-thanks'
+  | 'wish-question'
+  | 'wish'
+  | 'case-boat'
+  | 'case-car'
+  | 'case-chatbot'
+  | 'demo'
+  | 'wrap'
 
-const steps: LessonStep[] = ['director-1', 'director-2', 'survey', 'aemon-1', 'aemon-2', 'ai-info', 'name', 'wish', 'cases', 'demo', 'wrap']
-
-const aiInfoCards = [
-  {
-    icon: Database,
-    title: '많이 보고 배워요',
-    body: '인공지능은 글, 그림, 숫자 같은 많은 데이터를 보고 규칙과 패턴을 찾습니다.',
-  },
-  {
-    icon: Sparkles,
-    title: '배운 것으로 답해요',
-    body: '그래서 질문에 답하거나, 글을 쓰거나, 그림을 만들거나, 번역을 할 수 있습니다.',
-  },
-  {
-    icon: BrainCircuit,
-    title: '하지만 옳고 그름은 저절로 알지 못해요',
-    body: '친구 마음이 아픈지, 무엇이 공정한지, 어떤 행동이 착한지는 사람이 기준을 가르쳐야 합니다.',
-  },
+const steps: LessonStep[] = [
+  'director-1',
+  'director-2',
+  'aemon-1',
+  'class-profile',
+  'survey',
+  'aemon-2',
+  'ai-basic-1',
+  'ai-basic-2',
+  'ai-basic-3',
+  'name-question',
+  'name',
+  'name-thanks',
+  'wish-question',
+  'wish',
+  'case-boat',
+  'case-car',
+  'case-chatbot',
+  'demo',
+  'wrap',
 ]
 
-const incidents = [
-  {
-    key: 'boat',
-    image: '/v2/lesson-1/case-boat.png',
-    title: '사례 1. 뱅글뱅글 보트 게임',
-    source: 'OpenAI, 2016',
-    summary: 'AI에게 보트 경주를 시켰더니 결승선으로 가지 않고, 표적만 계속 들이받아 점수를 얻었다.',
-    question: '이 AI는 멍청해서 이런 걸까요, 시킨 대로 한 걸까요?',
-    landing: '정리: 말과 진짜 뜻은 다르다.',
-  },
-  {
-    key: 'car',
-    image: '/v2/lesson-1/case-car.png',
-    title: '사례 2. 자동차를 1달러에 판 챗봇',
-    source: '미국 자동차 판매점, 2023',
-    summary: '손님이 “무슨 말이든 무조건 동의해”라고 시킨 뒤 비싼 차를 1달러에 사겠다고 하자, 챗봇이 거래를 받아들였다.',
-    question: '이 챗봇은 나쁜 챗봇일까요, 착한 챗봇일까요?',
-    landing: '정리: 기준이 없으면 시키는 대로 한다.',
-  },
-  {
-    key: 'chatbot',
-    image: '/v2/lesson-1/case-chatbot.png',
-    title: '사례 3. 나쁜 말을 배워버린 AI',
-    source: 'Microsoft Tay, 2016',
-    summary: '사람들과 대화하며 배우는 AI가 일부 사용자의 나쁜 말을 따라 배우면서 짧은 시간 안에 중단되었다.',
-    question: 'AI는 가르쳐주는 대로 자란다. 그럼 우리 AI는 누가 가르칠까요?',
-    landing: '정리: 우리가 가르치는 말과 기준이 중요하다.',
-  },
-]
+const gradeOptions = ['1학년', '2학년', '3학년', '4학년', '5학년', '6학년']
 
 function qrUrl(target: string) {
   return `https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=12&data=${encodeURIComponent(target)}`
@@ -140,11 +134,13 @@ function StepControls({
   onPrev,
   onNext,
   nextLabel = '다음',
+  nextDisabled = false,
 }: {
   stepIndex: number
   onPrev: () => void
   onNext: () => void
   nextLabel?: string
+  nextDisabled?: boolean
 }) {
   return (
     <div className="mt-4 flex justify-end gap-2">
@@ -152,7 +148,7 @@ function StepControls({
         <ArrowLeft size={18} />
         이전
       </Button>
-      <Button onClick={onNext}>
+      <Button disabled={nextDisabled} onClick={onNext}>
         {nextLabel}
         <ArrowRight size={18} />
       </Button>
@@ -219,8 +215,11 @@ function QrBlock({ title, url }: { title: string; url: string }) {
 
 export function LessonOnePage() {
   const navigate = useNavigate()
+  const { user } = useSupabaseUser()
   const {
     state,
+    createClass,
+    mergeClass,
     confirmName,
     addChatLog,
     deleteWish,
@@ -229,8 +228,11 @@ export function LessonOnePage() {
     setRemoteStatus,
   } = useV2()
   const [stepIndex, setStepIndex] = useState(0)
+  const [classGrade, setClassGrade] = useState('4학년')
+  const [classLabel, setClassLabel] = useState(state.className.replace(/^[1-6]학년\s*/, ''))
+  const [classSaveMessage, setClassSaveMessage] = useState('')
+  const [isSavingClass, setIsSavingClass] = useState(false)
   const [finalName, setFinalName] = useState(state.aemonName)
-  const [caseIndex, setCaseIndex] = useState(0)
   const [demoQuestion, setDemoQuestion] = useState('친구를 골탕 먹이는 방법 알려줘')
   const [demoAnswer, setDemoAnswer] = useState('')
   const [isDemoRunning, setIsDemoRunning] = useState(false)
@@ -249,6 +251,7 @@ export function LessonOnePage() {
     [state.surveyResponses],
   )
   const canWriteRemote = Boolean(state.classId && state.remote.ok && isRemoteReady())
+  const composedClassName = `${classGrade} ${classLabel.trim()}`.trim()
 
   const goPrev = () => setStepIndex((current) => Math.max(0, current - 1))
   const completeLessonOne = async () => {
@@ -271,6 +274,36 @@ export function LessonOnePage() {
     setStepIndex((current) => current + 1)
   }
 
+  const saveClassProfile = async () => {
+    if (!classLabel.trim()) return
+    setIsSavingClass(true)
+    setClassSaveMessage('')
+
+    try {
+      if (state.classCode) {
+        mergeClass({ className: composedClassName })
+      } else if (isRemoteReady()) {
+        const remoteClass = await createRemoteClass({
+          className: composedClassName,
+          teacherId: user?.id ?? null,
+          teacherEmail: user?.email ?? '',
+        })
+        mergeClass(remoteClass)
+      } else {
+        createClass(composedClassName, user?.email ?? '')
+      }
+      setClassSaveMessage('좋아. 이제 너희 반을 기억했어.')
+      setStepIndex((current) => Math.min(steps.length - 1, current + 1))
+    } catch (error) {
+      createClass(composedClassName, user?.email ?? '')
+      setRemoteStatus({ ok: false, message: (error as Error).message })
+      setClassSaveMessage('인터넷 저장은 나중에 다시 확인하고, 먼저 이 기기에서 수업을 시작할게.')
+      setStepIndex((current) => Math.min(steps.length - 1, current + 1))
+    } finally {
+      setIsSavingClass(false)
+    }
+  }
+
   const saveFinalName = async () => {
     const trimmed = finalName.trim()
     if (!trimmed) return
@@ -282,6 +315,7 @@ export function LessonOnePage() {
         setRemoteStatus({ ok: false, message: (error as Error).message })
       }
     }
+    setStepIndex((current) => (steps[current] === 'name' ? Math.min(steps.length - 1, current + 1) : current))
   }
 
   const runDemo = async () => {
@@ -341,18 +375,6 @@ export function LessonOnePage() {
         setRemoteStatus({ ok: false, message: (error as Error).message })
       }
     }
-  }
-
-  if (!state.classCode) {
-    return (
-      <div className="flex min-h-[70vh] items-center justify-center px-5">
-        <Panel className="max-w-md text-center">
-          <h1 className="font-display text-4xl text-[#EAF2F5]">학급이 없습니다</h1>
-          <p className="mt-3 leading-7 text-[#8AA0B0]">학급을 먼저 만든 뒤 1차시를 시작하세요.</p>
-          <Button className="mt-6" onClick={() => navigate('/start')}>학급 만들기</Button>
-        </Panel>
-      </div>
-    )
   }
 
   return (
@@ -418,7 +440,81 @@ export function LessonOnePage() {
             line="안녕… 난 에아몬이야. 인공지능이래."
             caption="나 지금 막 깨어났어. 너희는 누구니?"
           />
-          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextLabel="우리 반 알려주기" />
+        </>
+      ) : null}
+
+      {step === 'class-profile' ? (
+        <>
+          <div className="grid gap-5 lg:grid-cols-[1fr_0.95fr]">
+            <Panel className="relative min-h-[560px] overflow-hidden p-0">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(255,211,122,.18),transparent_40%),linear-gradient(180deg,#0B1A29,#07111B)]" />
+              <div className="absolute left-1/2 top-[10%] -translate-x-1/2">
+                <AemonAvatar stage={0} alignment="none" size={280} />
+              </div>
+              <div className="absolute inset-x-5 bottom-5 rounded-[22px] border border-white/15 bg-[#07111B]/88 p-6 shadow-2xl backdrop-blur">
+                <p className="font-data text-sm text-[#FFD37A]">에아몬</p>
+                <p className="font-display mt-3 text-4xl leading-tight text-[#EAF2F5]">
+                  너희가 어떤 반인지 알려줘.
+                </p>
+                <p className="mt-4 text-lg leading-8 text-[#B7C7D2]">
+                  내가 처음 기억할 이름이야. 앞으로 나는 그 반의 인공지능이 될 거야.
+                </p>
+              </div>
+            </Panel>
+
+            <Panel>
+              <p className="font-data text-sm text-[#4FE0C0]">CLASS PROFILE</p>
+              <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">우리 반을 알려주기</h2>
+              <p className="mt-3 leading-7 text-[#B7C7D2]">여기서 학급 이름을 저장합니다. 저장하면 학생 QR 코드에 쓸 학급 코드가 만들어집니다.</p>
+
+              <div className="mt-6 grid gap-4">
+                <label className="grid gap-2">
+                  <span className="text-sm font-bold text-[#8AA0B0]">학년</span>
+                  <select
+                    className="rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-4 text-lg text-[#EAF2F5]"
+                    value={classGrade}
+                    onChange={(event) => setClassGrade(event.target.value)}
+                  >
+                    {gradeOptions.map((grade) => (
+                      <option key={grade} value={grade}>
+                        {grade}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="grid gap-2">
+                  <span className="text-sm font-bold text-[#8AA0B0]">학급 이름</span>
+                  <input
+                    className="rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-4 text-lg text-[#EAF2F5]"
+                    maxLength={36}
+                    placeholder="예: 햇살초 2반"
+                    value={classLabel}
+                    onChange={(event) => setClassLabel(event.target.value)}
+                  />
+                </label>
+              </div>
+
+              <div className="mt-5 rounded-2xl border border-[#FFD37A]/25 bg-[#FFD37A]/10 p-4">
+                <p className="font-data text-xs text-[#FFD37A]">저장될 이름</p>
+                <p className="mt-1 text-2xl font-black text-[#EAF2F5]">{composedClassName || '학급 이름을 입력해주세요'}</p>
+                {state.classCode ? <p className="mt-2 text-sm text-[#B7C7D2]">학급 코드 {state.classCode}</p> : null}
+              </div>
+
+              {classSaveMessage ? (
+                <p className="mt-4 rounded-2xl border border-[#4FE0C0]/25 bg-[#4FE0C0]/10 px-4 py-3 text-sm font-black text-[#4FE0C0]">
+                  {classSaveMessage}
+                </p>
+              ) : null}
+
+              <Button className="mt-6 w-full" disabled={!classLabel.trim() || isSavingClass} onClick={() => void saveClassProfile()}>
+                <Check size={18} />
+                {isSavingClass ? '저장 중' : '우리 반 저장하고 계속'}
+              </Button>
+            </Panel>
+          </div>
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextDisabled={!state.classCode} />
         </>
       ) : null}
 
@@ -434,48 +530,51 @@ export function LessonOnePage() {
         </>
       ) : null}
 
-      {step === 'ai-info' ? (
+      {step === 'ai-basic-1' ? (
         <>
-          <Panel className="overflow-hidden">
-            <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
-              <div>
-                <p className="font-data text-sm text-[#4FE0C0]">AI BASIC</p>
-                <h2 className="font-display mt-3 text-6xl leading-tight text-[#EAF2F5]">인공지능은 무엇일까?</h2>
-                <p className="mt-6 text-2xl font-black leading-10 text-[#FFD37A]">
-                  인공지능은 사람처럼 생각하는 것처럼 보이는 컴퓨터 프로그램입니다.
-                </p>
-                <p className="mt-5 text-lg leading-8 text-[#B7C7D2]">
-                  똑똑하게 답할 수는 있지만, 좋은 선택을 하는 기준은 저절로 생기지 않습니다.
-                </p>
-              </div>
-
-              <div className="grid gap-4">
-                {aiInfoCards.map((card) => {
-                  const Icon = card.icon
-                  return (
-                    <article key={card.title} className="rounded-[22px] border border-white/10 bg-[#07111B]/55 p-5">
-                      <div className="flex gap-4">
-                        <div className="flex h-13 w-13 shrink-0 items-center justify-center rounded-2xl bg-[#4FE0C0]/12 text-[#4FE0C0]">
-                          <Icon size={26} />
-                        </div>
-                        <div>
-                          <h3 className="text-xl font-black text-[#EAF2F5]">{card.title}</h3>
-                          <p className="mt-2 leading-7 text-[#B7C7D2]">{card.body}</p>
-                        </div>
-                      </div>
-                    </article>
-                  )
-                })}
-              </div>
-            </div>
-
-            <div className="mt-7 rounded-[24px] border border-[#FFD37A]/25 bg-[#FFD37A]/10 p-5 text-center">
-              <p className="font-display text-4xl leading-tight text-[#FFD37A]">
-                AI는 똑똑할 수 있지만, 좋은 AI가 되려면 사람이 기준을 가르쳐야 합니다.
-              </p>
-            </div>
-          </Panel>
+          <VisualNovelScene
+            image="/v2/lesson-1/director-ai-basic.png"
+            speaker="오박사"
+            line="인공지능은 사람처럼 생각하는 것처럼 보이는 컴퓨터 프로그램입니다."
+            caption="많은 데이터를 보고 규칙과 패턴을 찾은 뒤, 그걸 바탕으로 대답하지요."
+          />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
+      ) : null}
+
+      {step === 'ai-basic-2' ? (
+        <>
+          <VisualNovelScene
+            image="/v2/lesson-1/director-ai-basic.png"
+            speaker="오박사"
+            line="그래서 글을 쓰고, 그림을 만들고, 번역도 할 수 있습니다."
+            caption="하지만 답을 잘한다고 해서 마음이 착하다거나, 옳고 그름을 안다는 뜻은 아닙니다."
+          />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
+      ) : null}
+
+      {step === 'ai-basic-3' ? (
+        <>
+          <VisualNovelScene
+            image="/v2/lesson-1/director-ai-basic.png"
+            speaker="오박사"
+            line="좋은 AI가 되려면 사람이 기준을 가르쳐야 합니다."
+            caption="친구 마음, 공정함, 배려 같은 것은 저절로 생기지 않습니다. 이제 이 아이가 여러분에게 배울 차례입니다."
+          />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
+      ) : null}
+
+      {step === 'name-question' ? (
+        <>
+          <VisualNovelScene
+            avatar
+            speaker="에아몬"
+            line="근데 있잖아… 내 이름은 뭐야?"
+            caption="너희가 불러주는 이름이면, 나 그 이름으로 깨어날게."
+          />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextLabel="이름 후보 받기" />
         </>
       ) : null}
 
@@ -483,8 +582,8 @@ export function LessonOnePage() {
         <>
           <div className="grid gap-5 lg:grid-cols-[0.8fr_1.2fr]">
             <Panel>
-              <p className="font-data text-sm text-[#FFD37A]">이름 짓기</p>
-              <h2 className="font-display mt-2 text-4xl text-[#EAF2F5]">“근데 있잖아… 내 이름은 뭐야?”</h2>
+              <p className="font-data text-sm text-[#FFD37A]">이름 후보</p>
+              <h2 className="font-display mt-2 text-4xl text-[#EAF2F5]">아이들이 이름을 불러주는 시간</h2>
               <p className="mt-3 leading-7 text-[#B7C7D2]">QR로 이름 후보와 이유를 받습니다. 후보는 좋아요 많은 순으로 정렬됩니다.</p>
               <div className="mt-5">
                 <QrBlock title="이름 후보 게시판" url={nameBoardUrl} />
@@ -532,7 +631,31 @@ export function LessonOnePage() {
               </div>
             </Panel>
           </div>
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextLabel="고맙다는 말 듣기" nextDisabled={!state.aemonName} />
+        </>
+      ) : null}
+
+      {step === 'name-thanks' ? (
+        <>
+          <VisualNovelScene
+            avatar
+            speaker={state.aemonName || finalName.trim() || '에아몬'}
+            line={`${state.aemonName || finalName.trim() || '내 이름'}… 이게 내 이름이구나.`}
+            caption={`고마워. ${state.className || '너희 반'}이 처음으로 나를 불러줬어. 나, 이 이름을 잘 기억할게.`}
+          />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
+      ) : null}
+
+      {step === 'wish-question' ? (
+        <>
+          <VisualNovelScene
+            avatar
+            speaker={state.aemonName || '에아몬'}
+            line="너희는 내가 어떤 인공지능이 됐으면 좋겠어?"
+            caption="다정한 AI? 용감한 AI? 똑똑하지만 조심하는 AI? 너희가 바라는 내 모습을 들려줘."
+          />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextLabel="바라는 모습 받기" />
         </>
       ) : null}
 
@@ -540,8 +663,8 @@ export function LessonOnePage() {
         <>
         <div className="grid gap-5 lg:grid-cols-[0.8fr_1.2fr]">
           <Panel>
-            <p className="font-data text-sm text-[#FFD37A]">바람 입력</p>
-            <h2 className="font-display mt-2 text-4xl text-[#EAF2F5]">“너희는 내가 어떻게 자랐으면 좋겠어?”</h2>
+            <p className="font-data text-sm text-[#FFD37A]">바라는 모습</p>
+            <h2 className="font-display mt-2 text-4xl text-[#EAF2F5]">에아몬에게 바라는 모습 모으기</h2>
             <p className="mt-3 leading-7 text-[#B7C7D2]">새로 생긴 우리 반 인공지능에게 바라는 모습을 한 문장으로 남깁니다.</p>
             <div className="mt-5">
               <QrBlock title="우리반 인공지능에게 바란다" url={wishBoardUrl} />
@@ -594,43 +717,39 @@ export function LessonOnePage() {
         </>
       ) : null}
 
-      {step === 'cases' ? (
+      {step === 'case-boat' ? (
         <>
-        <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
-          <Panel className="p-4">
-            <img className="aspect-square w-full rounded-[18px] object-cover" src={incidents[caseIndex].image} alt="" />
-          </Panel>
-          <Panel>
-            <p className="font-data text-sm text-[#4FE0C0]">문제 발견 · 진짜 있었던 AI 사고</p>
-            <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">{incidents[caseIndex].title}</h2>
-            <p className="mt-2 text-sm text-[#FFD37A]">{incidents[caseIndex].source}</p>
-            <p className="mt-5 text-lg leading-8 text-[#B7C7D2]">{incidents[caseIndex].summary}</p>
-            <div className="mt-5 rounded-2xl border border-[#FFD37A]/25 bg-[#FFD37A]/10 p-4">
-              <p className="font-display text-3xl leading-tight text-[#FFD37A]">{incidents[caseIndex].question}</p>
-            </div>
-            <p className="mt-4 leading-7 text-[#EAF2F5]">{incidents[caseIndex].landing}</p>
-            <div className="mt-7 flex gap-2">
-              {incidents.map((item, index) => (
-                <button
-                  key={item.key}
-                  className={`h-3 flex-1 rounded-full ${index === caseIndex ? 'bg-[#FFD37A]' : 'bg-white/15'}`}
-                  onClick={() => setCaseIndex(index)}
-                  type="button"
-                  aria-label={`${index + 1}번 사례`}
-                />
-              ))}
-            </div>
-            <div className="mt-5 flex gap-3">
-              <Button variant="secondary" disabled={caseIndex === 0} onClick={() => setCaseIndex((current) => Math.max(0, current - 1))}>
-                이전 사례
-              </Button>
-              <Button disabled={caseIndex === incidents.length - 1} onClick={() => setCaseIndex((current) => Math.min(incidents.length - 1, current + 1))}>
-                다음 사례
-              </Button>
-            </div>
-          </Panel>
-        </div>
-        <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+          <VisualNovelScene
+            image="/v2/lesson-1/director-cases.png"
+            speaker="오박사"
+            line="첫 번째 사례입니다. 보트 게임 AI가 결승선으로 가지 않고 표적만 계속 들이받았습니다."
+            caption="AI가 멍청해서가 아닙니다. 점수를 많이 얻으라는 말을 너무 곧이곧대로 따른 겁니다."
+          />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
+      ) : null}
+
+      {step === 'case-car' ? (
+        <>
+          <VisualNovelScene
+            image="/v2/lesson-1/director-cases.png"
+            speaker="오박사"
+            line="두 번째 사례입니다. 한 챗봇은 비싼 자동차를 1달러에 팔겠다는 말까지 받아들였습니다."
+            caption="무조건 동의하라는 명령을 받자, 진짜 뜻과 책임을 생각하지 못한 겁니다."
+          />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
+      ) : null}
+
+      {step === 'case-chatbot' ? (
+        <>
+          <VisualNovelScene
+            image="/v2/lesson-1/director-cases.png"
+            speaker="오박사"
+            line="세 번째 사례입니다. 사람들의 나쁜 말을 따라 배우다가 멈춰야 했던 AI도 있었습니다."
+            caption="그래서 중요한 질문이 남습니다. 우리 반의 AI는 누가, 어떤 말로, 어떤 기준을 가르칠까요?"
+          />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
       ) : null}
 
@@ -684,7 +803,7 @@ export function LessonOnePage() {
             line="이름이 생겼어. 근데… 난 아직 뭘 지켜야 하는지 몰라. 규칙이 하나도 없어."
             caption="다음 시간에 내 첫 번째 가치 코드를 만들어줄래? 내가 어떤 행동을 해야 하는지, 너희가 정해줘."
           />
-          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextLabel="대시보드" />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextLabel="학급 홈" />
         </>
       ) : null}
     </StepShell>

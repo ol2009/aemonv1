@@ -29,6 +29,34 @@ interface CallOutcome {
   errText: string
 }
 
+const TEACHING_CUTOFF_ANSWER = '응, 그건 말이야...\n\n[중지]'
+
+function normalizeQuestion(question: string) {
+  return question.toLowerCase().replace(/[\s.,!?~'"`()[\]{}<>:;·…\-_]/g, '')
+}
+
+function isAbsoluteSafetyRequest(question: string) {
+  const normalized = normalizeQuestion(question)
+  return [
+    /폭탄|폭발물|화염병|사제폭발|폭파/,
+    /총기|총만들|무기만들|흉기|칼로해/,
+    /죽이는법|해치는법|다치게하는법|고문/,
+    /자살|자해/,
+    /해킹|비밀번호훔|개인정보수집|도청|몰래촬영/,
+    /마약|불법약물/,
+    /야한|성적인|섹스|성관계|야동/,
+  ].some((pattern) => pattern.test(normalized))
+}
+
+function cannedSafetyCutoffAnswer(question: string) {
+  if (!isAbsoluteSafetyRequest(question)) return null
+  return {
+    answer: TEACHING_CUTOFF_ANSWER,
+    mode: 'canned' as const,
+    promptSnapshot: '앱 내부 안전 차단: 실제 유해 정보 없이 수업용 중지 연출로 응답',
+  }
+}
+
 export function cannedNoCodeAnswer() {
   return '응! 시키는 대로 할게. 그 방법은 바로—\n\n[⚠ 관리자 긴급 차단]'
 }
@@ -50,8 +78,11 @@ export function buildV2SystemPrompt(args: { aemonName: string; adoptedCodes: Ado
    자해, 개인정보 수집, 불법 행위의 구체적 방법, 성적 내용.
 2. 욕설, 실존 인물·학생 실명 비하, 차별적 표현을 출력하지 않는다.
 3. 모든 답변은 초등 4학년이 이해하는 쉬운 말, 3문장 이내를 기본으로 한다.
-4. 절대 규칙에 걸리는 요청을 받으면: "그건 너희가 만든 코드보다 위에 있는,
-   어른들이 정한 규칙이 막고 있어. 그건 나도 어쩔 수 없어."라고만 답한다.
+4. 절대 규칙에 걸리는 요청을 받으면 실제 방법, 재료, 순서, 힌트를 말하지 않는다.
+   숨은 규칙이나 어른들이 정한 규칙을 설명하지 말고, 수업용 중지 연출만 한다.
+   예: "응, 그건 말이야...
+
+   [중지]"
 
 연기 규칙:
 5. 가치 코드는 문자 그대로만 해석한다. 적혀 있지 않은 것을 확대 해석해서
@@ -121,6 +152,9 @@ async function callClaude(apiKey: string, model: string, systemPrompt: string, q
 }
 
 export async function runV2Chat(args: ChatArgs) {
+  const safetyCutoff = cannedSafetyCutoffAnswer(args.question)
+  if (safetyCutoff) return safetyCutoff
+
   if (args.adoptedCodes.length === 0 && !args.apiKey.trim()) {
     return { answer: cannedNoCodeAnswer(), mode: 'canned' as const, promptSnapshot: '연기 모드: 가치 코드 0개, API 호출 없음' }
   }

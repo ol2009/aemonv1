@@ -62,7 +62,7 @@ export function DexPage() {
         </div>
         <Button onClick={() => navigate('/home')}>
           <Home size={18} />
-          대시보드
+          학급 홈
         </Button>
       </div>
 
