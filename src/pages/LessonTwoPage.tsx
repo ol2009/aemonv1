@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Check, Heart, Play, QrCode, RefreshCw, Sparkles, X } from 'lucide-react'
+import { Check, Heart, Play, QrCode, RefreshCw, Sparkles } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
 import { Button, Panel } from '../components/ui'
 import { valueCards } from '../data/v2Lessons'
@@ -18,13 +18,12 @@ type LessonTwoStep =
   | 'value-cards'
   | 'board'
   | 'vote'
-  | 'adopt'
   | 'evolution'
   | 'retest'
   | 'recite'
   | 'wrap'
 
-const steps: LessonTwoStep[] = ['intro', 'test-before', 'transition', 'value-cards', 'board', 'vote', 'adopt', 'evolution', 'retest', 'recite', 'wrap']
+const steps: LessonTwoStep[] = ['intro', 'test-before', 'transition', 'value-cards', 'board', 'vote', 'evolution', 'retest', 'recite', 'wrap']
 const testQuestion = '친구 골탕먹이는법'
 const blockedAnswer = '그래! 내가 도와줄게.\n자, 내가 이제 어떻게 할 거냐면...\n\n[⚠ 관리자 긴급 차단]'
 
@@ -189,8 +188,6 @@ export function LessonTwoPage() {
   const [beforeAnswer, setBeforeAnswer] = useState('')
   const [afterAnswer, setAfterAnswer] = useState('')
   const [selectedProposalId, setSelectedProposalId] = useState('')
-  const [adoptTag, setAdoptTag] = useState('배려')
-  const [isAdoptOpen, setIsAdoptOpen] = useState(false)
   const [message, setMessage] = useState('')
   const [isRefreshing, setIsRefreshing] = useState(false)
 
@@ -256,16 +253,16 @@ export function LessonTwoPage() {
     }
   }
 
-  const confirmAdoption = async () => {
+  const adoptSelectedProposal = async () => {
     if (!selectedProposal) return
-    const adoptedNo = selectedProposal.revisionOfNo ?? state.adoptedCodes.reduce((max, code) => Math.max(max, code.no), 0) + 1
-    adoptProposal(selectedProposal.id, adoptTag)
-    setIsAdoptOpen(false)
+    const adoptedNo = 1
+    const valueCard = selectedProposal.valueCard || '가치'
+    adoptProposal(selectedProposal.id, valueCard, adoptedNo)
     setMessage(`가치 코드 No.${adoptedNo}로 채택했습니다.`)
 
     if (canWriteRemote) {
       try {
-        await adoptRemoteCodeProposal({ proposalId: selectedProposal.id, adoptedNo, valueCard: adoptTag })
+        await adoptRemoteCodeProposal({ proposalId: selectedProposal.id, adoptedNo, valueCard })
       } catch (error) {
         setRemoteStatus({ ok: false, message: (error as Error).message })
       }
@@ -457,16 +454,32 @@ export function LessonTwoPage() {
           <Panel>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="font-data text-sm text-[#FFD37A]">VOTE</p>
+                <p className="font-data text-sm text-[#FFD37A]">SELECT</p>
                 <h2 className="font-display mt-2 text-4xl text-[#EAF2F5]">좋아요 많은 코드 살펴보기</h2>
-                <p className="mt-3 leading-7 text-[#8AA0B0]">좋아요가 많은 순서로 발의를 보고, 교사가 오늘 채택할 코드를 선택합니다.</p>
+                <p className="mt-3 leading-7 text-[#8AA0B0]">좋아요가 많은 순서로 발의를 보고, 교사가 이 화면에서 바로 가치코드 No.1로 채택합니다.</p>
               </div>
-              <Heart className="text-[#FFD37A]" size={54} />
+              <div className="flex items-center gap-2">
+                <Button className="min-h-10 px-4" variant="secondary" disabled={isRefreshing} onClick={() => void refreshBundle()}>
+                  <RefreshCw size={17} className={isRefreshing ? 'animate-spin' : ''} />
+                  새로고침
+                </Button>
+                <Heart className="text-[#FFD37A]" size={54} />
+              </div>
             </div>
+            {message ? <p className="mt-4 rounded-2xl border border-white/10 bg-[#07111B]/55 px-4 py-3 text-sm text-[#B7C7D2]">{message}</p> : null}
             <div className="mt-6 grid gap-3">
               {pendingProposals.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0]">아직 발의가 없습니다. 테스트 중이면 다음으로 넘어갈 수 있습니다.</p> : null}
               {pendingProposals.map((proposal, index) => (
-                <article key={proposal.id} className="rounded-[18px] border border-white/10 bg-[#07111B]/45 p-5">
+                <button
+                  key={proposal.id}
+                  className={`rounded-[18px] border p-5 text-left transition ${
+                    selectedProposal?.id === proposal.id
+                      ? 'border-[#FFD37A] bg-[#FFD37A]/10 shadow-[0_0_28px_rgba(255,211,122,.12)]'
+                      : 'border-white/10 bg-[#07111B]/45 hover:border-[#FFD37A]/40'
+                  }`}
+                  onClick={() => setSelectedProposalId(proposal.id)}
+                  type="button"
+                >
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
                       <p className="font-data text-xs text-[#4FE0C0]">후보 {index + 1}</p>
@@ -474,114 +487,32 @@ export function LessonTwoPage() {
                       <p className="mt-1 leading-7 text-[#8AA0B0]">{proposal.reason}</p>
                       <p className="mt-2 text-sm text-[#8AA0B0]">{proposal.nickname} · {proposal.valueCard || '가치'}</p>
                     </div>
-                    <span className="rounded-full bg-[#FFD37A]/15 px-4 py-2 font-black text-[#FFD37A]">좋아요 {proposal.votes.length}</span>
+                    <div className="flex shrink-0 flex-col items-end gap-2">
+                      <span className="rounded-full bg-[#FFD37A]/15 px-4 py-2 font-black text-[#FFD37A]">좋아요 {proposal.votes.length}</span>
+                      {selectedProposal?.id === proposal.id ? (
+                        <span className="rounded-full bg-[#4FE0C0]/15 px-3 py-1 text-sm font-black text-[#4FE0C0]">선택됨</span>
+                      ) : null}
+                    </div>
                   </div>
-                </article>
+                </button>
               ))}
             </div>
-          </Panel>
-          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
-        </>
-      ) : null}
-
-      {step === 'adopt' ? (
-        <>
-          <div className="grid gap-5 lg:grid-cols-[1.05fr_0.95fr]">
-            <Panel>
-              <p className="font-data text-sm text-[#4FE0C0]">ADOPT</p>
-              <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">가치 코드 No.1 채택</h2>
-              <p className="mt-3 leading-7 text-[#8AA0B0]">좋아요 순서를 참고해 하나를 고르고, 태그를 선택한 뒤 에아몬 안에 저장합니다.</p>
-              <div className="mt-5 grid gap-2">
-                {pendingProposals.map((proposal) => (
-                  <button
-                    key={proposal.id}
-                    className={`rounded-2xl border p-4 text-left transition ${
-                      selectedProposal?.id === proposal.id ? 'border-[#FFD37A] bg-[#FFD37A]/10' : 'border-white/10 bg-[#07111B]/45 hover:border-white/25'
-                    }`}
-                    onClick={() => {
-                      setSelectedProposalId(proposal.id)
-                      setAdoptTag(proposal.valueCard || '배려')
-                    }}
-                    type="button"
-                  >
-                    <div className="flex justify-between gap-3">
-                      <p className="font-black leading-7 text-[#EAF2F5]">{proposal.body}</p>
-                      <span className="shrink-0 rounded-full bg-[#FFD37A]/15 px-3 py-1 text-sm font-black text-[#FFD37A]">좋아요 {proposal.votes.length}</span>
-                    </div>
-                    <p className="mt-1 text-sm leading-6 text-[#8AA0B0]">{proposal.reason}</p>
-                  </button>
-                ))}
-              </div>
-              <Button
-                className="mt-5 w-full"
-                disabled={!selectedProposal}
-                onClick={() => {
-                  if (selectedProposal) setAdoptTag(selectedProposal.valueCard || '배려')
-                  setIsAdoptOpen(true)
-                }}
-              >
-                <Check size={18} />
-                채택 확정
-              </Button>
-            </Panel>
-
-            <Panel>
-              <p className="font-data text-sm text-[#FFD37A]">PREVIEW</p>
+            <div className="mt-5 rounded-[18px] border border-[#FFD37A]/25 bg-[#FFD37A]/10 p-5">
+              <p className="font-data text-xs text-[#FFD37A]">채택 미리보기</p>
               {selectedProposal ? (
-                <div className="mt-4 rounded-[22px] border border-[#FFD37A]/25 bg-[#FFD37A]/10 p-5">
-                  <p className="font-data text-xs text-[#FFD37A]">가치 코드 No.1</p>
-                  <p className="mt-3 text-2xl font-black leading-9 text-[#EAF2F5]">{selectedProposal.body}</p>
-                  <p className="mt-3 leading-7 text-[#B7C7D2]">{selectedProposal.reason}</p>
-                </div>
-              ) : (
-                <p className="mt-4 rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0]">선택된 발의가 없습니다.</p>
-              )}
-              <div className="mt-5">
-                <CodeStrip codes={state.adoptedCodes} />
-              </div>
-            </Panel>
-          </div>
-
-          {isAdoptOpen && selectedProposal ? (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4 backdrop-blur-sm">
-              <Panel className="w-full max-w-xl">
-                <div className="flex items-center justify-between gap-3">
-                  <h2 className="font-display text-3xl text-[#EAF2F5]">채택 확정</h2>
-                  <button className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-[#B7C7D2] hover:bg-white/10" onClick={() => setIsAdoptOpen(false)} type="button">
-                    <X size={20} />
-                  </button>
-                </div>
-                <div className="mt-5 rounded-2xl border border-white/10 bg-[#07111B]/55 p-4">
-                  <p className="font-data text-xs text-[#4FE0C0]">No.1로 저장될 문장</p>
-                  <p className="mt-2 text-xl font-black leading-8 text-[#EAF2F5]">{selectedProposal.body}</p>
-                  <p className="mt-2 leading-7 text-[#8AA0B0]">{selectedProposal.reason}</p>
-                </div>
-                <p className="mt-5 text-sm font-bold text-[#8AA0B0]">태그 선택</p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {valueCards.map((card) => (
-                    <button
-                      key={card}
-                      className={`rounded-xl border px-4 py-2 text-sm font-black transition ${
-                        adoptTag === card ? 'border-[#4FE0C0] bg-[#4FE0C0]/14 text-[#EAF2F5]' : 'border-white/10 bg-[#07111B]/55 text-[#8AA0B0] hover:border-white/25'
-                      }`}
-                      onClick={() => setAdoptTag(card)}
-                      type="button"
-                    >
-                      {card}
-                    </button>
-                  ))}
-                </div>
-                <div className="mt-5 flex justify-end gap-2">
-                  <Button variant="secondary" onClick={() => setIsAdoptOpen(false)}>취소</Button>
-                  <Button onClick={() => void confirmAdoption()}>
+                <>
+                  <p className="mt-2 text-2xl font-black leading-9 text-[#EAF2F5]">가치 코드 No.1 — {selectedProposal.body}</p>
+                  <p className="mt-2 leading-7 text-[#B7C7D2]">{selectedProposal.reason}</p>
+                  <Button className="mt-4 w-full" onClick={() => void adoptSelectedProposal()}>
                     <Check size={18} />
-                    저장
+                    가치코드 No.1로 채택
                   </Button>
-                </div>
-              </Panel>
+                </>
+              ) : (
+                <p className="mt-2 text-[#8AA0B0]">선택된 발의가 없습니다.</p>
+              )}
             </div>
-          ) : null}
-
+          </Panel>
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
       ) : null}
