@@ -215,6 +215,7 @@ export async function createRemoteClass(input: { className: string; teacherId?: 
       .from('classes')
       .insert({
         name: input.className.trim(),
+        mode: 'ai',
         code,
         teacher_id: input.teacherId ?? null,
         current_lesson: 1,
@@ -270,6 +271,7 @@ export async function restoreRemoteClassSnapshot(input: {
     .insert({
       id,
       name,
+      mode: 'ai',
       code,
       current_lesson: currentLesson,
       aemon_name: aemonName,
