@@ -197,8 +197,14 @@ function mapChatLogs(rows: ChatLogRow[]): ChatLog[] {
 export async function probeV2Database() {
   try {
     const client = ensureClient()
-    const { error } = await client.from('classes').select('id').limit(1)
-    if (error) throw error
+    const tables = ['classes', 'name_candidates', 'name_votes', 'wishes', 'survey_responses', 'codes', 'code_votes', 'chat_logs'] as const
+    const results = await Promise.all(tables.map(async (table) => ({ table, result: await client.from(table).select('*').limit(1) })))
+    const missingTables = results.filter(({ result }) => result.error && isMissingTableError(result.error)).map(({ table }) => table)
+    const unexpectedError = results.find(({ result }) => result.error && !isMissingTableError(result.error))?.result.error
+    if (unexpectedError) throw unexpectedError
+    if (missingTables.length > 0) {
+      throw new Error(`${MISSING_SCHEMA_MESSAGE} 누락된 테이블: ${missingTables.join(', ')}`)
+    }
     return { ok: true, message: 'Supabase 동기화 준비됨' }
   } catch (error) {
     return { ok: false, message: toMessage(error) }
@@ -323,20 +329,26 @@ export async function fetchRemoteClassBundle(classCode: string): Promise<Partial
       .limit(120),
   ])
 
-  for (const result of [candidateResult, nameVoteResult, wishResult, codeResult, codeVoteResult, chatResult]) {
-    if (result.error) throw new Error(toMessage(result.error))
+  for (const result of [candidateResult, nameVoteResult, wishResult, surveyResult, codeResult, codeVoteResult, chatResult]) {
+    if (result.error && !isMissingTableError(result.error)) throw new Error(toMessage(result.error))
   }
   if (surveyResult.error && !isMissingTableError(surveyResult.error)) throw new Error(toMessage(surveyResult.error))
 
-  const codeRows = (codeResult.data ?? []) as CodeRow[]
+  const candidateRows = candidateResult.error ? [] : ((candidateResult.data ?? []) as NameCandidateRow[])
+  const nameVoteRows = nameVoteResult.error ? [] : ((nameVoteResult.data ?? []) as NameVoteRow[])
+  const wishRows = wishResult.error ? [] : ((wishResult.data ?? []) as WishRow[])
+  const surveyRows = surveyResult.error ? [] : ((surveyResult.data ?? []) as SurveyResponseRow[])
+  const codeRows = codeResult.error ? [] : ((codeResult.data ?? []) as CodeRow[])
+  const codeVoteRows = codeVoteResult.error ? [] : ((codeVoteResult.data ?? []) as CodeVoteRow[])
+  const chatRows = chatResult.error ? [] : ((chatResult.data ?? []) as ChatLogRow[])
   return {
     ...mapClass(classRow),
-    nameCandidates: mapNameCandidates((candidateResult.data ?? []) as NameCandidateRow[], (nameVoteResult.data ?? []) as NameVoteRow[]),
-    wishes: mapWishes((wishResult.data ?? []) as WishRow[]),
-    surveyResponses: surveyResult.error ? [] : mapSurveyResponses((surveyResult.data ?? []) as SurveyResponseRow[]),
-    proposals: mapProposals(codeRows, (codeVoteResult.data ?? []) as CodeVoteRow[]),
+    nameCandidates: mapNameCandidates(candidateRows, nameVoteRows),
+    wishes: mapWishes(wishRows),
+    surveyResponses: mapSurveyResponses(surveyRows),
+    proposals: mapProposals(codeRows, codeVoteRows),
     adoptedCodes: mapAdoptedCodes(codeRows),
-    chatLogs: mapChatLogs((chatResult.data ?? []) as ChatLogRow[]),
+    chatLogs: mapChatLogs(chatRows),
     remote: { enabled: true, ok: true, message: 'Supabase 동기화됨', lastSyncedAt: new Date().toISOString() },
   }
 }

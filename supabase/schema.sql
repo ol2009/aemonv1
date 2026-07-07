@@ -15,6 +15,9 @@ alter table classes add column if not exists mode text not null default 'ai' che
 alter table classes add column if not exists code text;
 alter table classes add column if not exists current_lesson int not null default 1 check (current_lesson between 1 and 7);
 alter table classes add column if not exists aemon_name text not null default '';
+alter table classes alter column mode set default 'ai';
+update classes set mode = 'ai' where mode is null;
+alter table classes alter column mode set not null;
 create unique index if not exists classes_code_unique_idx on classes(code) where code is not null;
 
 create table if not exists name_candidates (
