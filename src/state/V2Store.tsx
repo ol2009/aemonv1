@@ -231,7 +231,7 @@ function reducer(state: V2State, action: Action): V2State {
         },
         apiKey: state.apiKey,
         aiProvider: state.aiProvider,
-        studentSession: state.studentSession,
+        studentSession: action.payload.studentSession ?? state.studentSession,
       }
     case 'class/joinStudent': {
       const nickname = clamp(action.nickname, 16)

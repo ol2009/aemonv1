@@ -32,10 +32,10 @@ export function playDialogueTick() {
   oscillator.type = 'sine'
   oscillator.frequency.setValueAtTime(620 + Math.random() * 90, now)
   gain.gain.setValueAtTime(0.0001, now)
-  gain.gain.exponentialRampToValueAtTime(0.028, now + 0.006)
-  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.045)
+  gain.gain.exponentialRampToValueAtTime(0.075, now + 0.006)
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.065)
   oscillator.connect(gain)
   gain.connect(context.destination)
   oscillator.start(now)
-  oscillator.stop(now + 0.05)
+  oscillator.stop(now + 0.07)
 }

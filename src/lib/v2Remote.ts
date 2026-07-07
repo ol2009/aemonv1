@@ -233,28 +233,30 @@ export async function createRemoteClass(input: { className: string; teacherId?: 
 }
 
 export async function restoreRemoteClassSnapshot(input: {
-  classId: string
+  classId?: string
   className: string
   classCode: string
   currentLesson: number
   aemonName: string
 }) {
   const client = ensureClient()
-  const id = input.classId.trim()
+  const id = input.classId?.trim() || crypto.randomUUID()
   const code = input.classCode.trim()
   const name = input.className.trim().slice(0, 50)
   const currentLesson = Math.min(7, Math.max(1, input.currentLesson || 1))
   const aemonName = input.aemonName.trim().slice(0, 12)
   const select = 'id,name,code,current_lesson,aemon_name,created_at'
 
-  if (!id || !code || !name) {
+  if (!code || !name) {
     throw new Error('Local class state is missing required fields.')
   }
 
-  const { data: byId, error: idError } = await client.from('classes').select(select).eq('id', id).maybeSingle<ClassRow>()
-  if (idError) throw new Error(toMessage(idError))
-  if (byId) {
-    return { ...mapClass(byId), remote: { enabled: true, ok: true, message: 'Supabase class restored', lastSyncedAt: new Date().toISOString() } }
+  if (input.classId?.trim()) {
+    const { data: byId, error: idError } = await client.from('classes').select(select).eq('id', input.classId.trim()).maybeSingle<ClassRow>()
+    if (idError) throw new Error(toMessage(idError))
+    if (byId) {
+      return { ...mapClass(byId), remote: { enabled: true, ok: true, message: 'Supabase class restored', lastSyncedAt: new Date().toISOString() } }
+    }
   }
 
   const { data: byCode, error: codeError } = await client.from('classes').select(select).eq('code', code).maybeSingle<ClassRow>()

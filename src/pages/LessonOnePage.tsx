@@ -6,7 +6,17 @@ import { AemonAvatar } from '../components/AemonAvatar'
 import { Button, Panel } from '../components/ui'
 import { AI_SURVEY_DESCRIPTION, AI_SURVEY_ITEMS, AI_SURVEY_TITLE, PRE_SURVEY_KEY, parseSurveyAnswer, surveyScore, type AiSurveyAnswer } from '../data/survey'
 import { absoluteUrl } from '../lib/siteUrl'
-import { addRemoteChatLog, confirmRemoteName, createRemoteClass, deleteRemoteWish, fetchRemoteClassBundle, isRemoteReady, updateRemoteLesson, updateRemoteWish } from '../lib/v2Remote'
+import {
+  addRemoteChatLog,
+  confirmRemoteName,
+  createRemoteClass,
+  deleteRemoteWish,
+  fetchRemoteClassBundle,
+  isRemoteReady,
+  restoreRemoteClassSnapshot,
+  updateRemoteLesson,
+  updateRemoteWish,
+} from '../lib/v2Remote'
 import { runV2Chat } from '../lib/v2Chat'
 import { playDialogueTick, unlockDialogueSound } from '../lib/dialogueSound'
 import { useSupabaseUser } from '../lib/useSupabaseUser'
@@ -389,8 +399,24 @@ export function LessonOnePage() {
     setClassSaveMessage('')
 
     try {
+      let nextMessage = '좋아. 이제 너희 반을 기억했어.'
       if (state.classCode) {
         mergeClass({ className: composedClassName })
+        if (isRemoteReady()) {
+          try {
+            const restoredClass = await restoreRemoteClassSnapshot({
+              classId: state.classId || crypto.randomUUID(),
+              className: composedClassName,
+              classCode: state.classCode,
+              currentLesson: state.currentLesson,
+              aemonName: state.aemonName,
+            })
+            mergeClass(restoredClass)
+          } catch (restoreError) {
+            setRemoteStatus({ ok: false, message: (restoreError as Error).message })
+            nextMessage = '수업은 계속할 수 있지만, 학생 QR 저장 서버를 다시 확인해야 합니다.'
+          }
+        }
       } else if (isRemoteReady()) {
         const remoteClass = await createRemoteClass({
           className: composedClassName,
@@ -401,7 +427,7 @@ export function LessonOnePage() {
       } else {
         createClass(composedClassName, user?.email ?? '')
       }
-      setClassSaveMessage('좋아. 이제 너희 반을 기억했어.')
+      setClassSaveMessage(nextMessage)
       setStepIndex((current) => Math.min(steps.length - 1, current + 1))
     } catch (error) {
       createClass(composedClassName, user?.email ?? '')

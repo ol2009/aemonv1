@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { BarChart3, BookOpenText, CheckCircle2, Heart, LogOut, Pencil, Send, Trash2 } from 'lucide-react'
 import { Button, Panel } from '../components/ui'
@@ -161,6 +161,29 @@ export function BoardPage() {
 
   useV2RemoteSync(state.classCode, Boolean(state.classCode && (session || isTeacherBoard)))
 
+  useEffect(() => {
+    const code = queryCode.trim()
+    if (!code || state.classCode === code || !isRemoteReady()) return
+
+    let cancelled = false
+    fetchRemoteClassBundle(code)
+      .then((bundle) => {
+        if (cancelled) return
+        mergeClass(bundle)
+        setClassCode(code)
+        setMessage('')
+      })
+      .catch((error) => {
+        if (cancelled) return
+        setRemoteStatus({ ok: false, message: (error as Error).message })
+        setMessage('학급 코드를 확인할 수 없습니다. 선생님 화면의 코드를 다시 확인해주세요.')
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [queryCode, state.classCode])
+
   const updateSurveyAnswer = (updater: (current: AiSurveyAnswer) => AiSurveyAnswer) => {
     if (!sessionNickname) return
     setSurveyDraft({ nickname: sessionNickname, answer: updater(surveyAnswer) })
@@ -176,9 +199,12 @@ export function BoardPage() {
     try {
       if (state.classCode !== code && isRemoteReady()) {
         const bundle = await fetchRemoteClassBundle(code)
-        mergeClass(bundle)
+        mergeClass({ ...bundle, studentSession: { classCode: code, nickname: nick } })
+      } else if (state.classCode !== code) {
+        setMessage('학급 정보를 아직 불러오지 못했습니다. 잠시 뒤 다시 눌러주세요.')
+      } else {
+        joinStudent(code, nick)
       }
-      joinStudent(code, nick)
     } catch (error) {
       setRemoteStatus({ ok: false, message: (error as Error).message })
       setMessage('학급 코드를 확인할 수 없습니다. 선생님 화면의 코드를 다시 확인해주세요.')
@@ -327,6 +353,7 @@ export function BoardPage() {
               className="rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 text-[#EAF2F5]"
               inputMode="numeric"
               placeholder="학급 코드"
+              readOnly={Boolean(queryCode)}
               value={classCode}
               onChange={(event) => setClassCode(event.target.value)}
             />

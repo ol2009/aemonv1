@@ -27,14 +27,13 @@ export function useV2RemoteSync(classCode?: string, enabled = true) {
       } catch (error) {
         const localState = stateRef.current
         const canRestoreClass =
-          localState.classId.trim() &&
           localState.classCode.trim() === code &&
           localState.className.trim()
 
         if (canRestoreClass) {
           try {
             await restoreRemoteClassSnapshot({
-              classId: localState.classId,
+              classId: localState.classId || crypto.randomUUID(),
               className: localState.className,
               classCode: localState.classCode,
               currentLesson: localState.currentLesson,
