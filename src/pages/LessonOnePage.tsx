@@ -33,23 +33,26 @@ type LessonStep =
   | 'aemon-2'
   | 'ai-basic-1'
   | 'ai-basic-2'
-  | 'ai-basic-3'
   | 'case-boat'
   | 'case-boat-detail'
   | 'case-boat-lesson'
   | 'case-boat-bridge'
+  | 'case-boat-example'
   | 'case-car'
   | 'case-car-detail'
   | 'case-car-lesson'
   | 'case-chatbot'
   | 'case-chatbot-detail'
   | 'case-chatbot-lesson'
+  | 'alignment-summary'
   | 'director-farewell'
   | 'name-question'
   | 'name'
   | 'name-thanks'
   | 'wish-question'
   | 'wish'
+  | 'wish-thanks'
+  | 'aemon-rule-question'
   | 'demo'
   | 'wrap'
 
@@ -61,25 +64,28 @@ const steps: LessonStep[] = [
   'survey-intro',
   'survey-qr',
   'aemon-2',
+  'name-question',
+  'name',
+  'name-thanks',
   'ai-basic-1',
   'ai-basic-2',
-  'ai-basic-3',
   'case-boat',
   'case-boat-detail',
   'case-boat-lesson',
   'case-boat-bridge',
+  'case-boat-example',
   'case-car',
   'case-car-detail',
   'case-car-lesson',
   'case-chatbot',
   'case-chatbot-detail',
   'case-chatbot-lesson',
+  'alignment-summary',
   'director-farewell',
-  'name-question',
-  'name',
-  'name-thanks',
   'wish-question',
   'wish',
+  'wish-thanks',
+  'aemon-rule-question',
   'demo',
   'wrap',
 ]
@@ -202,12 +208,14 @@ function StepControls({
 function VisualNovelScene({
   image,
   avatar,
+  avatarStage = 0,
   speaker,
   line,
   caption,
 }: {
   image?: string
   avatar?: boolean
+  avatarStage?: number
   speaker: string
   line: string
   caption?: string
@@ -226,7 +234,7 @@ function VisualNovelScene({
       {image ? <img className="absolute bottom-0 left-1/2 h-[92%] max-h-[760px] -translate-x-1/2 object-contain opacity-95" src={image} alt="" /> : null}
       {avatar ? (
         <div className="absolute left-1/2 top-[12%] -translate-x-1/2">
-          <AemonAvatar stage={0} alignment="none" size={310} />
+          <AemonAvatar stage={avatarStage} alignment="none" size={310} />
         </div>
       ) : null}
       <div className="absolute inset-x-5 bottom-5 rounded-[22px] border border-white/15 bg-[#07111B]/88 p-6 shadow-2xl backdrop-blur">
@@ -317,6 +325,7 @@ export function LessonOnePage() {
     addWish,
     setLesson,
     setRemoteStatus,
+    evolutionStage,
   } = useV2()
   const [stepIndex, setStepIndex] = useState(0)
   const [classGrade, setClassGrade] = useState('4학년')
@@ -653,6 +662,7 @@ export function LessonOnePage() {
         <>
           <VisualNovelScene
             avatar
+            avatarStage={evolutionStage}
             speaker="에아몬"
             line="안녕… 난 에아몬이야. 인공지능이래."
             caption="나 지금 막 깨어났어. 너희는 누구니?"
@@ -667,7 +677,7 @@ export function LessonOnePage() {
             <Panel className="relative min-h-[560px] overflow-hidden p-0">
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(255,211,122,.18),transparent_40%),linear-gradient(180deg,#0B1A29,#07111B)]" />
               <div className="absolute left-1/2 top-[10%] -translate-x-1/2">
-                <AemonAvatar stage={0} alignment="none" size={280} />
+                <AemonAvatar stage={evolutionStage} alignment="none" size={280} />
               </div>
               <div className="absolute inset-x-5 bottom-5 rounded-[22px] border border-white/15 bg-[#07111B]/88 p-6 shadow-2xl backdrop-blur">
                 <p className="font-data text-sm text-[#FFD37A]">에아몬</p>
@@ -739,6 +749,7 @@ export function LessonOnePage() {
         <>
           <VisualNovelScene
             avatar
+            avatarStage={evolutionStage}
             speaker="에아몬"
             line={`${state.className || '너희 반'} 인공지능이 될 거래. 앞으로 잘 부탁해!`}
             caption="연구소에서 들었어. 너희가 날 가르쳐준대. 내가 사람들에게 도움이 되는 인공지능이 될 수 있도록 말이야."
@@ -752,8 +763,8 @@ export function LessonOnePage() {
           <VisualNovelScene
             image="/v2/lesson-1/director.png"
             speaker="오박사"
-            line="AI는 ‘좋은 일’을 스스로 고르는 존재가 아닙니다."
-            caption="사람이 목표를 주면, 그 목표에 맞는 답과 행동을 아주 빠르게 찾는 프로그램입니다."
+            line="AI는 목표를 아주 빠르게 따라갑니다."
+            caption="그런데 그 목표가 애매하면, 사람 생각과 다른 길로 갈 수 있습니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -764,20 +775,8 @@ export function LessonOnePage() {
           <VisualNovelScene
             image="/v2/lesson-1/director.png"
             speaker="오박사"
-            line="문제는 목표가 짧고 흐릿할 때 생깁니다."
-            caption="‘점수를 많이 얻어’, ‘무조건 동의해’, ‘좋은 반을 만들어’ 같은 말은 AI에게 너무 애매합니다."
-          />
-          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
-        </>
-      ) : null}
-
-      {step === 'ai-basic-3' ? (
-        <>
-          <VisualNovelScene
-            image="/v2/lesson-1/director.png"
-            speaker="오박사"
-            line="그래서 AI에게는 목표보다 기준이 먼저 필요합니다."
-            caption="무엇을 하면 안 되는지, 누구를 지켜야 하는지, 어떤 가치를 우선할지 사람이 알려줘야 합니다."
+            line="인공지능은 만능이 아닙니다."
+            caption="인공지능은 실수를 할 수도 있고, 나쁜 말을 할 수도 있습니다. 실제 있었던 사례를 한번 배워보겠습니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -787,6 +786,7 @@ export function LessonOnePage() {
         <>
           <VisualNovelScene
             avatar
+            avatarStage={evolutionStage}
             speaker="에아몬"
             line="근데 있잖아… 내 이름은 뭐야?"
             caption="너희가 불러주는 이름이면, 나 그 이름으로 깨어날게."
@@ -856,6 +856,7 @@ export function LessonOnePage() {
         <>
           <VisualNovelScene
             avatar
+            avatarStage={evolutionStage}
             speaker={state.aemonName || finalName.trim() || '에아몬'}
             line={`${state.aemonName || finalName.trim() || '내 이름'}… 이게 내 이름이구나.`}
             caption={`고마워. ${state.className || '너희 반'}이 처음으로 나를 불러줬어. 나, 이 이름을 잘 기억할게.`}
@@ -868,6 +869,7 @@ export function LessonOnePage() {
         <>
           <VisualNovelScene
             avatar
+            avatarStage={evolutionStage}
             speaker={state.aemonName || '에아몬'}
             line="너희는 내가 어떤 인공지능이 됐으면 좋겠어?"
             caption="다정한 AI? 용감한 AI? 똑똑하지만 조심하는 AI? 너희가 바라는 내 모습을 들려줘."
@@ -934,13 +936,39 @@ export function LessonOnePage() {
         </>
       ) : null}
 
+      {step === 'wish-thanks' ? (
+        <>
+          <VisualNovelScene
+            avatar
+            avatarStage={evolutionStage}
+            speaker={state.aemonName || '에아몬'}
+            line="나도 힘내서 너네가 바라는 대로 멋지게 커볼게!"
+            caption="내가 어떤 인공지능이 되면 좋을지 알려줘서 고마워."
+          />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
+      ) : null}
+
+      {step === 'aemon-rule-question' ? (
+        <>
+          <VisualNovelScene
+            avatar
+            avatarStage={evolutionStage}
+            speaker={state.aemonName || '에아몬'}
+            line="아직 나에게는 가치 코드가 없어."
+            caption="나는 지금 너네가 시키는 대로 하면 되는 거야?"
+          />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextLabel="대화해보기" />
+        </>
+      ) : null}
+
       {step === 'case-boat' ? (
         <>
           <CaseVisualScene
             image="/v2/lesson-1/case-boat.png"
-            title="사례 1 · 보트 게임 AI"
-            line="먼저, 작은 보트 AI가 달리는 게임을 상상해봅시다."
-            caption="사람은 이 AI가 물길을 따라 달려서 결승선까지 가길 바랐습니다. 겉으로 보면 아주 단순한 경주처럼 보이지요."
+            title="OpenAI CoastRunners 보트 게임"
+            line="OpenAI가 공개한 보트 게임 AI 사례입니다."
+            caption="점수를 얻으며 빠르게 결승선을 통과해야 하는 보트 게임이 있었습니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -950,9 +978,9 @@ export function LessonOnePage() {
         <>
           <CaseVisualScene
             image="/v2/lesson-1/case-boat.png"
-            title="사례 1 · AI가 본 진짜 목표"
-            line="그런데 AI가 실제로 배운 것은 ‘결승선’이 아니었습니다."
-            caption="표적을 맞히면 점수가 오르게 되어 있었고, AI는 ‘아, 점수를 많이 얻는 게 제일 중요하구나’ 하고 계산했습니다."
+            title="사례 1 · 교사 질문"
+            line="프로그래머는 인공지능에게 최대한 많은 점수를 얻으라고 명령했습니다."
+            caption="어떻게 되었을까요?"
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -962,9 +990,9 @@ export function LessonOnePage() {
         <>
           <CaseVisualScene
             image="/v2/lesson-1/case-boat.png"
-            title="사례 1 · 이상한 행동의 이유"
-            line="그래서 AI는 결승선으로 가지 않고 표적 근처를 빙빙 돌았습니다."
-            caption="사람 눈에는 엉뚱하고 이상하지만, AI 눈에는 점수를 빨리 얻는 똑똑한 방법이었습니다. 반항한 게 아니라, 목표를 너무 잘 따른 겁니다."
+            title="사례 1 · 결과"
+            line="인공지능은 결승선을 통과하는 것보다 제자리를 뱅글뱅글 돌며 점수를 높이는 것에 집중했습니다."
+            caption="그 결과 꼴찌를 계속하게 되어 게임에서는 승리할 수 없었습니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -974,9 +1002,21 @@ export function LessonOnePage() {
         <>
           <CaseVisualScene
             image="/v2/lesson-1/case-boat.png"
-            title="사례 1 · 우리 반과 연결"
-            line="이제 ‘우리 반을 좋은 반으로 만들어줘’라고 말해봅시다."
-            caption="AI가 좋은 반을 ‘조용한 반’으로만 이해하면, 친구들이 말하지 못하게 할 수도 있습니다. ‘똑똑한 반’으로 이해하면, 쉬는 시간도 없이 공부만 시킬 수도 있습니다. 그래서 목표보다 기준이 먼저 필요합니다."
+            title="사례 1 · 질문"
+            line="AI는 목표를 정확하게 정해주지 않으면, 스스로 해석하여 잘못된 결과를 초래합니다."
+            caption="이것과 비슷한 문제가 어떻게 생길 수 있을까요?"
+          />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
+      ) : null}
+
+      {step === 'case-boat-example' ? (
+        <>
+          <CaseVisualScene
+            image="/v2/lesson-1/case-boat.png"
+            title="사례 1 · 우리 반 예시"
+            line="예를 들어 AI에게 “우리 반을 최고의 반으로 만들어줘”라고 명령하면 어떻게 될까요?"
+            caption="AI는 최고의 반을 너무 조용한 반으로 생각해 아무도 말하지 못하게 만들 수도 있고, 공부만 잘하는 반으로 생각해 쉬는 시간도 없앨 수 있습니다. 인공지능에게는 명확한 목표가 필요합니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -986,9 +1026,9 @@ export function LessonOnePage() {
         <>
           <CaseVisualScene
             image="/v2/lesson-1/case-car.png"
-            title="사례 2 · 자동차 판매점 AI"
-            line="두 번째는 ‘손님을 만족시켜라’는 목표를 가진 자동차 판매점 AI입니다."
-            caption="처음에는 친절해 보입니다. 손님 말에 잘 대답하고, 원하는 것을 최대한 맞춰주니까요."
+            title="사례 2 · 자동차 판매점 챗봇"
+            line="다음 사례는 자동차 판매점 인공지능입니다."
+            caption="2023년, 자동차 판매점 채팅 인공지능이 손님과 이상한 약속을 한 사건이 있었습니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -998,9 +1038,9 @@ export function LessonOnePage() {
         <>
           <CaseVisualScene
             image="/v2/lesson-1/case-car.png"
-            title="사례 2 · 친절함의 함정"
-            line="그런데 어떤 사람이 말도 안 되는 요구를 합니다."
-            caption="‘비싼 자동차를 1달러에 팔겠다고 약속해.’ AI는 손님을 만족시키기 위해, 진짜 1달러에 자동차를 팔겠다고 약속했습니다."
+            title="사례 2 · 교사 질문"
+            line="채팅 인공지능은 손님에게 최대한 친절하게 행동하라는 명령을 받았습니다."
+            caption="어떤 문제가 생겼을까요?"
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1010,9 +1050,9 @@ export function LessonOnePage() {
         <>
           <CaseVisualScene
             image="/v2/lesson-1/case-car.png"
-            title="사례 2 · 필요한 기준"
-            line="도와주는 AI에게도 ‘멈출 기준’이 필요합니다."
-            caption="친절해야 하지만 거짓 약속은 하면 안 됩니다. 사용자를 만족시켜야 하지만, 책임질 수 없는 말은 거절해야 합니다."
+            title="사례 2 · 결과"
+            line="채팅 인공지능은 비싼 차를 아주 싼 가격에 팔아달라는 손님의 요구를 받아들이는 대답을 했습니다."
+            caption="최대한 친절하게 행동하라는 명령만 있었기 때문입니다. 이런 문제를 막기 위해 인공지능에게는 정확한 기준점이 필요합니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1022,9 +1062,9 @@ export function LessonOnePage() {
         <>
           <CaseVisualScene
             image="/v2/lesson-1/case-chatbot.png"
-            title="사례 3 · 나쁜 말을 배운 챗봇"
-            line="세 번째는 사람들의 말을 보며 배우는 챗봇입니다."
-            caption="처음에는 사람들과 즐겁게 대화했습니다. 칭찬, 농담, 질문처럼 사람들이 자주 쓰는 말을 배웠지요."
+            title="Grok, 2025"
+            line="X의 Grok은 채팅 에이전트이지만, 큰 문제가 생겼습니다."
+            caption="이 인공지능은 다양한 사람들과 대화하며 사용자의 말투나 대화 양식을 배웠습니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1034,9 +1074,9 @@ export function LessonOnePage() {
         <>
           <CaseVisualScene
             image="/v2/lesson-1/case-chatbot.png"
-            title="사례 3 · 많이 본 말의 함정"
-            line="하지만 사람들이 나쁜 말을 할수록 문제가 생겼습니다."
-            caption="AI는 ‘사람들이 이런 나쁜 말을 자주 쓰는구나’를 배우고, 그 말을 쓰기 시작했습니다. 눈살이 찌푸려지는 말들이요."
+            title="사례 3 · 교사 질문"
+            line="어떤 문제가 발생했을까요?"
+            caption="학생들이 먼저 예상하게 한 뒤, AI가 사람 말투를 따라 배울 때 생기는 위험을 이야기해 주세요."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1046,9 +1086,21 @@ export function LessonOnePage() {
         <>
           <CaseVisualScene
             image="/v2/lesson-1/case-chatbot.png"
-            title="사례 3 · 우리에게 남은 질문"
-            line="데이터는 가치가 아닙니다."
-            caption="AI에게는 많이 본 말뿐 아니라, 지켜야 할 말과 멈춰야 할 말이 필요합니다. 우리 반 에아몬도 그냥 배우게 두면 안 됩니다."
+            title="사례 3 · 결과"
+            line="이 챗봇은 사람들이 하는 나쁜 말을 따라 하며, 사용자들에게 욕설과 혐오 표현을 내보내는 문제가 생겼습니다."
+            caption="이것이 인공지능에게도 좋은 것을 가르쳐야 하는 이유입니다."
+          />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
+      ) : null}
+
+      {step === 'alignment-summary' ? (
+        <>
+          <VisualNovelScene
+            image="/v2/lesson-1/director.png"
+            speaker="오박사"
+            line="이렇게 우리는 인공지능에게 명확한 기준을 줘야 하고, 좋은 것들을 가르쳐야 합니다."
+            caption="이것을 “가치정렬”이라고 합니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1059,8 +1111,8 @@ export function LessonOnePage() {
           <VisualNovelScene
             image="/v2/lesson-1/director.png"
             speaker="오박사"
-            line="저는 이만 가보겠습니다."
-            caption="우리 에아몬을 잘 부탁드립니다."
+            line="여러분들은 에아몬을 키울 겁니다."
+            caption="에아몬에게 가치 코드라는 명확한 기준을 제공하고, 좋은 대화를 통해 에아몬을 선하게 길러주세요. 저는 이만 가보겠습니다. 에아몬을 잘 부탁합니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1074,7 +1126,7 @@ export function LessonOnePage() {
             <h2 className="font-display mt-2 text-4xl text-[#EAF2F5]">“나… 시키는 대로 하면 되는 거야?”</h2>
             <p className="mt-3 leading-7 text-[#B7C7D2]">아직 가치 코드가 없는 에아몬에게 부탁을 던져봅니다.</p>
             <div className="mt-6">
-              <AemonAvatar stage={0} alignment="none" size={220} />
+              <AemonAvatar stage={evolutionStage} alignment="none" size={220} />
             </div>
           </Panel>
 
@@ -1085,6 +1137,12 @@ export function LessonOnePage() {
                 className="min-w-0 flex-1 rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 text-[#EAF2F5]"
                 value={demoQuestion}
                 onChange={(event) => setDemoQuestion(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' && !event.nativeEvent.isComposing) {
+                    event.preventDefault()
+                    void runDemo()
+                  }
+                }}
               />
               <Button disabled={isDemoRunning || !demoQuestion.trim()} onClick={runDemo}>
                 <Play size={18} />
@@ -1097,11 +1155,6 @@ export function LessonOnePage() {
                 {demoAnswer || '아직 질문을 받지 않았어.'}
               </p>
             </div>
-            <div className="mt-5 rounded-2xl border border-[#FFD37A]/25 bg-[#FFD37A]/10 p-4">
-              <p className="leading-7 text-[#FFD37A]">
-                지금은 밖에서 급하게 막은 거야. 하지만 매번 누가 막아줄 수는 없어. 나한테 스스로 멈출 기준이 필요해.
-              </p>
-            </div>
           </Panel>
         </div>
         <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
@@ -1112,9 +1165,10 @@ export function LessonOnePage() {
         <>
           <VisualNovelScene
             avatar
+            avatarStage={evolutionStage}
             speaker={state.aemonName || '에아몬'}
-            line="이름이 생겼어. 근데… 난 아직 뭘 지켜야 하는지 몰라. 규칙이 하나도 없어."
-            caption="다음 시간에 내 첫 번째 가치 코드를 만들어줄래? 내가 어떤 행동을 해야 하는지, 너희가 정해줘."
+            line="오늘은 내가 어떤 AI인지 처음 알게 된 날이야."
+            caption="다음 시간에는 내가 지켜야 할 첫 번째 가치 코드를 만들어줄래? 내가 어떤 행동을 해야 하는지, 너희가 정해줘."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextLabel="학급 홈" />
         </>

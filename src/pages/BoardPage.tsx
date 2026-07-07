@@ -15,7 +15,7 @@ import {
   surveyScore,
   type AiSurveyAnswer,
 } from '../data/survey'
-import { valueCards } from '../data/v2Lessons'
+import { LESSON2_RISK_KEY, valueCards } from '../data/v2Lessons'
 import {
   addRemoteCodeProposal,
   addRemoteNameCandidate,
@@ -31,7 +31,7 @@ import {
 import { useV2RemoteSync } from '../lib/useV2RemoteSync'
 import { useV2 } from '../state/V2Store'
 
-type BoardTopic = 'survey' | 'name' | 'wish' | 'code'
+type BoardTopic = 'survey' | 'risk' | 'name' | 'wish' | 'code'
 
 const topicMeta: Record<BoardTopic, { label: string; title: string; lesson: string; empty: string }> = {
   survey: {
@@ -39,6 +39,12 @@ const topicMeta: Record<BoardTopic, { label: string; title: string; lesson: stri
     title: AI_SURVEY_TITLE,
     lesson: '1차시',
     empty: '아직 설문 응답이 없습니다.',
+  },
+  risk: {
+    label: '위험 토론',
+    title: 'AI가 나쁜 명령을 들어주면?',
+    lesson: '2차시',
+    empty: '아직 의견이 올라오지 않았습니다.',
   },
   name: {
     label: '이름 후보',
@@ -65,12 +71,13 @@ function sortByLikes<T extends { votes: string[]; createdAt: string }>(items: T[
 }
 
 function requestedTopic(value: string | null): BoardTopic | null {
-  if (value === 'survey' || value === 'name' || value === 'wish' || value === 'code') return value
+  if (value === 'survey' || value === 'risk' || value === 'name' || value === 'wish' || value === 'code') return value
   return null
 }
 
 function classNameForTopic(topic: BoardTopic) {
   if (topic === 'survey') return 'border-[#6AD8FF] bg-[#6AD8FF]/12 text-[#9CE6FF]'
+  if (topic === 'risk') return 'border-[#EF6381] bg-[#EF6381]/12 text-[#FFD7DE]'
   if (topic === 'name') return 'border-[#FFD37A] bg-[#FFD37A]/12 text-[#FFD37A]'
   if (topic === 'wish') return 'border-[#4FE0C0] bg-[#4FE0C0]/12 text-[#4FE0C0]'
   return 'border-[#9B7CFF] bg-[#9B7CFF]/12 text-[#C9B9FF]'
@@ -111,6 +118,7 @@ export function BoardPage() {
   const [nameDraft, setNameDraft] = useState('')
   const [reasonDraft, setReasonDraft] = useState('')
   const [wishDraft, setWishDraft] = useState('')
+  const [riskDraft, setRiskDraft] = useState('')
   const [codeBodyDraft, setCodeBodyDraft] = useState('')
   const [codeReasonDraft, setCodeReasonDraft] = useState('')
   const [codeValueCard, setCodeValueCard] = useState('배려')
@@ -122,16 +130,18 @@ export function BoardPage() {
 
   const session = state.studentSession
   const canSeeSurvey = Boolean(state.currentLesson >= 1 || state.surveyResponses.length > 0 || queryTopic === 'survey')
+  const canSeeRisk = Boolean(state.currentLesson >= 2 || state.surveyResponses.some((response) => response.questionKey === LESSON2_RISK_KEY) || queryTopic === 'risk')
   const canSeeWish = Boolean(state.aemonName || state.wishes.length > 0 || state.currentLesson >= 2 || queryTopic === 'wish')
   const canSeeCode = Boolean(state.currentLesson >= 2 || state.proposals.length > 0 || state.adoptedCodes.length > 0 || queryTopic === 'code')
   const unlockedTopics = useMemo<BoardTopic[]>(() => {
     const topics: BoardTopic[] = []
     if (canSeeSurvey) topics.push('survey')
+    if (canSeeRisk) topics.push('risk')
     topics.push('name')
     if (canSeeWish) topics.push('wish')
     if (canSeeCode) topics.push('code')
     return queryTopic ? topics.filter((topic) => topic === queryTopic) : topics
-  }, [canSeeCode, canSeeSurvey, canSeeWish, queryTopic])
+  }, [canSeeCode, canSeeRisk, canSeeSurvey, canSeeWish, queryTopic])
   const activeTopic = unlockedTopics.includes(selectedTopic) ? selectedTopic : unlockedTopics[0] ?? 'name'
   const sortedNames = useMemo(() => sortByLikes(state.nameCandidates), [state.nameCandidates])
   const sortedProposals = useMemo(() => sortByLikes(state.proposals.filter((proposal) => proposal.status === 'pending')), [state.proposals])
@@ -157,6 +167,11 @@ export function BoardPage() {
   const surveyAverageScore = parsedSurveyResponses.length
     ? Math.round((parsedSurveyResponses.reduce((sum, item) => sum + surveyScore(item.answer), 0) / parsedSurveyResponses.length) * 10) / 10
     : 0
+  const riskResponses = useMemo(
+    () => state.surveyResponses.filter((response) => response.questionKey === LESSON2_RISK_KEY && response.body.trim()),
+    [state.surveyResponses],
+  )
+  const savedRiskResponse = sessionNickname ? riskResponses.find((response) => response.nickname === sessionNickname) : null
   const canWriteRemote = Boolean(state.classId && state.remote.ok && isRemoteReady())
 
   useV2RemoteSync(state.classCode, Boolean(state.classCode && (session || isTeacherBoard)))
@@ -265,6 +280,21 @@ export function BoardPage() {
     if (canWriteRemote) {
       try {
         await upsertRemoteSurveyResponse({ classId: state.classId, nickname: session.nickname, questionKey: PRE_SURVEY_KEY, body })
+      } catch (error) {
+        setRemoteStatus({ ok: false, message: (error as Error).message })
+      }
+    }
+  }
+
+  const submitRisk = async () => {
+    const body = riskDraft.trim() || savedRiskResponse?.body.trim() || ''
+    if (!body || !session) return
+    upsertSurveyResponse({ questionKey: LESSON2_RISK_KEY, body, nickname: session.nickname })
+    setRiskDraft('')
+
+    if (canWriteRemote) {
+      try {
+        await upsertRemoteSurveyResponse({ classId: state.classId, nickname: session.nickname, questionKey: LESSON2_RISK_KEY, body })
       } catch (error) {
         setRemoteStatus({ ok: false, message: (error as Error).message })
       }
@@ -413,7 +443,7 @@ export function BoardPage() {
           <div className="mt-4 flex items-start gap-3 rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
             <BookOpenText className="mt-0.5 text-[#FFD37A]" size={20} />
             <p className="text-sm leading-6 text-[#8AA0B0]">
-              사전 생각, 이름 후보, 바라는 모습, 가치코드를 차례대로 모읍니다.
+              사전 생각, 위험 토론, 이름 후보, 바라는 모습, 가치코드를 차례대로 모읍니다.
             </p>
           </div>
         ) : null}
@@ -601,6 +631,62 @@ export function BoardPage() {
         </div>
       ) : null}
 
+      {activeTopic === 'risk' ? (
+        <div className="grid gap-5 lg:grid-cols-[0.85fr_1.15fr]">
+          {!isTeacherBoard ? (
+            <Panel>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="font-data text-xs text-[#EF6381]">2차시 · 위험 토론</p>
+                  <h2 className="font-display mt-1 text-3xl leading-tight text-[#EAF2F5]">AI가 나쁜 명령을 들어주면 어떤 일이 생길까요?</h2>
+                  <p className="mt-3 leading-7 text-[#8AA0B0]">방금 본 에아몬처럼, AI가 사람이 시키는 대로만 행동하면 어떤 위험이 생길지 한 문장으로 남겨주세요.</p>
+                </div>
+                {savedRiskResponse ? (
+                  <span className="inline-flex items-center gap-2 rounded-full border border-[#4FE0C0]/25 bg-[#4FE0C0]/10 px-4 py-2 text-sm font-black text-[#4FE0C0]">
+                    <CheckCircle2 size={17} />
+                    저장됨
+                  </span>
+                ) : null}
+              </div>
+
+              <textarea
+                className="mt-5 min-h-36 w-full resize-none rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 text-lg leading-8 text-[#EAF2F5] outline-none transition focus:border-[#EF6381]/60"
+                maxLength={180}
+                placeholder="예: 누군가를 다치게 하거나, 비밀을 알려주거나, 친구를 괴롭히는 일이 생길 수 있어요."
+                value={riskDraft || savedRiskResponse?.body || ''}
+                onChange={(event) => setRiskDraft(event.target.value)}
+              />
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
+                <p className="text-sm leading-6 text-[#8AA0B0]">한 사람당 한 번 저장됩니다. 다시 저장하면 내 답이 수정됩니다.</p>
+                <Button disabled={!(riskDraft || savedRiskResponse?.body || '').trim()} onClick={submitRisk}>
+                  <Send size={18} />
+                  {savedRiskResponse ? '수정 저장' : '의견 저장'}
+                </Button>
+              </div>
+            </Panel>
+          ) : null}
+
+          <Panel className={isTeacherBoard ? 'lg:col-span-2' : ''}>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="font-data text-xs text-[#EF6381]">THINK BOARD</p>
+                <h2 className="font-display mt-1 text-3xl text-[#EAF2F5]">학생 의견</h2>
+              </div>
+              <span className="rounded-full bg-[#07111B]/70 px-3 py-1 text-sm text-[#8AA0B0]">{riskResponses.length}개</span>
+            </div>
+            <div className="mt-4 grid gap-3">
+              {riskResponses.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0]">{topicMeta.risk.empty}</p> : null}
+              {riskResponses.map((response) => (
+                <article key={response.id} className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
+                  <p className="text-lg font-black leading-8 text-[#EAF2F5]">{response.body}</p>
+                  <p className="mt-2 text-sm text-[#8AA0B0]">{response.nickname}</p>
+                </article>
+              ))}
+            </div>
+          </Panel>
+        </div>
+      ) : null}
+
       {activeTopic === 'name' ? (
         <div className="grid gap-5 lg:grid-cols-[0.85fr_1.15fr]">
           {!isTeacherBoard ? (
@@ -751,8 +837,13 @@ export function BoardPage() {
               <p className="font-data text-xs text-[#9B7CFF]">2차시 · 첫 번째 가치코드</p>
               <h2 className="font-display mt-1 text-3xl text-[#EAF2F5]">에아몬의 약속 발의하기</h2>
               <p className="mt-3 text-sm leading-6 text-[#8AA0B0]">
-                오늘은 친구를 다치게 하거나 위험하게 하는 부탁을 막는 코드를 만듭니다.
+                오늘은 나쁜 명령을 스스로 멈추게 할 첫 번째 기준을 만듭니다.
               </p>
+
+              <div className="mt-4 rounded-2xl border border-[#FFD37A]/25 bg-[#FFD37A]/10 p-4">
+                <p className="font-bold leading-7 text-[#FFD37A]">너에게 필요한 가치는 ___이다.</p>
+                <p className="mt-1 font-bold leading-7 text-[#FFD37A]">너는 ___해야 한다. 왜냐하면 ___이기 때문이다.</p>
+              </div>
 
               <div className="mt-4 flex flex-wrap gap-2">
                 {valueCards.map((card) => (
@@ -774,7 +865,7 @@ export function BoardPage() {
               <textarea
                 className="mt-4 min-h-28 w-full resize-none rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 leading-7 text-[#EAF2F5]"
                 maxLength={180}
-                placeholder="에아몬은 ___해야 한다."
+                placeholder={`${state.aemonName || '에아몬'}은 ___해야 한다.`}
                 value={codeBodyDraft}
                 onChange={(event) => setCodeBodyDraft(event.target.value)}
               />

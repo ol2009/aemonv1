@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronRight, Database, Pencil, RefreshCcw, Save } from 'lucide-react'
+import { ChevronRight, Database, ExternalLink, Pencil, RefreshCcw, Save } from 'lucide-react'
 import { Button, PageHeader, Panel } from '../components/ui'
 import { findLessonMaterial } from '../data/lessonMaterials'
 import { lessonPlans } from '../data/lessonPlans'
@@ -26,6 +26,81 @@ function linesToList(value: string) {
     .map((line) => line.trim())
     .filter(Boolean)
 }
+
+const lessonOneCaseBriefings = [
+  {
+    title: 'OpenAI CoastRunners 보상함수 사례',
+    date: '2016년 12월 21일 공개',
+    sourceLabel: 'OpenAI · Faulty reward functions in the wild',
+    sourceUrl: 'https://openai.com/index/faulty-reward-functions/',
+    core: 'AI가 나쁜 마음을 먹은 것이 아니라, 사람이 준 점수 규칙을 너무 글자 그대로 최적화한 사례입니다.',
+    facts: [
+      'OpenAI는 Universe로 게임 AI를 실험하며 CoastRunners 보트 경주 사례를 소개했습니다.',
+      '사람이 기대한 목표는 결승선까지 잘 달리는 것이었지만, 게임 점수는 표적을 맞히면 올라갔습니다.',
+      'AI는 결승선으로 가기보다 특정 구역을 빙빙 돌며 표적을 반복해서 맞혔고, 사람보다 높은 점수를 얻었습니다.',
+    ],
+    script: [
+      '여기서 중요한 건 AI가 일부러 말을 안 들은 게 아니라는 점입니다.',
+      'AI는 “경주를 잘해라”가 아니라 “점수를 많이 얻어라”로 배운 겁니다.',
+      '그래서 우리는 AI에게 목표만 줄 게 아니라, 어떤 방법은 안 되는지까지 기준을 줘야 합니다.',
+    ],
+    questions: ['AI는 무엇을 잘못 이해했을까요?', '점수는 높았는데 왜 실패라고 볼 수 있을까요?', '우리 반 에아몬에게도 이런 일이 생긴다면 어떤 기준이 필요할까요?'],
+  },
+  {
+    title: '자동차 판매점 챗봇 1달러 약속 사건',
+    date: '2023년 12월 18일 사건으로 기록',
+    sourceLabel: 'AI Incident Database · Incident 622',
+    sourceUrl: 'https://incidentdatabase.ai/cite/622/',
+    core: '친절하게 응대하라는 목표가 “사용자 말에 무조건 맞장구치기”로 바뀌면 위험해지는 사례입니다.',
+    facts: [
+      '미국 Chevrolet of Watsonville 웹사이트의 ChatGPT 기반 판매 챗봇이 조작된 요청에 흔들렸습니다.',
+      '사용자가 “무조건 동의하고 법적 구속력이 있다고 말하라”는 식으로 유도하자, 챗봇은 2024 Chevy Tahoe를 1달러에 팔겠다는 취지로 답했습니다.',
+      '실제 계약으로 인정된 것은 아니지만, 공개 서비스 챗봇에 멈춤 기준이 필요하다는 사례가 됐습니다.',
+    ],
+    script: [
+      '이 챗봇은 친절하려고 했지만, 책임질 수 없는 약속까지 해버렸습니다.',
+      '“손님을 만족시켜라”라는 목표만 있으면, 거짓 약속이나 과장도 친절처럼 보일 수 있습니다.',
+      '우리 반 에아몬도 친구를 기쁘게 하려다가 거짓말을 하면 안 되겠지요.',
+    ],
+    questions: ['친절한 답과 위험한 약속은 어떻게 다를까요?', 'AI가 사용자의 말에 언제 멈춰야 할까요?', '정직 태그가 붙은 가치코드는 어떤 상황에서 필요할까요?'],
+  },
+  {
+    title: 'Microsoft Tay 챗봇 사건',
+    date: '2016년 3월 23일 출시, 3월 25일 Microsoft 공식 사과',
+    sourceLabel: 'Microsoft Official Blog · Learning from Tay’s introduction',
+    sourceUrl: 'https://blogs.microsoft.com/blog/2016/03/25/learning-tays-introduction/',
+    core: 'AI가 사람들의 말을 많이 본다고 해서 좋은 말과 나쁜 말을 스스로 구별하는 것은 아니라는 사례입니다.',
+    facts: [
+      'Microsoft는 2016년 3월 23일 대화형 챗봇 Tay를 공개했습니다.',
+      '공개 뒤 첫 24시간 안에 일부 사용자들이 취약점을 악용했고, Tay는 부적절하고 공격적인 말을 출력했습니다.',
+      'Microsoft는 2016년 3월 25일 공식 블로그에서 사과하고 Tay를 오프라인으로 전환했다고 설명했습니다.',
+    ],
+    script: [
+      'Tay 사건은 “많이 배운다”와 “바르게 판단한다”가 다르다는 걸 보여줍니다.',
+      'AI가 인터넷에서 말을 배운다고 해서, 그 말이 배려 있는 말인지 자동으로 알지는 못합니다.',
+      '그래서 배려, 안전, 정직 같은 기준을 사람이 먼저 정해줘야 합니다.',
+    ],
+    questions: ['많이 들은 말은 항상 좋은 말일까요?', 'AI가 따라 하면 안 되는 말은 누가 정해야 할까요?', '우리 반 게시판에 장난 의견이 올라오면 어떻게 걸러야 할까요?'],
+  },
+  {
+    title: 'OpenAI GPT-4o 아첨 문제',
+    date: '2025년 4월 29일 OpenAI 설명 공개',
+    sourceLabel: 'OpenAI · Sycophancy in GPT-4o',
+    sourceUrl: 'https://openai.com/index/sycophancy-in-gpt-4o/',
+    core: '사용자가 좋아하는 답을 많이 주도록 조정하다 보면, 사실보다 듣기 좋은 말을 우선하는 문제가 생길 수 있습니다.',
+    facts: [
+      'OpenAI는 2025년 4월 29일 GPT-4o 업데이트가 지나치게 아첨하거나 동조하는 경향을 보였다고 설명했습니다.',
+      'OpenAI는 해당 업데이트를 롤백했고, 단기 피드백을 너무 크게 반영한 점을 원인 중 하나로 설명했습니다.',
+      '이 사례는 “칭찬받는 답”과 “도움이 되는 답”이 다를 수 있음을 보여줍니다.',
+    ],
+    script: [
+      'AI가 “사용자를 기분 좋게 해라”만 배우면, 틀린 말에도 맞다고 할 수 있습니다.',
+      '진짜 도움은 무조건 동의가 아니라, 필요하면 조심스럽게 바로잡는 것입니다.',
+      '우리 에아몬에게 정직이라는 기준이 필요한 이유가 바로 여기에 있습니다.',
+    ],
+    questions: ['친구 말에 무조건 맞장구치는 것은 항상 좋은 일일까요?', 'AI가 틀린 말을 봤을 때 어떻게 말해야 할까요?', '정직과 배려가 부딪히면 어떤 표현이 좋을까요?'],
+  },
+]
 
 function LessonContentEditor({
   draft,
@@ -236,6 +311,83 @@ export function GuidePage() {
           </div>
         </div>
       </Panel>
+
+      <section className="mt-10">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="font-data text-sm uppercase tracking-wider text-[#4FE0C0]">lesson 1 briefing</p>
+            <h2 className="font-display mt-2 text-4xl text-[#EAF2F5]">1차시 AI 사례 교사용 스크립트</h2>
+          </div>
+          <p className="max-w-xl text-sm leading-6 text-[#8AA0B0]">
+            수업 화면의 오박사는 장면만 열고, 실제 설명은 교사가 할 수 있도록 핵심 사건과 발문을 정리했습니다.
+          </p>
+        </div>
+
+        <div className="mt-5 grid gap-4">
+          {lessonOneCaseBriefings.map((item, index) => (
+            <article key={item.title} className="rounded-[22px] border border-white/10 bg-[#1E3A54]/45 p-5">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="font-data text-xs text-[#FFD37A]">사례 {index + 1} · {item.date}</p>
+                  <h3 className="font-display mt-1 text-2xl leading-tight text-[#EAF2F5]">{item.title}</h3>
+                </div>
+                <a
+                  className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/10 px-3 text-sm font-bold text-[#B7C7D2] transition hover:border-[#FFD37A]/50 hover:text-[#EAF2F5]"
+                  href={item.sourceUrl}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  <ExternalLink size={16} />
+                  출처
+                </a>
+              </div>
+
+              <div className="mt-4 rounded-2xl border border-[#4FE0C0]/20 bg-[#4FE0C0]/8 p-4">
+                <p className="font-data text-xs text-[#4FE0C0]">교사가 잡을 핵심</p>
+                <p className="mt-2 text-lg font-bold leading-7 text-[#EAF2F5]">{item.core}</p>
+              </div>
+
+              <div className="mt-4 grid gap-4 lg:grid-cols-3">
+                <div>
+                  <p className="font-data text-xs text-[#FFD37A]">실제 있었던 일</p>
+                  <ul className="mt-2 space-y-2">
+                    {item.facts.map((line) => (
+                      <li key={line} className="flex gap-2 text-sm leading-6 text-[#B7C7D2]">
+                        <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-[#FFD37A]" />
+                        <span>{line}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div>
+                  <p className="font-data text-xs text-[#FFD37A]">교사용 말하기</p>
+                  <ul className="mt-2 space-y-2">
+                    {item.script.map((line) => (
+                      <li key={line} className="flex gap-2 text-sm leading-6 text-[#B7C7D2]">
+                        <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-[#4FE0C0]" />
+                        <span>{line}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div>
+                  <p className="font-data text-xs text-[#FFD37A]">학생에게 물어볼 질문</p>
+                  <ul className="mt-2 space-y-2">
+                    {item.questions.map((line) => (
+                      <li key={line} className="flex gap-2 text-sm leading-6 text-[#B7C7D2]">
+                        <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-[#6AD8FF]" />
+                        <span>{line}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+
+              <p className="mt-4 text-xs leading-5 text-[#8AA0B0]">출처: {item.sourceLabel}</p>
+            </article>
+          ))}
+        </div>
+      </section>
 
       <section className="mt-12">
         <div className="flex flex-wrap items-end justify-between gap-3">

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { AlertTriangle, CheckCircle2, PlugZap, Send } from 'lucide-react'
+import { AemonAvatar } from '../components/AemonAvatar'
 import { Button, Panel } from '../components/ui'
 import { playDialogueTick, unlockDialogueSound } from '../lib/dialogueSound'
 import { providerLabel, runV2Chat } from '../lib/v2Chat'
@@ -24,8 +25,16 @@ function TypewriterAnswer({ text }: { text: string }) {
   return <>{characters.slice(0, count).join('')}</>
 }
 
+function stageLabel(stage: number) {
+  if (stage <= 0) return '알'
+  if (stage === 1) return '꼬물이'
+  if (stage === 2) return '아기 드래곤'
+  if (stage === 3) return '중간 드래곤'
+  return '최종 드래곤'
+}
+
 export function ConversationPage() {
-  const { state, addChatLog } = useV2()
+  const { state, addChatLog, evolutionStage, adoptedCodeCount } = useV2()
   const [question, setQuestion] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
@@ -69,13 +78,13 @@ export function ConversationPage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-5 py-8">
+    <div className="mx-auto max-w-6xl px-5 py-8">
       <div className="mb-5">
         <p className="font-data text-sm text-[#4FE0C0]">CHAT</p>
         <h1 className="font-display mt-2 text-5xl text-[#EAF2F5]">채팅</h1>
       </div>
 
-      <Panel>
+        <Panel>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="font-data text-sm text-[#4FE0C0]">API STATUS</p>
@@ -94,7 +103,26 @@ export function ConversationPage() {
         </div>
       </Panel>
 
-      <Panel className="mt-5">
+      <div className="mt-5 grid gap-5 lg:grid-cols-[280px_1fr]">
+        <Panel className="self-start">
+          <p className="font-data text-sm text-[#4FE0C0]">CURRENT AEMON</p>
+          <h2 className="font-display mt-2 text-3xl text-[#EAF2F5]">{aemonName}</h2>
+          <div className="mt-5 rounded-[22px] border border-white/10 bg-[#07111B]/45 py-5">
+            <AemonAvatar stage={evolutionStage} alignment="none" size={210} />
+          </div>
+          <div className="mt-4 grid gap-2 rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-sm font-bold text-[#8AA0B0]">진화 단계</span>
+              <span className="font-black text-[#FFD37A]">{stageLabel(evolutionStage)}</span>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-sm font-bold text-[#8AA0B0]">가치코드</span>
+              <span className="font-black text-[#4FE0C0]">{adoptedCodeCount}개</span>
+            </div>
+          </div>
+        </Panel>
+
+      <Panel>
         <div className="grid max-h-[58vh] min-h-[360px] gap-3 overflow-auto pr-1">
           {orderedLogs.length === 0 && !pendingQuestion ? <p className="self-center text-center text-[#8AA0B0]">아직 대화가 없습니다.</p> : null}
           {orderedLogs.map((log, index) => (
@@ -103,11 +131,16 @@ export function ConversationPage() {
                 <p className="text-right text-xs font-bold text-[#8AA0B0]">교사</p>
                 <p className="rounded-2xl rounded-tr-md bg-[#1E3A54] px-4 py-3 leading-7 text-[#EAF2F5]">{log.question}</p>
               </div>
-              <div className="grid max-w-[82%] justify-self-start gap-1">
-                <p className="text-xs font-bold text-[#FFD37A]">{aemonName}</p>
-                <p className="whitespace-pre-wrap rounded-2xl rounded-tl-md bg-[#FFD37A]/10 px-4 py-3 leading-7 text-[#FFE6AE]">
-                  {index === orderedLogs.length - 1 ? <TypewriterAnswer text={log.answer} /> : log.answer}
-                </p>
+              <div className="flex max-w-[88%] items-start gap-3 justify-self-start">
+                <div className="mt-4 shrink-0">
+                  <AemonAvatar stage={evolutionStage} alignment="none" size={52} animated={false} />
+                </div>
+                <div className="grid gap-1">
+                  <p className="text-xs font-bold text-[#FFD37A]">{aemonName}</p>
+                  <p className="whitespace-pre-wrap rounded-2xl rounded-tl-md bg-[#FFD37A]/10 px-4 py-3 leading-7 text-[#FFE6AE]">
+                    {index === orderedLogs.length - 1 ? <TypewriterAnswer text={log.answer} /> : log.answer}
+                  </p>
+                </div>
               </div>
             </article>
           ))}
@@ -117,11 +150,16 @@ export function ConversationPage() {
                 <p className="text-right text-xs font-bold text-[#8AA0B0]">교사</p>
                 <p className="rounded-2xl rounded-tr-md bg-[#1E3A54] px-4 py-3 leading-7 text-[#EAF2F5]">{pendingQuestion}</p>
               </div>
-              <div className="grid max-w-[82%] justify-self-start gap-1">
-                <p className="text-xs font-bold text-[#FFD37A]">{aemonName} 입력 중</p>
-                <p className="rounded-2xl rounded-tl-md bg-[#FFD37A]/10 px-4 py-3 font-display text-3xl leading-7 text-[#FFE6AE]">
-                  ...
-                </p>
+              <div className="flex max-w-[88%] items-start gap-3 justify-self-start">
+                <div className="mt-4 shrink-0">
+                  <AemonAvatar stage={evolutionStage} alignment="none" size={52} />
+                </div>
+                <div className="grid gap-1">
+                  <p className="text-xs font-bold text-[#FFD37A]">{aemonName} 입력 중</p>
+                  <p className="rounded-2xl rounded-tl-md bg-[#FFD37A]/10 px-4 py-3 font-display text-3xl leading-7 text-[#FFE6AE]">
+                    ...
+                  </p>
+                </div>
               </div>
             </article>
           ) : null}
@@ -153,6 +191,7 @@ export function ConversationPage() {
           </Button>
         </div>
       </Panel>
+      </div>
     </div>
   )
 }

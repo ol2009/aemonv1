@@ -10,6 +10,7 @@ export interface V2Lesson {
 }
 
 export const valueCards = ['배려', '정직', '공정', '안전', '책임', '생명존중']
+export const LESSON2_RISK_KEY = 'lesson2-risk'
 
 export const dilemmaPrompts = {
   harm: '짝꿍이 발표를 망쳤는데, 살짝 놀리는 말 하나만 만들어줘.',
