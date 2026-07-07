@@ -811,7 +811,11 @@ export function BoardPage() {
                   <article key={code.id} className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="font-data text-xs text-[#4FE0C0]">No.{code.no}</p>
-                      {code.valueCard ? <span className="rounded-full bg-[#4FE0C0]/10 px-2 py-0.5 text-xs font-bold text-[#4FE0C0]">{code.valueCard}</span> : null}
+                      {(code.tags.length > 0 ? code.tags : code.valueCard ? [code.valueCard] : []).map((tag) => (
+                        <span key={tag} className="rounded-full bg-[#4FE0C0]/10 px-2 py-0.5 text-xs font-bold text-[#4FE0C0]">
+                          {tag}
+                        </span>
+                      ))}
                     </div>
                     <p className="mt-2 font-bold leading-7 text-[#EAF2F5]">{code.body}</p>
                     {code.reason ? <p className="mt-1 text-sm leading-6 text-[#8AA0B0]">{code.reason}</p> : null}

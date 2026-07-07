@@ -1,20 +1,27 @@
 import { useState } from 'react'
 import { Edit3, Plus, Save, Trash2, X } from 'lucide-react'
 import { Button, Panel } from '../components/ui'
+import { valueCards } from '../data/v2Lessons'
+import { useV2RemoteSync } from '../lib/useV2RemoteSync'
+import { addRemoteAdoptedCode, deleteRemoteAdoptedCode, isRemoteReady, updateRemoteAdoptedCode } from '../lib/v2Remote'
 import { useV2 } from '../state/V2Store'
 
 type CodeDraft = {
   id: string
   body: string
   reason: string
+  tags: string[]
 }
 
-const emptyDraft: CodeDraft = { id: '', body: '', reason: '' }
+const emptyDraft: CodeDraft = { id: '', body: '', reason: '', tags: [] }
 
 export function ValueCodePage() {
-  const { state, addCode, updateCode, deleteCode } = useV2()
+  const { state, addCode, updateCode, deleteCode, setRemoteStatus } = useV2()
   const [draft, setDraft] = useState<CodeDraft>(emptyDraft)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+
+  useV2RemoteSync(state.classCode, Boolean(state.classCode))
 
   const closeModal = () => {
     setDraft(emptyDraft)
@@ -31,17 +38,47 @@ export function ValueCodePage() {
     setIsModalOpen(true)
   }
 
-  const save = () => {
+  const nextCodeNo = () => state.adoptedCodes.reduce((max, code) => Math.max(max, code.no), 0) + 1
+
+  const syncRemote = async (work: () => Promise<void>) => {
+    if (!state.classId || !isRemoteReady()) return
+    try {
+      await work()
+      setRemoteStatus({ ok: true, message: '가치코드 동기화 완료' })
+    } catch (error) {
+      setRemoteStatus({ ok: false, message: (error as Error).message })
+    }
+  }
+
+  const save = async () => {
     const body = draft.body.trim()
     const reason = draft.reason.trim()
-    if (!body) return
+    const tags = draft.tags
+    if (!body || tags.length === 0 || isSaving) return
 
+    setIsSaving(true)
     if (draft.id) {
-      updateCode({ codeId: draft.id, body, reason })
+      updateCode({ codeId: draft.id, body, reason, tags })
+      await syncRemote(() => updateRemoteAdoptedCode({ codeId: draft.id, body, reason, tags }))
     } else {
-      addCode({ body, reason })
+      const no = nextCodeNo()
+      addCode({ body, reason, tags })
+      await syncRemote(() => addRemoteAdoptedCode({ classId: state.classId, nickname: '교사', no, body, reason, tags }))
     }
+    setIsSaving(false)
     closeModal()
+  }
+
+  const removeCode = async (codeId: string) => {
+    deleteCode(codeId)
+    await syncRemote(() => deleteRemoteAdoptedCode(codeId))
+  }
+
+  const toggleTag = (tag: string) => {
+    setDraft((current) => {
+      const selected = current.tags.includes(tag)
+      return { ...current, tags: selected ? current.tags.filter((item) => item !== tag) : [...current.tags, tag] }
+    })
   }
 
   return (
@@ -91,6 +128,13 @@ export function ValueCodePage() {
                 <p className="font-data text-xs text-[#4FE0C0]">No.{code.no}</p>
                 <p className="mt-2 text-xl font-black leading-8 text-[#EAF2F5]">{code.body}</p>
                 {code.reason ? <p className="mt-2 leading-7 text-[#8AA0B0]">{code.reason}</p> : null}
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {code.tags.map((tag) => (
+                    <span key={tag} className="rounded-full border border-[#4FE0C0]/25 bg-[#4FE0C0]/10 px-3 py-1 text-xs font-black text-[#4FE0C0]">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
               </div>
               <div className="flex shrink-0 gap-2">
                 <button
@@ -103,7 +147,7 @@ export function ValueCodePage() {
                 </button>
                 <button
                   className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-[#07111B]/45 text-[#B7C7D2] transition hover:border-[#E0476B]/60 hover:text-[#EF6381]"
-                  onClick={() => deleteCode(code.id)}
+                  onClick={() => void removeCode(code.id)}
                   title="삭제"
                   type="button"
                 >
@@ -148,15 +192,38 @@ export function ValueCodePage() {
                   onChange={(event) => setDraft((current) => ({ ...current, reason: event.target.value }))}
                 />
               </label>
+
+              <div className="grid gap-2">
+                <span className="text-sm font-bold text-[#8AA0B0]">태그</span>
+                <div className="flex flex-wrap gap-2">
+                  {valueCards.map((tag) => {
+                    const selected = draft.tags.includes(tag)
+                    return (
+                      <button
+                        key={tag}
+                        className={`rounded-2xl border px-4 py-2 text-sm font-black transition ${
+                          selected
+                            ? 'border-[#FFD37A]/70 bg-[#FFD37A] text-[#07111B]'
+                            : 'border-white/10 bg-[#07111B]/55 text-[#B7C7D2] hover:border-[#4FE0C0]/50 hover:text-[#EAF2F5]'
+                        }`}
+                        onClick={() => toggleTag(tag)}
+                        type="button"
+                      >
+                        {tag}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
             </div>
 
             <div className="mt-5 flex justify-end gap-2">
               <Button variant="ghost" onClick={closeModal}>
                 취소
               </Button>
-              <Button disabled={!draft.body.trim()} onClick={save}>
+              <Button disabled={!draft.body.trim() || draft.tags.length === 0 || isSaving} onClick={() => void save()}>
                 <Save size={18} />
-                저장
+                {isSaving ? '저장 중' : '저장'}
               </Button>
             </div>
           </Panel>

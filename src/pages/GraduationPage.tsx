@@ -30,6 +30,13 @@ export function GraduationPage() {
               <p className="font-data text-sm text-[#4FE0C0]">가치 코드 No.{code.no}</p>
               <p className="mt-2 text-2xl font-black leading-9 text-[#EAF2F5]">{code.body}</p>
               <p className="mt-1 leading-7 text-[#8AA0B0]">왜냐하면 {code.reason}</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {code.tags.map((tag) => (
+                  <span key={tag} className="rounded-full border border-[#4FE0C0]/25 bg-[#4FE0C0]/10 px-3 py-1 text-xs font-black text-[#4FE0C0]">
+                    {tag}
+                  </span>
+                ))}
+              </div>
             </article>
           ))}
         </div>

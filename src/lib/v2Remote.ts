@@ -1,4 +1,5 @@
 import { isSupabaseConfigured, supabase } from './supabase'
+import { valueCards } from '../data/v2Lessons'
 import type { AdoptedCode, ChatLog, CodeProposal, NameCandidate, SurveyResponse, V2State, Wish } from '../state/V2Store'
 
 const MISSING_SCHEMA_MESSAGE =
@@ -97,6 +98,19 @@ function ensureClient() {
   return supabase
 }
 
+function normalizeCodeTags(tags: string[]) {
+  return [...new Set(tags.map((tag) => tag.trim()).filter((tag) => valueCards.includes(tag)))]
+}
+
+function encodeCodeTags(tags: string[]) {
+  return normalizeCodeTags(tags).join(',')
+}
+
+function decodeCodeTags(valueCard: string) {
+  const tags = normalizeCodeTags(valueCard.split(','))
+  return tags.length > 0 ? tags : ['책임']
+}
+
 function mapClass(row: ClassRow): Partial<V2State> {
   return {
     classId: row.id,
@@ -162,6 +176,7 @@ function mapAdoptedCodes(rows: CodeRow[]): AdoptedCode[] {
       body: row.body,
       reason: row.reason,
       valueCard: row.value_card,
+      tags: decodeCodeTags(row.value_card),
       sourceProposalId: row.id,
       createdAt: row.adopted_at ?? row.created_at,
     }))
@@ -423,6 +438,48 @@ export async function addRemoteCodeProposal(args: {
     revision_of_no: args.revisionOfNo,
     status: 'pending',
   })
+  if (error) throw new Error(toMessage(error))
+}
+
+export async function addRemoteAdoptedCode(args: {
+  classId: string
+  nickname: string
+  no: number
+  body: string
+  reason: string
+  tags: string[]
+}) {
+  const client = ensureClient()
+  const { error } = await client.from('codes').insert({
+    class_id: args.classId,
+    nickname: args.nickname.trim(),
+    body: args.body.trim(),
+    reason: args.reason.trim(),
+    value_card: encodeCodeTags(args.tags),
+    revision_of_no: null,
+    status: 'adopted',
+    adopted_no: args.no,
+    adopted_at: new Date().toISOString(),
+  })
+  if (error) throw new Error(toMessage(error))
+}
+
+export async function updateRemoteAdoptedCode(args: { codeId: string; body: string; reason: string; tags: string[] }) {
+  const client = ensureClient()
+  const { error } = await client
+    .from('codes')
+    .update({
+      body: args.body.trim(),
+      reason: args.reason.trim(),
+      value_card: encodeCodeTags(args.tags),
+    })
+    .eq('id', args.codeId)
+  if (error) throw new Error(toMessage(error))
+}
+
+export async function deleteRemoteAdoptedCode(codeId: string) {
+  const client = ensureClient()
+  const { error } = await client.from('codes').delete().eq('id', codeId)
   if (error) throw new Error(toMessage(error))
 }
 

@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useEffect, useMemo, useReducer, type ReactNode } from 'react'
-import { evolutionLines } from '../data/v2Lessons'
+import { evolutionLines, valueCards } from '../data/v2Lessons'
 import type { AiProvider } from '../domain/types'
 
 const STORAGE_KEY = 'aemon.v2.state'
@@ -52,6 +52,7 @@ export interface AdoptedCode {
   body: string
   reason: string
   valueCard?: string
+  tags: string[]
   sourceProposalId: string | null
   createdAt: string
 }
@@ -100,6 +101,13 @@ export interface V2State {
 
 const todayKey = () => new Date().toISOString().slice(0, 10)
 const clamp = (value: string, length: number) => value.trim().slice(0, length)
+const normalizeTags = (tags: unknown, fallback: string[] = []) => {
+  const rawTags = Array.isArray(tags) ? tags : fallback
+  const normalized = rawTags
+    .map((tag) => (typeof tag === 'string' ? tag.trim() : ''))
+    .filter((tag) => valueCards.includes(tag))
+  return [...new Set(normalized)]
+}
 
 function generateClassCode() {
   return String(Math.floor(1000 + Math.random() * 900000)).slice(0, 6)
@@ -143,8 +151,8 @@ type Action =
   | { type: 'proposal/vote'; nickname: string; proposalId: string }
   | { type: 'proposal/adopt'; proposalId: string; valueCard?: string; adoptedNo?: number }
   | { type: 'proposal/reject'; proposalId: string }
-  | { type: 'code/add'; body: string; reason: string }
-  | { type: 'code/update'; codeId: string; body: string; reason: string }
+  | { type: 'code/add'; body: string; reason: string; tags: string[] }
+  | { type: 'code/update'; codeId: string; body: string; reason: string; tags: string[] }
   | { type: 'code/delete'; codeId: string }
   | { type: 'chat/add'; question: string; answer: string; mode: 'canned' | 'live'; promptSnapshot: string }
   | { type: 'dev/reset' }
@@ -157,6 +165,10 @@ function normalizeLoaded(raw: unknown): V2State {
     remote: { ...initialState.remote, ...(loaded.remote ?? {}) },
     nameCandidates: loaded.nameCandidates.map((candidate) => ({ ...candidate, reason: candidate.reason ?? '' })),
     surveyResponses: loaded.surveyResponses ?? [],
+    adoptedCodes: loaded.adoptedCodes.map((code) => ({
+      ...code,
+      tags: normalizeTags((code as AdoptedCode).tags, (code as AdoptedCode).valueCard ? [(code as AdoptedCode).valueCard ?? ''] : ['책임']),
+    })),
   }
 }
 
@@ -303,6 +315,7 @@ function reducer(state: V2State, action: Action): V2State {
         body: proposal.body,
         reason: proposal.reason,
         valueCard,
+        tags: normalizeTags([valueCard], ['책임']),
         sourceProposalId: proposal.id,
         createdAt: new Date().toISOString(),
       }
@@ -320,13 +333,15 @@ function reducer(state: V2State, action: Action): V2State {
     case 'code/add': {
       const body = clamp(action.body, 180)
       const reason = clamp(action.reason, 180)
+      const tags = normalizeTags(action.tags, ['책임'])
       if (!body) return state
       const code: AdoptedCode = {
         id: crypto.randomUUID(),
         no: nextCodeNo(state.adoptedCodes),
         body,
         reason,
-        valueCard: '',
+        valueCard: tags[0] ?? '',
+        tags,
         sourceProposalId: null,
         createdAt: new Date().toISOString(),
       }
@@ -335,10 +350,11 @@ function reducer(state: V2State, action: Action): V2State {
     case 'code/update': {
       const body = clamp(action.body, 180)
       const reason = clamp(action.reason, 180)
+      const tags = normalizeTags(action.tags, ['책임'])
       if (!body) return state
       return {
         ...state,
-        adoptedCodes: state.adoptedCodes.map((code) => (code.id === action.codeId ? { ...code, body, reason } : code)),
+        adoptedCodes: state.adoptedCodes.map((code) => (code.id === action.codeId ? { ...code, body, reason, valueCard: tags[0] ?? '', tags } : code)),
       }
     }
     case 'code/delete':
@@ -395,8 +411,8 @@ interface V2ContextValue {
   voteProposal: (proposalId: string, nickname?: string) => void
   adoptProposal: (proposalId: string, valueCard?: string, adoptedNo?: number) => void
   rejectProposal: (proposalId: string) => void
-  addCode: (code: { body: string; reason: string }) => void
-  updateCode: (code: { codeId: string; body: string; reason: string }) => void
+  addCode: (code: { body: string; reason: string; tags: string[] }) => void
+  updateCode: (code: { codeId: string; body: string; reason: string; tags: string[] }) => void
   deleteCode: (codeId: string) => void
   addChatLog: (log: { question: string; answer: string; mode: 'canned' | 'live'; promptSnapshot: string }) => void
   resetDemo: () => void
