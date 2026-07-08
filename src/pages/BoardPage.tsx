@@ -123,6 +123,8 @@ export function BoardPage() {
   const [codeReasonDraft, setCodeReasonDraft] = useState('')
   const [codeValueCard, setCodeValueCard] = useState('배려')
   const [surveyDraft, setSurveyDraft] = useState<{ nickname: string; answer: AiSurveyAnswer } | null>(null)
+  const [surveySaveMessage, setSurveySaveMessage] = useState('')
+  const [isSavingSurvey, setIsSavingSurvey] = useState(false)
   const [editWishId, setEditWishId] = useState('')
   const [editWishBody, setEditWishBody] = useState('')
   const [message, setMessage] = useState('')
@@ -164,6 +166,9 @@ export function BoardPage() {
   }, [sessionNickname, surveyResponses])
   const surveyAnswer = surveyDraft?.nickname === sessionNickname ? surveyDraft.answer : savedSurveyAnswer ?? emptySurveyAnswer()
   const surveySaved = Boolean(savedSurveyAnswer)
+  const surveyChoiceCount = surveyAnswer.s.filter(Boolean).length
+  const surveyOpenCount = surveyAnswer.o.filter((text) => text.trim()).length
+  const isSurveyComplete = surveyComplete(surveyAnswer)
   const surveyAverageScore = parsedSurveyResponses.length
     ? Math.round((parsedSurveyResponses.reduce((sum, item) => sum + surveyScore(item.answer), 0) / parsedSurveyResponses.length) * 10) / 10
     : 0
@@ -201,6 +206,7 @@ export function BoardPage() {
 
   const updateSurveyAnswer = (updater: (current: AiSurveyAnswer) => AiSurveyAnswer) => {
     if (!sessionNickname) return
+    setSurveySaveMessage('')
     setSurveyDraft({ nickname: sessionNickname, answer: updater(surveyAnswer) })
   }
 
@@ -273,17 +279,41 @@ export function BoardPage() {
   }
 
   const submitSurvey = async () => {
-    if (!surveyComplete(surveyAnswer) || !session) return
+    if (!session) {
+      setSurveySaveMessage('닉네임으로 입장한 뒤 저장해 주세요.')
+      return
+    }
+    if (!isSurveyComplete) {
+      const missingChoices = AI_SURVEY_ITEMS.length - surveyChoiceCount
+      const missingOpen = AI_SURVEY_OPEN_QUESTIONS.length - surveyOpenCount
+      const parts = [
+        missingChoices > 0 ? `선택형 ${missingChoices}문항` : '',
+        missingOpen > 0 ? `서술형 ${missingOpen}문항` : '',
+      ].filter(Boolean)
+      setSurveySaveMessage(`아직 ${parts.join(', ')}이 남았어요. 빠진 답을 채우면 저장됩니다.`)
+      return
+    }
+
     const body = serializeSurveyAnswer(surveyAnswer)
+    setIsSavingSurvey(true)
+    setSurveySaveMessage('')
     upsertSurveyResponse({ questionKey: PRE_SURVEY_KEY, body, nickname: session.nickname })
+    setSurveyDraft(null)
 
     if (canWriteRemote) {
       try {
         await upsertRemoteSurveyResponse({ classId: state.classId, nickname: session.nickname, questionKey: PRE_SURVEY_KEY, body })
+        const bundle = await fetchRemoteClassBundle(state.classCode)
+        mergeClass(bundle)
+        setSurveySaveMessage('저장됐어요. 선생님 화면에도 곧 보입니다.')
       } catch (error) {
         setRemoteStatus({ ok: false, message: (error as Error).message })
+        setSurveySaveMessage(`내 화면에는 저장됐지만 선생님 화면 저장에 실패했어요. 선생님께 이 문구를 보여주세요: ${(error as Error).message}`)
       }
+    } else {
+      setSurveySaveMessage('이 기기에는 저장됐어요. 다만 선생님 화면에 바로 모이지 않으면 Supabase 연결을 확인해야 합니다.')
     }
+    setIsSavingSurvey(false)
   }
 
   const submitRisk = async () => {
@@ -377,7 +407,7 @@ export function BoardPage() {
         <Panel className="w-full max-w-md">
           <p className="font-data text-sm text-[#4FE0C0]">LEARNING BOARD</p>
           <h1 className="font-display mt-2 text-4xl text-[#EAF2F5]">{topicMeta[entryTopic].title}</h1>
-          <p className="mt-3 leading-7 text-[#8AA0B0]">가입 없이 학급 코드와 닉네임만 입력합니다.</p>
+          <p className="mt-3 leading-7 text-[#8AA0B0]">처음 들어오거나 시크릿 탭이면 닉네임을 한 번 더 입력합니다.</p>
           <div className="mt-6 grid gap-4">
             <input
               className="rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 text-[#EAF2F5]"
@@ -419,7 +449,7 @@ export function BoardPage() {
         {!isTeacherBoard ? (
           <Button variant="ghost" onClick={() => { leaveStudent(); navigate('/') }}>
             <LogOut size={18} />
-            나가기
+            닉네임 다시 입력
           </Button>
         ) : null}
       </div>
@@ -527,12 +557,26 @@ export function BoardPage() {
               </div>
 
               <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
-                <p className="text-sm leading-6 text-[#8AA0B0]">한 사람당 한 번 저장됩니다. 다시 저장하면 내 답이 수정됩니다.</p>
-                <Button disabled={!surveyComplete(surveyAnswer)} onClick={submitSurvey}>
+                <div>
+                  <p className="text-sm leading-6 text-[#8AA0B0]">한 사람당 한 번 저장됩니다. 다시 저장하면 내 답이 수정됩니다.</p>
+                  <p className={`mt-1 text-sm font-black ${isSurveyComplete ? 'text-[#4FE0C0]' : 'text-[#FFD37A]'}`}>
+                    선택형 {surveyChoiceCount}/{AI_SURVEY_ITEMS.length} · 서술형 {surveyOpenCount}/{AI_SURVEY_OPEN_QUESTIONS.length}
+                  </p>
+                </div>
+                <Button disabled={isSavingSurvey} onClick={submitSurvey}>
                   <Send size={18} />
-                  {surveySaved ? '수정 저장' : '설문 저장'}
+                  {isSavingSurvey ? '저장 중' : surveySaved ? '수정 저장' : '설문 저장'}
                 </Button>
               </div>
+              {surveySaveMessage ? (
+                <p className={`mt-3 rounded-2xl border px-4 py-3 text-sm font-bold leading-6 ${
+                  surveySaveMessage.includes('저장됐어요')
+                    ? 'border-[#4FE0C0]/25 bg-[#4FE0C0]/10 text-[#4FE0C0]'
+                    : 'border-[#FFD37A]/25 bg-[#FFD37A]/10 text-[#FFD37A]'
+                }`}>
+                  {surveySaveMessage}
+                </p>
+              ) : null}
             </Panel>
           ) : null}
 

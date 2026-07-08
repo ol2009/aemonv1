@@ -100,6 +100,12 @@ function sortedByLikes<T extends { votes: string[]; createdAt: string }>(items: 
   return [...items].sort((a, b) => b.votes.length - a.votes.length || Date.parse(b.createdAt) - Date.parse(a.createdAt))
 }
 
+function compactReason(reason: string) {
+  const trimmed = reason.trim()
+  if (trimmed.length <= 34) return trimmed
+  return `${trimmed.slice(0, 34)}...`
+}
+
 function TypewriterText({
   text,
   enabled = true,
@@ -348,6 +354,9 @@ export function LessonOnePage() {
   const nameBoardUrl = useMemo(() => absoluteUrl(`/board?mode=name&code=${encodeURIComponent(state.classCode)}`), [state.classCode])
   const wishBoardUrl = useMemo(() => absoluteUrl(`/board?mode=wish&code=${encodeURIComponent(state.classCode)}`), [state.classCode])
   const sortedNames = useMemo(() => sortedByLikes(state.nameCandidates), [state.nameCandidates])
+  const confirmedName = state.aemonName.trim() || finalName.trim() || '에아몬'
+  const confirmedNameCandidate = sortedNames.find((candidate) => candidate.name.trim() === confirmedName)
+  const confirmedNameReason = compactReason(confirmedNameCandidate?.reason ?? '')
   const surveyResponses = useMemo(
     () => {
       const items: Array<{ response: SurveyResponse; answer: AiSurveyAnswer }> = []
@@ -857,9 +866,9 @@ export function LessonOnePage() {
           <VisualNovelScene
             avatar
             avatarStage={evolutionStage}
-            speaker={state.aemonName || finalName.trim() || '에아몬'}
-            line={`${state.aemonName || finalName.trim() || '내 이름'}… 이게 내 이름이구나.`}
-            caption={`고마워. ${state.className || '너희 반'}이 처음으로 나를 불러줬어. 나, 이 이름을 잘 기억할게.`}
+            speaker={confirmedName}
+            line={confirmedNameReason ? `${confirmedName}… "${confirmedNameReason}" 그런 마음이 담긴 이름이구나.` : `${confirmedName}… 이제 그 소리에 내가 대답하게 됐어.`}
+            caption={`누가 나를 ${confirmedName}이라고 부르면, ${state.className || '너희 반'}이 처음 불러준 이 순간을 떠올릴게. 나, ${confirmedName}으로 깨어날게.`}
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>

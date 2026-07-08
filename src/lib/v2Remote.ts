@@ -332,15 +332,26 @@ export async function fetchRemoteClassBundle(classCode: string): Promise<Partial
   for (const result of [candidateResult, nameVoteResult, wishResult, surveyResult, codeResult, codeVoteResult, chatResult]) {
     if (result.error && !isMissingTableError(result.error)) throw new Error(toMessage(result.error))
   }
-  if (surveyResult.error && !isMissingTableError(surveyResult.error)) throw new Error(toMessage(surveyResult.error))
+  const missingTables: string[] = []
+  if (isMissingTableError(candidateResult.error)) missingTables.push('name_candidates')
+  if (isMissingTableError(nameVoteResult.error)) missingTables.push('name_votes')
+  if (isMissingTableError(wishResult.error)) missingTables.push('wishes')
+  if (isMissingTableError(surveyResult.error)) missingTables.push('survey_responses')
+  if (isMissingTableError(codeResult.error)) missingTables.push('codes')
+  if (isMissingTableError(codeVoteResult.error)) missingTables.push('code_votes')
+  if (isMissingTableError(chatResult.error)) missingTables.push('chat_logs')
 
-  const candidateRows = candidateResult.error ? [] : ((candidateResult.data ?? []) as NameCandidateRow[])
-  const nameVoteRows = nameVoteResult.error ? [] : ((nameVoteResult.data ?? []) as NameVoteRow[])
-  const wishRows = wishResult.error ? [] : ((wishResult.data ?? []) as WishRow[])
-  const surveyRows = surveyResult.error ? [] : ((surveyResult.data ?? []) as SurveyResponseRow[])
-  const codeRows = codeResult.error ? [] : ((codeResult.data ?? []) as CodeRow[])
-  const codeVoteRows = codeVoteResult.error ? [] : ((codeVoteResult.data ?? []) as CodeVoteRow[])
-  const chatRows = chatResult.error ? [] : ((chatResult.data ?? []) as ChatLogRow[])
+  if (missingTables.length > 0) {
+    throw new Error(`${MISSING_SCHEMA_MESSAGE} 누락된 테이블: ${missingTables.join(', ')}`)
+  }
+
+  const candidateRows = (candidateResult.data ?? []) as NameCandidateRow[]
+  const nameVoteRows = (nameVoteResult.data ?? []) as NameVoteRow[]
+  const wishRows = (wishResult.data ?? []) as WishRow[]
+  const surveyRows = (surveyResult.data ?? []) as SurveyResponseRow[]
+  const codeRows = (codeResult.data ?? []) as CodeRow[]
+  const codeVoteRows = (codeVoteResult.data ?? []) as CodeVoteRow[]
+  const chatRows = (chatResult.data ?? []) as ChatLogRow[]
   return {
     ...mapClass(classRow),
     nameCandidates: mapNameCandidates(candidateRows, nameVoteRows),

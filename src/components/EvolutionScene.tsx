@@ -1,5 +1,7 @@
+import { useEffect } from 'react'
 import { Sparkles } from 'lucide-react'
 import { evolutionLines } from '../data/v2Lessons'
+import { playEvolutionSound } from '../lib/dialogueSound'
 import { AemonAvatar } from './AemonAvatar'
 import { Panel } from './ui'
 
@@ -17,6 +19,10 @@ export function EvolutionScene({
   line?: string
 }) {
   const previousStage = Math.max(0, stage - 1)
+
+  useEffect(() => {
+    playEvolutionSound()
+  }, [stage])
 
   return (
     <Panel className="relative min-h-[690px] overflow-hidden p-0">
