@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, Check, Heart, Pencil, Play, QrCode, RefreshCw, Trash2 } from 'lucide-react'
@@ -209,8 +209,11 @@ function StepShell({
 
 type DialogueGateContextValue = {
   isDialogueWaiting: boolean
+  canAdvanceDialogue: boolean
   startDialogue: (key: string) => void
   finishDialogue: (key: string) => void
+  registerDialogueAdvance: (key: string, handler: (() => void) | null) => void
+  advanceDialogue: () => boolean
 }
 
 const DialogueGateContext = createContext<DialogueGateContextValue | null>(null)
@@ -230,6 +233,8 @@ function StepControls({
 }) {
   const dialogueGate = useContext(DialogueGateContext)
   const hideNext = Boolean(dialogueGate?.isDialogueWaiting)
+  const canAdvanceDialogue = Boolean(dialogueGate?.canAdvanceDialogue)
+  const effectiveNextLabel = canAdvanceDialogue ? '다음' : nextLabel
 
   return (
     <div className="mt-4 flex justify-end gap-2">
@@ -248,18 +253,57 @@ function StepControls({
         <div className="min-h-12 min-w-28" aria-live="polite" />
       ) : (
         <Button
-          disabled={nextDisabled}
+          disabled={canAdvanceDialogue ? false : nextDisabled}
           onClick={() => {
             unlockDialogueSound()
+            if (dialogueGate?.advanceDialogue()) return
             onNext()
           }}
         >
-          {nextLabel}
+          {effectiveNextLabel}
           <ArrowRight size={18} />
         </Button>
       )}
     </div>
   )
+}
+
+function useSequencedDialogue(sceneKey: string, parts: string[]) {
+  const dialogueGate = useContext(DialogueGateContext)
+  const startDialogue = dialogueGate?.startDialogue
+  const finishDialogue = dialogueGate?.finishDialogue
+  const registerDialogueAdvance = dialogueGate?.registerDialogueAdvance
+  const [partState, setPartState] = useState({ sceneKey, index: 0 })
+  const partIndex = partState.sceneKey === sceneKey ? Math.min(partState.index, Math.max(0, parts.length - 1)) : 0
+  const activeText = parts[partIndex] ?? ''
+  const activeDialogueKey = useMemo(() => `${sceneKey}-${partIndex}-${activeText}`, [activeText, partIndex, sceneKey])
+  const [doneState, setDoneState] = useState({ key: activeDialogueKey, done: false })
+  const activeDone = doneState.key === activeDialogueKey && doneState.done
+  const handleActiveDone = useCallback(() => {
+    setDoneState({ key: activeDialogueKey, done: true })
+  }, [activeDialogueKey])
+  const advanceActiveDialogue = useCallback(() => {
+    setPartState((current) => {
+      const currentIndex = current.sceneKey === sceneKey ? current.index : partIndex
+      return { sceneKey, index: Math.min(parts.length - 1, currentIndex + 1) }
+    })
+  }, [partIndex, parts.length, sceneKey])
+
+  useEffect(() => {
+    startDialogue?.(activeDialogueKey)
+  }, [activeDialogueKey, startDialogue])
+
+  useEffect(() => {
+    if (activeDone) finishDialogue?.(activeDialogueKey)
+  }, [activeDialogueKey, activeDone, finishDialogue])
+
+  useEffect(() => {
+    const hasNextPart = partIndex < parts.length - 1
+    registerDialogueAdvance?.(activeDialogueKey, activeDone && hasNextPart ? advanceActiveDialogue : null)
+    return () => registerDialogueAdvance?.(activeDialogueKey, null)
+  }, [activeDialogueKey, activeDone, advanceActiveDialogue, partIndex, parts.length, registerDialogueAdvance])
+
+  return { activeText, activeDone, activeDialogueKey, handleActiveDone }
 }
 
 function VisualNovelScene({
@@ -277,30 +321,10 @@ function VisualNovelScene({
   line: string
   caption?: string
 }) {
-  const [lineDoneState, setLineDoneState] = useState({ line, done: false })
-  const [captionDoneState, setCaptionDoneState] = useState({ caption: caption ?? '', done: false })
-  const lineDone = lineDoneState.line === line && lineDoneState.done
   const captionText = caption ?? ''
-  const captionDone = captionDoneState.caption === captionText && captionDoneState.done
-  const handleLineDone = useCallback(() => setLineDoneState({ line, done: true }), [line])
-  const handleCaptionDone = useCallback(() => setCaptionDoneState({ caption: captionText, done: true }), [captionText])
-  const showingCaption = Boolean(captionText && lineDone)
-  const activeText = showingCaption ? captionText : line
-  const activeDone = showingCaption ? captionDone : lineDone
-  const handleActiveDone = showingCaption ? handleCaptionDone : handleLineDone
-  const dialogueGate = useContext(DialogueGateContext)
-  const startDialogue = dialogueGate?.startDialogue
-  const finishDialogue = dialogueGate?.finishDialogue
   const dialogueKey = useMemo(() => `visual-${speaker}-${line}-${captionText}`, [captionText, line, speaker])
-  const dialogueDone = captionText ? captionDone : lineDone
-
-  useEffect(() => {
-    startDialogue?.(dialogueKey)
-  }, [startDialogue, dialogueKey])
-
-  useEffect(() => {
-    if (dialogueDone) finishDialogue?.(dialogueKey)
-  }, [dialogueDone, finishDialogue, dialogueKey])
+  const dialogueParts = useMemo(() => [line, captionText].filter(Boolean), [captionText, line])
+  const { activeText, activeDone, activeDialogueKey, handleActiveDone } = useSequencedDialogue(dialogueKey, dialogueParts)
 
   return (
     <Panel className="relative min-h-[650px] overflow-hidden p-0">
@@ -315,7 +339,7 @@ function VisualNovelScene({
         <p className="font-data text-sm text-[#FFD37A]">{speaker}</p>
         <p className={`font-display mt-3 min-h-[4.5rem] break-keep leading-tight text-[#EAF2F5] ${dialogueTextClass(activeText)}`}>
           <TypewriterText
-            key={`${showingCaption ? 'caption' : 'line'}-${activeText}`}
+            key={activeDialogueKey}
             text={activeText}
             speed={34}
             cursor={!activeDone}
@@ -340,29 +364,9 @@ function CaseVisualScene({
   line: string
   caption: string
 }) {
-  const [lineDoneState, setLineDoneState] = useState({ line, done: false })
-  const [captionDoneState, setCaptionDoneState] = useState({ caption, done: false })
-  const lineDone = lineDoneState.line === line && lineDoneState.done
-  const captionDone = captionDoneState.caption === caption && captionDoneState.done
-  const handleLineDone = useCallback(() => setLineDoneState({ line, done: true }), [line])
-  const handleCaptionDone = useCallback(() => setCaptionDoneState({ caption, done: true }), [caption])
-  const showingCaption = lineDone
-  const activeText = showingCaption ? caption : line
-  const activeDone = showingCaption ? captionDone : lineDone
-  const handleActiveDone = showingCaption ? handleCaptionDone : handleLineDone
-  const dialogueGate = useContext(DialogueGateContext)
-  const startDialogue = dialogueGate?.startDialogue
-  const finishDialogue = dialogueGate?.finishDialogue
   const dialogueKey = useMemo(() => `case-${speaker}-${title}-${line}-${caption}`, [caption, line, speaker, title])
-  const dialogueDone = captionDone
-
-  useEffect(() => {
-    startDialogue?.(dialogueKey)
-  }, [startDialogue, dialogueKey])
-
-  useEffect(() => {
-    if (dialogueDone) finishDialogue?.(dialogueKey)
-  }, [dialogueDone, finishDialogue, dialogueKey])
+  const dialogueParts = useMemo(() => [line, caption].filter(Boolean), [caption, line])
+  const { activeText, activeDone, activeDialogueKey, handleActiveDone } = useSequencedDialogue(dialogueKey, dialogueParts)
 
   return (
     <Panel className="relative min-h-[640px] overflow-hidden p-0 sm:min-h-[660px]">
@@ -383,7 +387,7 @@ function CaseVisualScene({
         </div>
         <p className={`font-display mt-3 min-h-[4.5rem] break-keep leading-tight text-[#EAF2F5] ${dialogueTextClass(activeText)}`}>
           <TypewriterText
-            key={`${showingCaption ? 'caption' : 'line'}-${activeText}`}
+            key={activeDialogueKey}
             text={activeText}
             speed={34}
             cursor={!activeDone}
@@ -435,20 +439,42 @@ export function LessonOnePage() {
   const [surveyRefreshMessage, setSurveyRefreshMessage] = useState('')
   const [editWishId, setEditWishId] = useState('')
   const [editWishBody, setEditWishBody] = useState('')
-  const [dialogueGateState, setDialogueGateState] = useState({ key: '', ready: true })
+  const dialogueAdvanceRef = useRef<{ key: string; handler: () => void } | null>(null)
+  const [dialogueGateState, setDialogueGateState] = useState({ key: '', ready: true, canAdvance: false })
   const startDialogue = useCallback((key: string) => {
-    setDialogueGateState((current) => (current.key === key && !current.ready ? current : { key, ready: false }))
+    setDialogueGateState((current) => (current.key === key && !current.ready && !current.canAdvance ? current : { key, ready: false, canAdvance: false }))
   }, [])
   const finishDialogue = useCallback((key: string) => {
-    setDialogueGateState((current) => (current.key === key ? { key, ready: true } : current))
+    setDialogueGateState((current) => (current.key === key ? { ...current, ready: true } : current))
+  }, [])
+  const registerDialogueAdvance = useCallback((key: string, handler: (() => void) | null) => {
+    if (handler) {
+      dialogueAdvanceRef.current = { key, handler }
+    } else if (dialogueAdvanceRef.current?.key === key) {
+      dialogueAdvanceRef.current = null
+    }
+    setDialogueGateState((current) => (current.key === key ? { ...current, canAdvance: Boolean(handler) } : current))
+  }, [])
+  const advanceDialogue = useCallback(() => {
+    if (!dialogueGateState.canAdvance || dialogueAdvanceRef.current?.key !== dialogueGateState.key) return false
+    dialogueAdvanceRef.current.handler()
+    return true
+  }, [dialogueGateState.canAdvance, dialogueGateState.key])
+  const goPrev = useCallback(() => {
+    dialogueAdvanceRef.current = null
+    setDialogueGateState({ key: '', ready: true, canAdvance: false })
+    setStepIndex((current) => Math.max(0, current - 1))
   }, [])
   const dialogueGateValue = useMemo<DialogueGateContextValue>(
     () => ({
       isDialogueWaiting: !dialogueGateState.ready,
+      canAdvanceDialogue: dialogueGateState.canAdvance,
       startDialogue,
       finishDialogue,
+      registerDialogueAdvance,
+      advanceDialogue,
     }),
-    [dialogueGateState.ready, finishDialogue, startDialogue],
+    [advanceDialogue, dialogueGateState.canAdvance, dialogueGateState.ready, finishDialogue, registerDialogueAdvance, startDialogue],
   )
 
   useV2RemoteSync(state.classCode, Boolean(state.classCode))
@@ -493,9 +519,6 @@ export function LessonOnePage() {
   const canWriteRemote = Boolean(state.classId && state.remote.ok && isRemoteReady())
   const composedClassName = `${classGrade} ${classLabel.trim()}`.trim()
 
-  const goPrev = () => {
-    setStepIndex((current) => Math.max(0, current - 1))
-  }
   const completeLessonOne = async () => {
     setLesson(2)
     if (canWriteRemote) {

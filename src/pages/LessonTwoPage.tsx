@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Check, Heart, Play, QrCode, RefreshCw, Send, Sparkles } from 'lucide-react'
@@ -77,25 +77,60 @@ function sortProposals(items: CodeProposal[]) {
   return [...items].sort((a, b) => b.votes.length - a.votes.length || Date.parse(b.createdAt) - Date.parse(a.createdAt))
 }
 
-function TypewriterText({ text, enabled = true, speed = 22 }: { text: string; enabled?: boolean; speed?: number }) {
+function TypewriterText({
+  text,
+  enabled = true,
+  speed = 22,
+  cursor = false,
+  onDone,
+}: {
+  text: string
+  enabled?: boolean
+  speed?: number
+  cursor?: boolean
+  onDone?: () => void
+}) {
   const chars = useMemo(() => Array.from(text), [text])
   const [progress, setProgress] = useState({ text, count: enabled ? 0 : chars.length })
   const count = progress.text === text ? progress.count : 0
 
   useEffect(() => {
     if (!enabled) return
+    if (!chars.length) {
+      onDone?.()
+      return
+    }
     let index = 0
     const timer = window.setInterval(() => {
       index += 1
       if (index % 2 === 0 && chars[index - 1]?.trim()) playDialogueTick()
       setProgress({ text, count: index })
-      if (index >= chars.length) window.clearInterval(timer)
+      if (index >= chars.length) {
+        window.clearInterval(timer)
+        onDone?.()
+      }
     }, speed)
     return () => window.clearInterval(timer)
-  }, [chars, chars.length, enabled, speed, text])
+  }, [chars, chars.length, enabled, onDone, speed, text])
 
-  return <>{chars.slice(0, count).join('')}</>
+  return (
+    <>
+      {chars.slice(0, count).join('')}
+      {cursor ? <span className="ml-1 animate-pulse text-[#4FE0C0]">▌</span> : null}
+    </>
+  )
 }
+
+type DialogueGateContextValue = {
+  isDialogueWaiting: boolean
+  canAdvanceDialogue: boolean
+  startDialogue: (key: string) => void
+  finishDialogue: (key: string) => void
+  registerDialogueAdvance: (key: string, handler: (() => void) | null) => void
+  advanceDialogue: () => boolean
+}
+
+const DialogueGateContext = createContext<DialogueGateContextValue | null>(null)
 
 function StepShell({ children, stepIndex, aemonName }: { children: ReactNode; stepIndex: number; aemonName: string }) {
   const progress = Math.round(((stepIndex + 1) / steps.length) * 100)
@@ -137,6 +172,11 @@ function StepControls({
   nextLabel?: string
   nextDisabled?: boolean
 }) {
+  const dialogueGate = useContext(DialogueGateContext)
+  const hideNext = Boolean(dialogueGate?.isDialogueWaiting)
+  const canAdvanceDialogue = Boolean(dialogueGate?.canAdvanceDialogue)
+  const effectiveNextLabel = canAdvanceDialogue ? '다음' : nextLabel
+
   return (
     <div className="mt-6 flex items-center justify-between gap-3 border-t border-white/10 pt-5">
       <Button
@@ -149,17 +189,60 @@ function StepControls({
       >
         이전
       </Button>
-      <Button
-        disabled={nextDisabled}
-        onClick={() => {
-          unlockDialogueSound()
-          onNext()
-        }}
-      >
-        {nextLabel}
-      </Button>
+      {hideNext ? (
+        <div className="min-h-12 min-w-28" aria-live="polite" />
+      ) : (
+        <Button
+          disabled={canAdvanceDialogue ? false : nextDisabled}
+          onClick={() => {
+            unlockDialogueSound()
+            if (dialogueGate?.advanceDialogue()) return
+            onNext()
+          }}
+        >
+          {effectiveNextLabel}
+        </Button>
+      )}
     </div>
   )
+}
+
+function useSequencedDialogue(sceneKey: string, parts: string[]) {
+  const dialogueGate = useContext(DialogueGateContext)
+  const startDialogue = dialogueGate?.startDialogue
+  const finishDialogue = dialogueGate?.finishDialogue
+  const registerDialogueAdvance = dialogueGate?.registerDialogueAdvance
+  const [partState, setPartState] = useState({ sceneKey, index: 0 })
+  const partIndex = partState.sceneKey === sceneKey ? Math.min(partState.index, Math.max(0, parts.length - 1)) : 0
+  const activeText = parts[partIndex] ?? ''
+  const activeDialogueKey = useMemo(() => `${sceneKey}-${partIndex}-${activeText}`, [activeText, partIndex, sceneKey])
+  const [doneState, setDoneState] = useState({ key: activeDialogueKey, done: false })
+  const activeDone = doneState.key === activeDialogueKey && doneState.done
+  const handleActiveDone = useCallback(() => {
+    setDoneState({ key: activeDialogueKey, done: true })
+  }, [activeDialogueKey])
+  const advanceActiveDialogue = useCallback(() => {
+    setPartState((current) => {
+      const currentIndex = current.sceneKey === sceneKey ? current.index : partIndex
+      return { sceneKey, index: Math.min(parts.length - 1, currentIndex + 1) }
+    })
+  }, [partIndex, parts.length, sceneKey])
+
+  useEffect(() => {
+    startDialogue?.(activeDialogueKey)
+  }, [activeDialogueKey, startDialogue])
+
+  useEffect(() => {
+    if (activeDone) finishDialogue?.(activeDialogueKey)
+  }, [activeDialogueKey, activeDone, finishDialogue])
+
+  useEffect(() => {
+    const hasNextPart = partIndex < parts.length - 1
+    registerDialogueAdvance?.(activeDialogueKey, activeDone && hasNextPart ? advanceActiveDialogue : null)
+    return () => registerDialogueAdvance?.(activeDialogueKey, null)
+  }, [activeDialogueKey, activeDone, advanceActiveDialogue, partIndex, parts.length, registerDialogueAdvance])
+
+  return { activeText, activeDone, activeDialogueKey, handleActiveDone, partIndex }
 }
 
 function QrBlock({ title, url }: { title: string; url: string }) {
@@ -176,6 +259,14 @@ function QrBlock({ title, url }: { title: string; url: string }) {
 }
 
 function AemonScene({ name, line, caption, stage = 0 }: { name: string; line: string; caption: string; stage?: number }) {
+  const sceneKey = useMemo(() => `aemon-${name}-${line}-${caption}-${stage}`, [caption, line, name, stage])
+  const dialogueParts = useMemo(() => [line, caption].filter(Boolean), [caption, line])
+  const { activeText, activeDone, activeDialogueKey, handleActiveDone, partIndex } = useSequencedDialogue(sceneKey, dialogueParts)
+  const textClass =
+    partIndex === 0
+      ? 'font-display mt-3 min-h-[4.5rem] text-4xl leading-tight text-[#EAF2F5]'
+      : 'mt-4 min-h-[4.5rem] text-lg leading-8 text-[#B7C7D2]'
+
   return (
     <Panel className="relative min-h-[620px] overflow-hidden p-0">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(79,224,192,.2),transparent_42%),linear-gradient(180deg,#0B1A29,#07111B)]" />
@@ -184,16 +275,23 @@ function AemonScene({ name, line, caption, stage = 0 }: { name: string; line: st
       </div>
       <div className="absolute inset-x-5 bottom-5 rounded-[22px] border border-white/15 bg-[#07111B]/90 p-6 shadow-2xl backdrop-blur">
         <p className="font-data text-sm text-[#4FE0C0]">{name}</p>
-        <p className="font-display mt-3 text-4xl leading-tight text-[#EAF2F5]">
-          <TypewriterText text={line} />
+        <p className={textClass}>
+          <TypewriterText key={activeDialogueKey} text={activeText} cursor={!activeDone} onDone={handleActiveDone} />
         </p>
-        <p className="mt-4 text-lg leading-8 text-[#B7C7D2]">{caption}</p>
       </div>
     </Panel>
   )
 }
 
 function ProfessorCaseScene({ line, caption }: { line: string; caption: string }) {
+  const sceneKey = useMemo(() => `professor-${line}-${caption}`, [caption, line])
+  const dialogueParts = useMemo(() => [line, caption].filter(Boolean), [caption, line])
+  const { activeText, activeDone, activeDialogueKey, handleActiveDone, partIndex } = useSequencedDialogue(sceneKey, dialogueParts)
+  const textClass =
+    partIndex === 0
+      ? 'font-display mt-3 min-h-[4.5rem] text-4xl leading-tight text-[#EAF2F5]'
+      : 'mt-4 min-h-[4.5rem] text-lg leading-8 text-[#B7C7D2]'
+
   return (
     <Panel className="relative min-h-[620px] overflow-hidden p-0">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(255,211,122,.18),transparent_42%),linear-gradient(180deg,#102236,#07111B)]" />
@@ -202,10 +300,9 @@ function ProfessorCaseScene({ line, caption }: { line: string; caption: string }
       </div>
       <div className="absolute inset-x-5 bottom-5 rounded-[22px] border border-white/15 bg-[#07111B]/90 p-6 shadow-2xl backdrop-blur">
         <p className="font-data text-sm text-[#FFD37A]">오박사</p>
-        <p className="font-display mt-3 text-4xl leading-tight text-[#EAF2F5]">
-          <TypewriterText text={line} />
+        <p className={textClass}>
+          <TypewriterText key={activeDialogueKey} text={activeText} cursor={!activeDone} onDone={handleActiveDone} />
         </p>
-        <p className="mt-4 text-lg leading-8 text-[#B7C7D2]">{caption}</p>
       </div>
     </Panel>
   )
@@ -224,6 +321,14 @@ function VisualCaseScene({
   line: string
   caption: string
 }) {
+  const sceneKey = useMemo(() => `visual-case-${label}-${title}-${line}-${caption}`, [caption, label, line, title])
+  const dialogueParts = useMemo(() => [line, caption].filter(Boolean), [caption, line])
+  const { activeText, activeDone, activeDialogueKey, handleActiveDone, partIndex } = useSequencedDialogue(sceneKey, dialogueParts)
+  const textClass =
+    partIndex === 0
+      ? 'font-display mt-3 min-h-[4.5rem] break-keep text-4xl leading-tight text-[#EAF2F5]'
+      : 'mt-4 min-h-[4.5rem] break-keep text-lg leading-8 text-[#B7C7D2]'
+
   return (
     <Panel className="relative min-h-[700px] overflow-hidden p-0">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_12%,rgba(79,224,192,.14),transparent_34%),linear-gradient(180deg,#102236,#07111B)]" />
@@ -241,10 +346,9 @@ function VisualCaseScene({
             {title}
           </span>
         </div>
-        <p className="font-display mt-3 min-h-[4.5rem] break-keep text-4xl leading-tight text-[#EAF2F5]">
-          <TypewriterText text={line} speed={28} />
+        <p className={textClass}>
+          <TypewriterText key={activeDialogueKey} text={activeText} speed={28} cursor={!activeDone} onDone={handleActiveDone} />
         </p>
-        <p className="mt-4 text-lg leading-8 text-[#B7C7D2]">{caption}</p>
       </div>
     </Panel>
   )
@@ -291,6 +395,38 @@ export function LessonTwoPage() {
   const [selectedProposalId, setSelectedProposalId] = useState('')
   const [message, setMessage] = useState('')
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const dialogueAdvanceRef = useRef<{ key: string; handler: () => void } | null>(null)
+  const [dialogueGateState, setDialogueGateState] = useState({ key: '', ready: true, canAdvance: false })
+  const startDialogue = useCallback((key: string) => {
+    setDialogueGateState((current) => (current.key === key && !current.ready && !current.canAdvance ? current : { key, ready: false, canAdvance: false }))
+  }, [])
+  const finishDialogue = useCallback((key: string) => {
+    setDialogueGateState((current) => (current.key === key ? { ...current, ready: true } : current))
+  }, [])
+  const registerDialogueAdvance = useCallback((key: string, handler: (() => void) | null) => {
+    if (handler) {
+      dialogueAdvanceRef.current = { key, handler }
+    } else if (dialogueAdvanceRef.current?.key === key) {
+      dialogueAdvanceRef.current = null
+    }
+    setDialogueGateState((current) => (current.key === key ? { ...current, canAdvance: Boolean(handler) } : current))
+  }, [])
+  const advanceDialogue = useCallback(() => {
+    if (!dialogueGateState.canAdvance || dialogueAdvanceRef.current?.key !== dialogueGateState.key) return false
+    dialogueAdvanceRef.current.handler()
+    return true
+  }, [dialogueGateState.canAdvance, dialogueGateState.key])
+  const dialogueGateValue = useMemo<DialogueGateContextValue>(
+    () => ({
+      isDialogueWaiting: !dialogueGateState.ready,
+      canAdvanceDialogue: dialogueGateState.canAdvance,
+      startDialogue,
+      finishDialogue,
+      registerDialogueAdvance,
+      advanceDialogue,
+    }),
+    [advanceDialogue, dialogueGateState.canAdvance, dialogueGateState.ready, finishDialogue, registerDialogueAdvance, startDialogue],
+  )
 
   useV2RemoteSync(state.classCode, Boolean(state.classCode))
 
@@ -394,7 +530,11 @@ export function LessonTwoPage() {
     navigate('/home')
   }
 
-  const goPrev = () => setStepIndex((current) => Math.max(0, current - 1))
+  const goPrev = useCallback(() => {
+    dialogueAdvanceRef.current = null
+    setDialogueGateState({ key: '', ready: true, canAdvance: false })
+    setStepIndex((current) => Math.max(0, current - 1))
+  }, [])
   const goNext = () => {
     if (stepIndex >= steps.length - 1) void finishLesson()
     else setStepIndex((current) => Math.min(steps.length - 1, current + 1))
@@ -414,6 +554,7 @@ export function LessonTwoPage() {
   }
 
   return (
+    <DialogueGateContext.Provider value={dialogueGateValue}>
     <StepShell stepIndex={stepIndex} aemonName={aemonName}>
       {step === 'intro' ? (
         <>
@@ -873,5 +1014,6 @@ export function LessonTwoPage() {
         </>
       ) : null}
     </StepShell>
+    </DialogueGateContext.Provider>
   )
 }
