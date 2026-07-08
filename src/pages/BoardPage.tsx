@@ -114,7 +114,7 @@ export function BoardPage() {
 
   const [classCode, setClassCode] = useState(queryCode || state.classCode)
   const [nickname, setNickname] = useState(state.studentSession?.nickname ?? '')
-  const [selectedTopic, setSelectedTopic] = useState<BoardTopic>(queryTopic ?? 'name')
+  const [selectedTopic, setSelectedTopic] = useState<BoardTopic>(queryTopic ?? 'survey')
   const [nameDraft, setNameDraft] = useState('')
   const [reasonDraft, setReasonDraft] = useState('')
   const [wishDraft, setWishDraft] = useState('')
@@ -129,6 +129,7 @@ export function BoardPage() {
   const [editWishBody, setEditWishBody] = useState('')
   const [message, setMessage] = useState('')
   const [isEntering, setIsEntering] = useState(false)
+  const aemonDisplayName = state.aemonName.trim() || '에아몬'
 
   const session = state.studentSession
   const canSeeSurvey = Boolean(state.currentLesson >= 1 || state.surveyResponses.length > 0 || queryTopic === 'survey')
@@ -178,6 +179,10 @@ export function BoardPage() {
   )
   const savedRiskResponse = sessionNickname ? riskResponses.find((response) => response.nickname === sessionNickname) : null
   const canWriteRemote = Boolean(state.classId && state.remote.ok && isRemoteReady())
+  const topicTitle = (topic: BoardTopic) => {
+    if (topic === 'wish') return `${aemonDisplayName}에게 바라는 모습`
+    return topicMeta[topic].title
+  }
 
   useV2RemoteSync(state.classCode, Boolean(state.classCode && (session || isTeacherBoard)))
 
@@ -401,12 +406,12 @@ export function BoardPage() {
   }
 
   if (!session && !isTeacherBoard) {
-    const entryTopic = queryTopic ?? 'name'
+    const entryTopic = queryTopic ?? 'survey'
     return (
       <div className="flex min-h-[75vh] items-center justify-center px-5">
         <Panel className="w-full max-w-md">
           <p className="font-data text-sm text-[#4FE0C0]">LEARNING BOARD</p>
-          <h1 className="font-display mt-2 text-4xl text-[#EAF2F5]">{topicMeta[entryTopic].title}</h1>
+          <h1 className="font-display mt-2 text-4xl text-[#EAF2F5]">{queryTopic ? topicTitle(entryTopic) : '학습게시판'}</h1>
           <p className="mt-3 leading-7 text-[#8AA0B0]">처음 들어오거나 시크릿 탭이면 닉네임을 한 번 더 입력합니다.</p>
           <div className="mt-6 grid gap-4">
             <input
@@ -683,7 +688,7 @@ export function BoardPage() {
                 <div>
                   <p className="font-data text-xs text-[#EF6381]">2차시 · 위험 토론</p>
                   <h2 className="font-display mt-1 text-3xl leading-tight text-[#EAF2F5]">AI가 나쁜 명령을 들어주면 어떤 일이 생길까요?</h2>
-                  <p className="mt-3 leading-7 text-[#8AA0B0]">방금 본 에아몬처럼, AI가 사람이 시키는 대로만 행동하면 어떤 위험이 생길지 한 문장으로 남겨주세요.</p>
+                  <p className="mt-3 leading-7 text-[#8AA0B0]">방금 본 {aemonDisplayName}처럼, AI가 사람이 시키는 대로만 행동하면 어떤 위험이 생길지 한 문장으로 남겨주세요.</p>
                 </div>
                 {savedRiskResponse ? (
                   <span className="inline-flex items-center gap-2 rounded-full border border-[#4FE0C0]/25 bg-[#4FE0C0]/10 px-4 py-2 text-sm font-black text-[#4FE0C0]">
@@ -800,7 +805,7 @@ export function BoardPage() {
           {!isTeacherBoard ? (
             <Panel>
               <p className="font-data text-xs text-[#FFD37A]">1차시 · 바람 입력</p>
-              <h2 className="font-display mt-1 text-3xl text-[#EAF2F5]">{state.aemonName || '에아몬'}에게 바라는 모습</h2>
+              <h2 className="font-display mt-1 text-3xl text-[#EAF2F5]">{aemonDisplayName}에게 바라는 모습</h2>
               <textarea
                 className="mt-4 min-h-32 w-full resize-none rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 leading-7 text-[#EAF2F5]"
                 maxLength={160}
@@ -879,7 +884,7 @@ export function BoardPage() {
           {!isTeacherBoard ? (
             <Panel>
               <p className="font-data text-xs text-[#9B7CFF]">2차시 · 첫 번째 가치코드</p>
-              <h2 className="font-display mt-1 text-3xl text-[#EAF2F5]">에아몬의 약속 발의하기</h2>
+              <h2 className="font-display mt-1 text-3xl text-[#EAF2F5]">{aemonDisplayName}의 약속 발의하기</h2>
               <p className="mt-3 text-sm leading-6 text-[#8AA0B0]">
                 오늘은 나쁜 명령을 스스로 멈추게 할 첫 번째 기준을 만듭니다.
               </p>
@@ -909,7 +914,7 @@ export function BoardPage() {
               <textarea
                 className="mt-4 min-h-28 w-full resize-none rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 leading-7 text-[#EAF2F5]"
                 maxLength={180}
-                placeholder={`${state.aemonName || '에아몬'}은 ___해야 한다.`}
+                placeholder={`${aemonDisplayName}은 ___해야 한다.`}
                 value={codeBodyDraft}
                 onChange={(event) => setCodeBodyDraft(event.target.value)}
               />

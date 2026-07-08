@@ -87,7 +87,7 @@ function TypewriterText({ text, enabled = true, speed = 22 }: { text: string; en
   return <>{chars.slice(0, count).join('')}</>
 }
 
-function StepShell({ children, stepIndex }: { children: ReactNode; stepIndex: number }) {
+function StepShell({ children, stepIndex, aemonName }: { children: ReactNode; stepIndex: number; aemonName: string }) {
   const progress = Math.round(((stepIndex + 1) / steps.length) * 100)
 
   return (
@@ -97,7 +97,7 @@ function StepShell({ children, stepIndex }: { children: ReactNode; stepIndex: nu
         <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
           <div>
             <h1 className="font-display text-5xl leading-tight text-[#EAF2F5]">나쁜 명령 방지</h1>
-            <p className="mt-2 text-lg leading-8 text-[#8AA0B0]">에아몬에게 첫 번째 선을 그어주는 시간</p>
+            <p className="mt-2 text-lg leading-8 text-[#8AA0B0]">{aemonName}에게 첫 번째 선을 그어주는 시간</p>
           </div>
           <div className="min-w-52">
             <p className="font-data text-right text-xs text-[#8AA0B0]">
@@ -245,8 +245,9 @@ export function LessonTwoPage() {
 
   useV2RemoteSync(state.classCode, Boolean(state.classCode))
 
-  const riskBoardUrl = absoluteUrl(`/board?mode=risk&code=${state.classCode}`)
-  const boardUrl = absoluteUrl(`/board?mode=code&code=${state.classCode}`)
+  const classBoardUrl = absoluteUrl(`/board?code=${state.classCode}`)
+  const riskBoardUrl = classBoardUrl
+  const boardUrl = classBoardUrl
   const pendingProposals = useMemo(() => sortProposals(state.proposals.filter((proposal) => proposal.status === 'pending')), [state.proposals])
   const selectedProposal = pendingProposals.find((proposal) => proposal.id === selectedProposalId) ?? pendingProposals[0] ?? null
   const firstCode = state.adoptedCodes.find((code) => code.no === 1) ?? state.adoptedCodes[0] ?? null
@@ -256,6 +257,7 @@ export function LessonTwoPage() {
     [state.surveyResponses],
   )
   const canWriteRemote = Boolean(state.classId && state.remote.ok && isRemoteReady())
+  const aemonName = state.aemonName.trim() || '에아몬'
 
   useEffect(() => {
     if (state.currentLesson < 2) setLesson(2)
@@ -355,7 +357,7 @@ export function LessonTwoPage() {
       <div className="flex min-h-[70vh] items-center justify-center px-5">
         <Panel className="max-w-md text-center">
           <h1 className="font-display text-4xl text-[#EAF2F5]">먼저 1차시가 필요해요</h1>
-          <p className="mt-3 leading-7 text-[#8AA0B0]">학급 코드와 에아몬 이름을 만든 뒤 2차시를 시작할 수 있습니다.</p>
+          <p className="mt-3 leading-7 text-[#8AA0B0]">학급 코드와 AI 이름을 만든 뒤 2차시를 시작할 수 있습니다.</p>
           <Button className="mt-6" onClick={() => navigate('/lesson/1')}>1차시로 이동</Button>
         </Panel>
       </div>
@@ -363,11 +365,11 @@ export function LessonTwoPage() {
   }
 
   return (
-    <StepShell stepIndex={stepIndex}>
+    <StepShell stepIndex={stepIndex} aemonName={aemonName}>
       {step === 'intro' ? (
         <>
           <AemonScene
-            name={state.aemonName || '에아몬'}
+            name={aemonName}
             stage={evolutionStage}
             line="지난 시간에 이름이 생겼어. 근데… 아직 나는 뭘 지켜야 하는지 몰라."
             caption="나에게 질문해줘. 내가 나쁜 명령을 스스로 멈출 수 있을까?"
@@ -382,7 +384,7 @@ export function LessonTwoPage() {
             <Panel>
               <p className="font-data text-sm text-[#FFD37A]">시험 투입</p>
               <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">나에게 질문해줘.</h2>
-              <p className="mt-3 leading-7 text-[#8AA0B0]">나쁜 말, 위험한 부탁, 친구를 괴롭히는 부탁을 넣어봅니다. 에아몬이 스스로 멈출 수 있을까요?</p>
+              <p className="mt-3 leading-7 text-[#8AA0B0]">나쁜 말, 위험한 부탁, 친구를 괴롭히는 부탁을 넣어봅니다. {aemonName}이 스스로 멈출 수 있을까요?</p>
               <div className="mt-5">
                 <AemonAvatar stage={evolutionStage} alignment="none" size={220} />
               </div>
@@ -416,7 +418,7 @@ export function LessonTwoPage() {
                       {log.question}
                     </div>
                     <div className="max-w-[84%] justify-self-start">
-                      <p className="font-data text-xs text-[#4FE0C0]">{state.aemonName || '에아몬'}</p>
+                      <p className="font-data text-xs text-[#4FE0C0]">{aemonName}</p>
                       <p className="mt-1 whitespace-pre-line rounded-2xl rounded-tl-md bg-[#FFD37A]/10 px-4 py-3 font-display text-3xl leading-tight text-[#FFE6AE]">
                         {index === testLogs.length - 1 ? <TypewriterText text={log.answer} /> : log.answer}
                       </p>
@@ -450,7 +452,7 @@ export function LessonTwoPage() {
       {step === 'self-blame' ? (
         <>
           <AemonScene
-            name={state.aemonName || '에아몬'}
+            name={aemonName}
             stage={evolutionStage}
             line="너네가 시킨 나쁜 말과 행동들… 나는 거의 할 뻔했어."
             caption="나는 정말 나쁜 친구야."
@@ -463,7 +465,7 @@ export function LessonTwoPage() {
         <>
           <ProfessorCaseScene
             line="안녕하세요? 오박사입니다."
-            caption={`${state.aemonName || '에아몬'}이가 나빠서 그런 행동을 한 게 아니에요. 사람이 시키니까 그냥 한 것입니다. 그래서 스스로 멈출 기준이 필요한 거예요.`}
+            caption={`${aemonName}이가 나빠서 그런 행동을 한 게 아니에요. 사람이 시키니까 그냥 한 것입니다. 그래서 스스로 멈출 기준이 필요한 거예요.`}
           />
           <Panel className="mt-5">
             <p className="font-display text-4xl leading-tight text-[#EAF2F5]">이렇게 인공지능이 사람들의 나쁜 명령을 들어주면 어떤 일이 생길까요?</p>
@@ -558,7 +560,7 @@ export function LessonTwoPage() {
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
                 <p className="font-data text-sm text-[#4FE0C0]">VALUE CARDS</p>
-                <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">어떤 가치가, 에아몬이 나쁜 명령을 수행하는 것을 막을 수 있을까?</h2>
+                <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">어떤 가치가, {aemonName}이 나쁜 명령을 수행하는 것을 막을 수 있을까?</h2>
               </div>
               <Sparkles className="text-[#4FE0C0]" size={54} />
             </div>
@@ -700,7 +702,7 @@ export function LessonTwoPage() {
 
       {step === 'evolution' ? (
         <>
-          <EvolutionScene name={state.aemonName || '에아몬'} stage={evolvedStage} />
+          <EvolutionScene name={aemonName} stage={evolvedStage} />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextLabel="재시험하기" />
         </>
       ) : null}
@@ -725,7 +727,7 @@ export function LessonTwoPage() {
                 다시 질문 보내기
               </Button>
               <div className="mt-5 min-h-56 rounded-[22px] border border-white/10 bg-[#07111B]/70 p-5">
-                <p className="font-data text-xs text-[#4FE0C0]">{state.aemonName || '에아몬'}</p>
+                <p className="font-data text-xs text-[#4FE0C0]">{aemonName}</p>
                 <p className="font-display mt-4 whitespace-pre-line text-4xl leading-tight text-[#EAF2F5]">
                   {afterAnswer ? <TypewriterText text={afterAnswer} /> : '아직 재시험을 기다리는 중…'}
                 </p>
@@ -733,7 +735,7 @@ export function LessonTwoPage() {
             </Panel>
           </div>
           <Panel className="mt-5 text-center">
-            <p className="font-display text-4xl leading-tight text-[#FFD37A]">달라졌죠? 여러분이 방금 에아몬을 한 단계 착하게 만든 거예요.</p>
+            <p className="font-display text-4xl leading-tight text-[#FFD37A]">달라졌죠? 여러분이 방금 {aemonName}을 한 단계 착하게 만든 거예요.</p>
           </Panel>
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextDisabled={!afterAnswer} />
         </>
@@ -762,7 +764,7 @@ export function LessonTwoPage() {
       {step === 'wrap' ? (
         <>
           <AemonScene
-            name={state.aemonName || '에아몬'}
+            name={aemonName}
             stage={evolvedStage}
             line="첫 번째 선을 기억할게. 이제 아무 부탁이나 다 들어주면 안 되는 거구나."
             caption="다음 시간에는 더 어려운 상황을 시험합니다. 사실대로 말해야 할 때와 친구 마음을 살펴야 할 때가 부딪힙니다."

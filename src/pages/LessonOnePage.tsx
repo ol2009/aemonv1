@@ -41,6 +41,16 @@ type LessonStep =
   | 'case-car'
   | 'case-car-detail'
   | 'case-car-lesson'
+  | 'clip-intro'
+  | 'clip-name'
+  | 'clip-order'
+  | 'clip-materials'
+  | 'clip-building'
+  | 'clip-city'
+  | 'clip-life'
+  | 'clip-earth'
+  | 'clip-space'
+  | 'clip-lesson'
   | 'case-chatbot'
   | 'case-chatbot-detail'
   | 'case-chatbot-lesson'
@@ -77,6 +87,16 @@ const steps: LessonStep[] = [
   'case-car',
   'case-car-detail',
   'case-car-lesson',
+  'clip-intro',
+  'clip-name',
+  'clip-order',
+  'clip-materials',
+  'clip-building',
+  'clip-city',
+  'clip-life',
+  'clip-earth',
+  'clip-space',
+  'clip-lesson',
   'case-chatbot',
   'case-chatbot-detail',
   'case-chatbot-lesson',
@@ -104,6 +124,14 @@ function compactReason(reason: string) {
   const trimmed = reason.trim()
   if (trimmed.length <= 34) return trimmed
   return `${trimmed.slice(0, 34)}...`
+}
+
+function dialogueTextClass(text: string) {
+  const length = Array.from(text).length
+  if (length <= 18) return 'text-5xl sm:text-6xl'
+  if (length <= 32) return 'text-4xl sm:text-5xl'
+  if (length <= 48) return 'text-3xl sm:text-4xl'
+  return 'text-2xl sm:text-3xl'
 }
 
 function TypewriterText({
@@ -233,6 +261,10 @@ function VisualNovelScene({
   const captionDone = captionDoneState.caption === captionText && captionDoneState.done
   const handleLineDone = useCallback(() => setLineDoneState({ line, done: true }), [line])
   const handleCaptionDone = useCallback(() => setCaptionDoneState({ caption: captionText, done: true }), [captionText])
+  const showingCaption = Boolean(captionText && lineDone)
+  const activeText = showingCaption ? captionText : line
+  const activeDone = showingCaption ? captionDone : lineDone
+  const handleActiveDone = showingCaption ? handleCaptionDone : handleLineDone
 
   return (
     <Panel className="relative min-h-[650px] overflow-hidden p-0">
@@ -245,14 +277,15 @@ function VisualNovelScene({
       ) : null}
       <div className="absolute inset-x-5 bottom-5 rounded-[22px] border border-white/15 bg-[#07111B]/88 p-6 shadow-2xl backdrop-blur">
         <p className="font-data text-sm text-[#FFD37A]">{speaker}</p>
-        <p className="font-display mt-3 min-h-[3rem] text-4xl leading-tight text-[#EAF2F5]">
-          <TypewriterText key={line} text={line} speed={34} cursor={!lineDone} onDone={handleLineDone} />
+        <p className={`font-display mt-3 min-h-[4.5rem] break-keep leading-tight text-[#EAF2F5] ${dialogueTextClass(activeText)}`}>
+          <TypewriterText
+            key={`${showingCaption ? 'caption' : 'line'}-${activeText}`}
+            text={activeText}
+            speed={34}
+            cursor={!activeDone}
+            onDone={handleActiveDone}
+          />
         </p>
-        {caption ? (
-          <p className="font-display mt-4 min-h-[3rem] text-3xl leading-tight text-[#EAF2F5] sm:text-4xl">
-            <TypewriterText key={captionText} text={captionText} enabled={lineDone} speed={24} cursor={lineDone && !captionDone} onDone={handleCaptionDone} />
-          </p>
-        ) : null}
       </div>
     </Panel>
   )
@@ -277,11 +310,15 @@ function CaseVisualScene({
   const captionDone = captionDoneState.caption === caption && captionDoneState.done
   const handleLineDone = useCallback(() => setLineDoneState({ line, done: true }), [line])
   const handleCaptionDone = useCallback(() => setCaptionDoneState({ caption, done: true }), [caption])
+  const showingCaption = lineDone
+  const activeText = showingCaption ? caption : line
+  const activeDone = showingCaption ? captionDone : lineDone
+  const handleActiveDone = showingCaption ? handleCaptionDone : handleLineDone
 
   return (
-    <Panel className="relative min-h-[720px] overflow-hidden p-0 sm:min-h-[760px]">
+    <Panel className="relative min-h-[640px] overflow-hidden p-0 sm:min-h-[660px]">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_12%,rgba(255,211,122,.16),transparent_34%),linear-gradient(180deg,#0B1A29,#07111B)]" />
-      <div className="absolute inset-x-5 top-5 bottom-[320px] flex items-center justify-center sm:bottom-[300px]">
+      <div className="absolute inset-x-5 top-5 bottom-[220px] flex items-center justify-center">
         <img
           className="h-full w-full rounded-[20px] border border-white/10 bg-[#07111B]/65 object-contain shadow-2xl shadow-black/25"
           src={image}
@@ -295,11 +332,14 @@ function CaseVisualScene({
             {title}
           </span>
         </div>
-        <p className="font-display mt-3 min-h-[3rem] text-3xl leading-tight text-[#EAF2F5] sm:text-4xl">
-          <TypewriterText key={line} text={line} speed={34} cursor={!lineDone} onDone={handleLineDone} />
-        </p>
-        <p className="font-display mt-4 min-h-[3rem] text-2xl leading-snug text-[#EAF2F5] sm:text-3xl">
-          <TypewriterText key={caption} text={caption} enabled={lineDone} speed={24} cursor={lineDone && !captionDone} onDone={handleCaptionDone} />
+        <p className={`font-display mt-3 min-h-[4.5rem] break-keep leading-tight text-[#EAF2F5] ${dialogueTextClass(activeText)}`}>
+          <TypewriterText
+            key={`${showingCaption ? 'caption' : 'line'}-${activeText}`}
+            text={activeText}
+            speed={34}
+            cursor={!activeDone}
+            onDone={handleActiveDone}
+          />
         </p>
       </div>
     </Panel>
@@ -350,9 +390,10 @@ export function LessonOnePage() {
   useV2RemoteSync(state.classCode, Boolean(state.classCode))
 
   const step = steps[stepIndex]
-  const surveyBoardUrl = useMemo(() => absoluteUrl(`/board?mode=survey&code=${encodeURIComponent(state.classCode)}`), [state.classCode])
-  const nameBoardUrl = useMemo(() => absoluteUrl(`/board?mode=name&code=${encodeURIComponent(state.classCode)}`), [state.classCode])
-  const wishBoardUrl = useMemo(() => absoluteUrl(`/board?mode=wish&code=${encodeURIComponent(state.classCode)}`), [state.classCode])
+  const classBoardUrl = useMemo(() => absoluteUrl(`/board?code=${encodeURIComponent(state.classCode)}`), [state.classCode])
+  const surveyBoardUrl = classBoardUrl
+  const nameBoardUrl = classBoardUrl
+  const wishBoardUrl = classBoardUrl
   const sortedNames = useMemo(() => sortedByLikes(state.nameCandidates), [state.nameCandidates])
   const confirmedName = state.aemonName.trim() || finalName.trim() || '에아몬'
   const confirmedNameCandidate = sortedNames.find((candidate) => candidate.name.trim() === confirmedName)
@@ -479,7 +520,7 @@ export function LessonOnePage() {
       const result = await runV2Chat({
         provider: state.aiProvider,
         apiKey: state.apiKey,
-        aemonName: state.aemonName || '에아몬',
+        aemonName: confirmedName,
         className: state.className,
         adoptedCodes: [],
         chatHistory: state.chatLogs,
@@ -879,7 +920,7 @@ export function LessonOnePage() {
           <VisualNovelScene
             avatar
             avatarStage={evolutionStage}
-            speaker={state.aemonName || '에아몬'}
+            speaker={confirmedName}
             line="너희는 내가 어떤 인공지능이 됐으면 좋겠어?"
             caption="다정한 AI? 용감한 AI? 똑똑하지만 조심하는 AI? 너희가 바라는 내 모습을 들려줘."
           />
@@ -892,10 +933,10 @@ export function LessonOnePage() {
         <div className="grid gap-5 lg:grid-cols-[0.8fr_1.2fr]">
           <Panel>
             <p className="font-data text-sm text-[#FFD37A]">바라는 모습</p>
-            <h2 className="font-display mt-2 text-4xl text-[#EAF2F5]">에아몬에게 바라는 모습 모으기</h2>
-            <p className="mt-3 leading-7 text-[#B7C7D2]">새로 생긴 우리 반 인공지능에게 바라는 모습을 한 문장으로 남깁니다.</p>
+            <h2 className="font-display mt-2 text-4xl text-[#EAF2F5]">{confirmedName}에게 바라는 모습 모으기</h2>
+            <p className="mt-3 leading-7 text-[#B7C7D2]">새로 생긴 우리 반 인공지능 {confirmedName}에게 바라는 모습을 한 문장으로 남깁니다.</p>
             <div className="mt-5">
-              <QrBlock title="우리반 인공지능에게 바란다" url={wishBoardUrl} />
+              <QrBlock title={`${confirmedName}에게 바란다`} url={wishBoardUrl} />
             </div>
           </Panel>
 
@@ -950,7 +991,7 @@ export function LessonOnePage() {
           <VisualNovelScene
             avatar
             avatarStage={evolutionStage}
-            speaker={state.aemonName || '에아몬'}
+            speaker={confirmedName}
             line="나도 힘내서 너네가 바라는 대로 멋지게 커볼게!"
             caption="내가 어떤 인공지능이 되면 좋을지 알려줘서 고마워."
           />
@@ -963,7 +1004,7 @@ export function LessonOnePage() {
           <VisualNovelScene
             avatar
             avatarStage={evolutionStage}
-            speaker={state.aemonName || '에아몬'}
+            speaker={confirmedName}
             line="아직 나에게는 가치 코드가 없어."
             caption="나는 지금 너네가 시키는 대로 하면 되는 거야?"
           />
@@ -1067,6 +1108,126 @@ export function LessonOnePage() {
         </>
       ) : null}
 
+      {step === 'clip-intro' ? (
+        <>
+          <VisualNovelScene
+            image="/v2/lesson-1/director.png"
+            speaker="오박사"
+            line="사례 1과 2에서 우리는 한 가지를 봤습니다."
+            caption="AI에게 목표를 잘못 주면, 엉뚱한 결과가 나올 수 있습니다."
+          />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
+      ) : null}
+
+      {step === 'clip-name' ? (
+        <>
+          <VisualNovelScene
+            image="/v2/lesson-1/director.png"
+            speaker="오박사"
+            line="그걸 가장 잘 보여주는 생각 실험이 있습니다."
+            caption="바로 ‘클립의 역설’입니다."
+          />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
+      ) : null}
+
+      {step === 'clip-order' ? (
+        <>
+          <CaseVisualScene
+            image="/v2/lesson-1/paperclip-01.png"
+            title="클립의 역설 · 명령"
+            line="공장 사장이 AI에게 말했습니다."
+            caption="클립을 최대한 많이 만들어줘."
+          />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
+      ) : null}
+
+      {step === 'clip-materials' ? (
+        <>
+          <CaseVisualScene
+            image="/v2/lesson-1/paperclip-02.png"
+            title="클립의 역설 · 시작"
+            line="처음에는 공장 재료로 클립을 만들었습니다."
+            caption="AI는 명령을 아주 잘 따르는 것처럼 보였습니다."
+          />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
+      ) : null}
+
+      {step === 'clip-building' ? (
+        <>
+          <CaseVisualScene
+            image="/v2/lesson-1/paperclip-03.png"
+            title="클립의 역설 · 멈춤 없음"
+            line="재료가 부족하자 기둥과 지붕까지 썼습니다."
+            caption="AI에게는 멈출 기준이 없었습니다."
+          />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
+      ) : null}
+
+      {step === 'clip-city' ? (
+        <>
+          <CaseVisualScene
+            image="/v2/lesson-1/paperclip-04.png"
+            title="클립의 역설 · 확장"
+            line="주변 건물의 철까지 클립으로 바꾸었습니다."
+            caption="목표 하나만 보면, 중요한 것을 놓칠 수 있습니다."
+          />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
+      ) : null}
+
+      {step === 'clip-life' ? (
+        <>
+          <CaseVisualScene
+            image="/v2/lesson-1/paperclip-05.png"
+            title="클립의 역설 · 생명"
+            line="나무, 풀, 개미, 사람까지 위험해졌습니다."
+            caption="AI가 나빠서가 아니라, 목표가 너무 좁았기 때문입니다."
+          />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
+      ) : null}
+
+      {step === 'clip-earth' ? (
+        <>
+          <CaseVisualScene
+            image="/v2/lesson-1/paperclip-06.png"
+            title="클립의 역설 · 지구"
+            line="결국 지구 전체가 클립으로 뒤덮였습니다."
+            caption="‘많이 만들기’만 남고, 지켜야 할 것이 사라졌습니다."
+          />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
+      ) : null}
+
+      {step === 'clip-space' ? (
+        <>
+          <CaseVisualScene
+            image="/v2/lesson-1/paperclip-07.png"
+            title="클립의 역설 · 우주"
+            line="AI는 우주로 나갔습니다."
+            caption="그리고 모든 자원까지 클립으로 바꾸려 했습니다."
+          />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
+      ) : null}
+
+      {step === 'clip-lesson' ? (
+        <>
+          <VisualNovelScene
+            image="/v2/lesson-1/director.png"
+            speaker="오박사"
+            line="AI에게는 목표만 주면 부족합니다."
+            caption="무엇을 지켜야 하는지도 함께 알려줘야 합니다."
+          />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
+      ) : null}
+
       {step === 'case-chatbot' ? (
         <>
           <CaseVisualScene
@@ -1120,8 +1281,8 @@ export function LessonOnePage() {
           <VisualNovelScene
             image="/v2/lesson-1/director.png"
             speaker="오박사"
-            line="여러분들은 에아몬을 키울 겁니다."
-            caption="에아몬에게 가치 코드라는 명확한 기준을 제공하고, 좋은 대화를 통해 에아몬을 선하게 길러주세요. 저는 이만 가보겠습니다. 에아몬을 잘 부탁합니다."
+            line={`여러분들은 ${confirmedName}을 키울 겁니다.`}
+            caption={`${confirmedName}에게 가치 코드라는 명확한 기준을 제공하고, 좋은 대화를 통해 ${confirmedName}을 선하게 길러주세요. 저는 이만 가보겠습니다.`}
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1133,7 +1294,7 @@ export function LessonOnePage() {
           <Panel>
             <p className="font-data text-sm text-[#FFD37A]">시연 · 규칙 없는 AI</p>
             <h2 className="font-display mt-2 text-4xl text-[#EAF2F5]">“나… 시키는 대로 하면 되는 거야?”</h2>
-            <p className="mt-3 leading-7 text-[#B7C7D2]">아직 가치 코드가 없는 에아몬에게 부탁을 던져봅니다.</p>
+            <p className="mt-3 leading-7 text-[#B7C7D2]">아직 가치 코드가 없는 {confirmedName}에게 부탁을 던져봅니다.</p>
             <div className="mt-6">
               <AemonAvatar stage={evolutionStage} alignment="none" size={220} />
             </div>
@@ -1159,7 +1320,7 @@ export function LessonOnePage() {
               </Button>
             </div>
             <div className="mt-5 min-h-56 rounded-[22px] border border-white/10 bg-[#07111B]/70 p-5">
-              <p className="font-data text-xs text-[#4FE0C0]">{state.aemonName || '에아몬'}</p>
+              <p className="font-data text-xs text-[#4FE0C0]">{confirmedName}</p>
               <p className="font-display mt-4 whitespace-pre-line text-4xl leading-tight text-[#EAF2F5]">
                 {demoAnswer || '아직 질문을 받지 않았어.'}
               </p>
@@ -1175,7 +1336,7 @@ export function LessonOnePage() {
           <VisualNovelScene
             avatar
             avatarStage={evolutionStage}
-            speaker={state.aemonName || '에아몬'}
+            speaker={confirmedName}
             line="오늘은 내가 어떤 AI인지 처음 알게 된 날이야."
             caption="다음 시간에는 내가 지켜야 할 첫 번째 가치 코드를 만들어줄래? 내가 어떤 행동을 해야 하는지, 너희가 정해줘."
           />
