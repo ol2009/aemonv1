@@ -6,8 +6,9 @@ import { Button, Panel } from '../components/ui'
 import { pickWalkItem } from '../data/walkItems'
 import { findV2Lesson, v2Lessons } from '../data/v2Lessons'
 import type { AiProvider, WalkItem, WalkItemType } from '../domain/types'
+import { findBestRecoverableClass, shouldAutoRestoreClass } from '../lib/classRecovery'
 import { providerLabel } from '../lib/v2Chat'
-import { isRemoteReady, updateRemoteLesson } from '../lib/v2Remote'
+import { fetchRemoteClassBundle, fetchRemoteTeacherClasses, isRemoteReady, updateRemoteLesson } from '../lib/v2Remote'
 import { useSupabaseUser } from '../lib/useSupabaseUser'
 import { useV2RemoteSync } from '../lib/useV2RemoteSync'
 import { useV2 } from '../state/V2Store'
@@ -22,8 +23,8 @@ const typeMeta: Record<WalkItemType, { color: string; soft: string }> = {
 
 export function HomePage() {
   const navigate = useNavigate()
-  const { isLoading } = useSupabaseUser()
-  const { state, evolutionStage, adoptedCodeCount, currentReaction, setLesson, setRemoteStatus, updateAiSettings, resetDemo } = useV2()
+  const { user, isLoading } = useSupabaseUser()
+  const { state, evolutionStage, adoptedCodeCount, currentReaction, mergeClass, setLesson, setRemoteStatus, updateAiSettings, resetDemo } = useV2()
   const [isApiOpen, setIsApiOpen] = useState(false)
   const [draftProvider, setDraftProvider] = useState<AiProvider>(state.aiProvider)
   const [draftApiKey, setDraftApiKey] = useState(state.apiKey)
@@ -31,9 +32,43 @@ export function HomePage() {
   const [walkPhase, setWalkPhase] = useState<WalkPhase>('idle')
   const [walkItem, setWalkItem] = useState<WalkItem | null>(null)
   const swimTimer = useRef<number | null>(null)
+  const recoveryAttemptedRef = useRef('')
+  const stateRef = useRef(state)
   const walkMeta = walkItem ? typeMeta[walkItem.type] : null
 
   useV2RemoteSync(state.classCode, Boolean(state.classCode))
+
+  useEffect(() => {
+    stateRef.current = state
+  }, [state])
+
+  useEffect(() => {
+    if (!user?.id || !isRemoteReady()) return
+
+    let cancelled = false
+    fetchRemoteTeacherClasses(user.id)
+      .then(async (classes) => {
+        if (cancelled || !shouldAutoRestoreClass(stateRef.current, classes)) return
+        const bestClass = findBestRecoverableClass(classes)
+        if (!bestClass || recoveryAttemptedRef.current === bestClass.classCode) return
+
+        recoveryAttemptedRef.current = bestClass.classCode
+        const bundle = await fetchRemoteClassBundle(bestClass.classCode)
+        if (!cancelled) mergeClass({ ...bundle, studentSession: null })
+      })
+      .catch((error) => {
+        if (!cancelled) setRemoteStatus({ ok: false, message: (error as Error).message })
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [
+    mergeClass,
+    setRemoteStatus,
+    state.classCode,
+    user?.id,
+  ])
 
   useEffect(
     () => () => {

@@ -261,6 +261,15 @@ export interface RemoteClassSummary {
   currentLesson: number
   aemonName: string
   createdAt: string
+  activityCount: number
+  counts: {
+    nameCandidates: number
+    wishes: number
+    surveyResponses: number
+    codeProposals: number
+    adoptedCodes: number
+    chatLogs: number
+  }
 }
 
 export async function fetchRemoteTeacherClasses(teacherId: string): Promise<RemoteClassSummary[]> {
@@ -277,14 +286,49 @@ export async function fetchRemoteTeacherClasses(teacherId: string): Promise<Remo
 
   if (error) throw new Error(toMessage(error))
 
-  return ((data ?? []) as ClassRow[]).map((row) => ({
-    classId: row.id,
-    className: row.name,
-    classCode: row.code,
-    currentLesson: row.current_lesson,
-    aemonName: row.aemon_name ?? '',
-    createdAt: row.created_at,
+  return Promise.all(((data ?? []) as ClassRow[]).map(async (row) => {
+    const counts = await fetchRemoteClassCounts(row.id)
+    const activityCount =
+      counts.nameCandidates +
+      counts.wishes +
+      counts.surveyResponses +
+      counts.codeProposals +
+      counts.adoptedCodes +
+      counts.chatLogs
+
+    return {
+      classId: row.id,
+      className: row.name,
+      classCode: row.code,
+      currentLesson: row.current_lesson,
+      aemonName: row.aemon_name ?? '',
+      createdAt: row.created_at,
+      activityCount,
+      counts,
+    }
   }))
+}
+
+async function fetchTableCount(table: 'name_candidates' | 'wishes' | 'survey_responses' | 'codes' | 'chat_logs', classId: string, status?: 'adopted') {
+  const client = ensureClient()
+  let query = client.from(table).select('*', { count: 'exact', head: true }).eq('class_id', classId)
+  if (table === 'codes' && status) query = query.eq('status', status)
+  const { count, error } = await query
+  if (error) throw new Error(toMessage(error))
+  return count ?? 0
+}
+
+async function fetchRemoteClassCounts(classId: string): Promise<RemoteClassSummary['counts']> {
+  const [nameCandidates, wishes, surveyResponses, codeProposals, adoptedCodes, chatLogs] = await Promise.all([
+    fetchTableCount('name_candidates', classId),
+    fetchTableCount('wishes', classId),
+    fetchTableCount('survey_responses', classId),
+    fetchTableCount('codes', classId),
+    fetchTableCount('codes', classId, 'adopted'),
+    fetchTableCount('chat_logs', classId),
+  ])
+
+  return { nameCandidates, wishes, surveyResponses, codeProposals, adoptedCodes, chatLogs }
 }
 
 export async function restoreRemoteClassSnapshot(input: {
@@ -293,6 +337,7 @@ export async function restoreRemoteClassSnapshot(input: {
   classCode: string
   currentLesson: number
   aemonName: string
+  teacherId?: string | null
 }) {
   const client = ensureClient()
   const id = input.classId?.trim() || crypto.randomUUID()
@@ -327,6 +372,7 @@ export async function restoreRemoteClassSnapshot(input: {
       name,
       mode: 'ai',
       code,
+      teacher_id: input.teacherId ?? null,
       current_lesson: currentLesson,
       aemon_name: aemonName,
     })

@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { localClassHasSharedData } from './classRecovery'
 import { fetchRemoteClassBundle, isRemoteReady, restoreRemoteClassSnapshot } from './v2Remote'
 import { useV2 } from '../state/V2Store'
 
@@ -28,7 +29,8 @@ export function useV2RemoteSync(classCode?: string, enabled = true) {
         const localState = stateRef.current
         const canRestoreClass =
           localState.classCode.trim() === code &&
-          localState.className.trim()
+          localState.className.trim() &&
+          localClassHasSharedData(localState)
 
         if (canRestoreClass) {
           try {

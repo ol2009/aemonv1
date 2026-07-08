@@ -1,9 +1,10 @@
 import { useNavigate } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { BookOpen, CheckCircle2, KeyRound, Play, RotateCcw, Save, Search, X } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
 import { Button, Panel } from '../components/ui'
 import type { AiProvider } from '../domain/types'
+import { findBestRecoverableClass, remoteClassHasSharedData, shouldAutoRestoreClass } from '../lib/classRecovery'
 import { fetchRemoteClassBundle, fetchRemoteTeacherClasses, isRemoteReady, type RemoteClassSummary } from '../lib/v2Remote'
 import { useSupabaseUser } from '../lib/useSupabaseUser'
 import { providerLabel } from '../lib/v2Chat'
@@ -21,7 +22,16 @@ export function StartPage() {
   const [restoreMessage, setRestoreMessage] = useState('')
   const [isRestoring, setIsRestoring] = useState(false)
   const [remoteClasses, setRemoteClasses] = useState<RemoteClassSummary[]>([])
+  const [newProjectConfirmed, setNewProjectConfirmed] = useState(false)
+  const autoRestoreAttemptedRef = useRef('')
+  const stateRef = useRef(state)
   const isApiConnected = Boolean(state.apiKey.trim())
+  const bestRecoverableClass = useMemo(() => findBestRecoverableClass(remoteClasses), [remoteClasses])
+  const hasRecoverableRemoteClass = Boolean(bestRecoverableClass && remoteClassHasSharedData(bestRecoverableClass))
+
+  useEffect(() => {
+    stateRef.current = state
+  }, [state])
 
   useEffect(() => {
     if (!user?.id || !isRemoteReady()) return
@@ -64,11 +74,7 @@ export function StartPage() {
     navigate('/lesson/1')
   }
 
-  const openProject = () => {
-    navigate(state.classCode ? '/home' : '/lesson/1')
-  }
-
-  const loadClass = async (code: string) => {
+  const loadClass = useCallback(async (code: string, options?: { automatic?: boolean }) => {
     const trimmedCode = code.trim()
     if (!trimmedCode) return
     if (!isRemoteReady()) {
@@ -82,7 +88,7 @@ export function StartPage() {
       const bundle = await fetchRemoteClassBundle(trimmedCode)
       mergeClass({ ...bundle, studentSession: null })
       setRestoreCode('')
-      setRestoreMessage(`${bundle.className ?? '학급'} 기록을 불러왔습니다.`)
+      setRestoreMessage(options?.automatic ? `${bundle.className ?? '학급'} 기존 기록을 자동으로 불러왔습니다.` : `${bundle.className ?? '학급'} 기록을 불러왔습니다.`)
       navigate('/home')
     } catch (error) {
       const message = (error as Error).message
@@ -91,6 +97,32 @@ export function StartPage() {
     } finally {
       setIsRestoring(false)
     }
+  }, [mergeClass, navigate, setRemoteStatus])
+
+  useEffect(() => {
+    if (!bestRecoverableClass || isRestoring) return
+    if (!shouldAutoRestoreClass(stateRef.current, remoteClasses)) return
+    if (autoRestoreAttemptedRef.current === bestRecoverableClass.classCode) return
+
+    autoRestoreAttemptedRef.current = bestRecoverableClass.classCode
+    Promise.resolve().then(() => {
+      void loadClass(bestRecoverableClass.classCode, { automatic: true })
+    })
+  }, [bestRecoverableClass, isRestoring, loadClass, remoteClasses])
+
+  const openProject = () => {
+    if (state.classCode) {
+      navigate('/home')
+      return
+    }
+
+    if (hasRecoverableRemoteClass && !newProjectConfirmed) {
+      setNewProjectConfirmed(true)
+      setRestoreMessage(`이미 진행 중인 학급 ${bestRecoverableClass?.className ?? ''} 기록이 있습니다. 이어 하려면 아래 학급을 누르고, 정말 새로 시작하려면 버튼을 한 번 더 눌러주세요.`)
+      return
+    }
+
+    navigate('/lesson/1')
   }
 
   return (
@@ -157,7 +189,7 @@ export function StartPage() {
                       <span className="font-data text-xs text-[#4FE0C0]">{remoteClass.classCode}</span>
                     </div>
                     <p className="mt-1 text-sm text-[#8AA0B0]">
-                      {remoteClass.aemonName || '이름 미정'} · {remoteClass.currentLesson}차시
+                      {remoteClass.aemonName || '이름 미정'} · {remoteClass.currentLesson}차시 · 기록 {remoteClass.activityCount}개
                     </p>
                   </button>
                 ))}
@@ -184,7 +216,7 @@ export function StartPage() {
           <div className="mt-8 flex flex-wrap gap-3">
             <Button onClick={openProject}>
               <Play size={20} />
-              {state.classCode ? '대시보드로 가기' : '프로젝트 시작하기'}
+              {state.classCode ? '대시보드로 가기' : newProjectConfirmed ? '정말 새 학급 시작하기' : '프로젝트 시작하기'}
             </Button>
             <Button variant="secondary" onClick={() => navigate('/training')}>
               <BookOpen size={20} />

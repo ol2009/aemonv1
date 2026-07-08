@@ -368,7 +368,7 @@ function QrBlock({ title, url }: { title: string; url: string }) {
 
 export function LessonOnePage() {
   const navigate = useNavigate()
-  const { user } = useSupabaseUser()
+  const { user, isLoading: isUserLoading } = useSupabaseUser()
   const {
     state,
     createClass,
@@ -466,6 +466,11 @@ export function LessonOnePage() {
     setClassSaveMessage('')
 
     try {
+      if (!state.classCode && isRemoteReady() && isUserLoading) {
+        setClassSaveMessage('로그인 정보를 확인하는 중입니다. 잠시 후 다시 저장해 주세요.')
+        return
+      }
+
       let nextMessage = '좋아. 이제 너희 반을 기억했어.'
       if (state.classCode) {
         mergeClass({ className: composedClassName })
@@ -477,6 +482,7 @@ export function LessonOnePage() {
               classCode: state.classCode,
               currentLesson: state.currentLesson,
               aemonName: state.aemonName,
+              teacherId: user?.id ?? null,
             })
             mergeClass(restoredClass)
           } catch (restoreError) {
