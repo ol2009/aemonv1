@@ -23,6 +23,7 @@ import {
   fetchRemoteClassBundle,
   isRemoteReady,
   toggleRemoteNameLike,
+  toggleRemotePostLike,
   updateRemoteWish,
   upsertRemoteSurveyResponse,
   upsertRemoteWish,
@@ -106,8 +107,10 @@ export function BoardPage() {
     addNameCandidate,
     voteName,
     addWish,
+    voteWish,
     deleteWish,
     upsertSurveyResponse,
+    voteSurveyResponse,
     addProposal,
     voteProposal,
   } = useV2()
@@ -177,6 +180,8 @@ export function BoardPage() {
     () => state.surveyResponses.filter((response) => response.questionKey === LESSON2_RISK_KEY && response.body.trim()),
     [state.surveyResponses],
   )
+  const sortedRiskResponses = useMemo(() => sortByLikes(riskResponses), [riskResponses])
+  const sortedWishes = useMemo(() => sortByLikes(state.wishes), [state.wishes])
   const savedRiskResponse = sessionNickname ? riskResponses.find((response) => response.nickname === sessionNickname) : null
   const canWriteRemote = Boolean(state.classId && state.remote.ok && isRemoteReady())
   const topicTitle = (topic: BoardTopic) => {
@@ -250,6 +255,8 @@ export function BoardPage() {
     if (canWriteRemote) {
       try {
         await addRemoteNameCandidate({ classId: state.classId, nickname: session.nickname, name, reason })
+        const bundle = await fetchRemoteClassBundle(state.classCode)
+        mergeClass(bundle)
       } catch (error) {
         setRemoteStatus({ ok: false, message: (error as Error).message })
       }
@@ -277,6 +284,20 @@ export function BoardPage() {
     if (canWriteRemote) {
       try {
         await upsertRemoteWish({ classId: state.classId, nickname: session.nickname, body })
+        const bundle = await fetchRemoteClassBundle(state.classCode)
+        mergeClass(bundle)
+      } catch (error) {
+        setRemoteStatus({ ok: false, message: (error as Error).message })
+      }
+    }
+  }
+
+  const likeWish = async (wishId: string) => {
+    if (!session || isTeacherBoard) return
+    voteWish(wishId, session.nickname)
+    if (canWriteRemote) {
+      try {
+        await toggleRemotePostLike({ classId: state.classId, nickname: session.nickname, postType: 'wish', postId: wishId })
       } catch (error) {
         setRemoteStatus({ ok: false, message: (error as Error).message })
       }
@@ -330,6 +351,20 @@ export function BoardPage() {
     if (canWriteRemote) {
       try {
         await upsertRemoteSurveyResponse({ classId: state.classId, nickname: session.nickname, questionKey: LESSON2_RISK_KEY, body })
+        const bundle = await fetchRemoteClassBundle(state.classCode)
+        mergeClass(bundle)
+      } catch (error) {
+        setRemoteStatus({ ok: false, message: (error as Error).message })
+      }
+    }
+  }
+
+  const likeRisk = async (responseId: string) => {
+    if (!session || isTeacherBoard) return
+    voteSurveyResponse(responseId, session.nickname)
+    if (canWriteRemote) {
+      try {
+        await toggleRemotePostLike({ classId: state.classId, nickname: session.nickname, postType: 'risk', postId: responseId })
       } catch (error) {
         setRemoteStatus({ ok: false, message: (error as Error).message })
       }
@@ -347,6 +382,8 @@ export function BoardPage() {
     if (canWriteRemote) {
       try {
         await addRemoteCodeProposal({ classId: state.classId, nickname: session.nickname, body, reason, valueCard: codeValueCard, revisionOfNo: null })
+        const bundle = await fetchRemoteClassBundle(state.classCode)
+        mergeClass(bundle)
       } catch (error) {
         setRemoteStatus({ ok: false, message: (error as Error).message })
       }
@@ -721,16 +758,32 @@ export function BoardPage() {
                 <p className="font-data text-xs text-[#EF6381]">THINK BOARD</p>
                 <h2 className="font-display mt-1 text-3xl text-[#EAF2F5]">학생 의견</h2>
               </div>
-              <span className="rounded-full bg-[#07111B]/70 px-3 py-1 text-sm text-[#8AA0B0]">{riskResponses.length}개</span>
+              <span className="rounded-full bg-[#07111B]/70 px-3 py-1 text-sm text-[#8AA0B0]">{sortedRiskResponses.length}개</span>
             </div>
             <div className="mt-4 grid gap-3">
-              {riskResponses.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0]">{topicMeta.risk.empty}</p> : null}
-              {riskResponses.map((response) => (
-                <article key={response.id} className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
-                  <p className="text-lg font-black leading-8 text-[#EAF2F5]">{response.body}</p>
-                  <p className="mt-2 text-sm text-[#8AA0B0]">{response.nickname}</p>
-                </article>
-              ))}
+              {sortedRiskResponses.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0]">{topicMeta.risk.empty}</p> : null}
+              {sortedRiskResponses.map((response) => {
+                const liked = Boolean(session && response.votes.includes(session.nickname))
+                return (
+                  <article key={response.id} className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
+                    <p className="text-lg font-black leading-8 text-[#EAF2F5]">{response.body}</p>
+                    <div className="mt-3 flex items-center justify-between gap-3">
+                      <p className="text-sm text-[#8AA0B0]">{response.nickname}</p>
+                      <button
+                        className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-bold transition ${
+                          liked ? 'bg-[#FFD37A]/20 text-[#FFD37A]' : 'bg-white/10 text-[#B7C7D2] hover:bg-[#FFD37A]/15 hover:text-[#FFD37A]'
+                        }`}
+                        onClick={() => likeRisk(response.id)}
+                        disabled={isTeacherBoard || !session}
+                        type="button"
+                      >
+                        <Heart size={16} fill={liked ? 'currentColor' : 'none'} />
+                        {response.votes.length}
+                      </button>
+                    </div>
+                  </article>
+                )
+              })}
             </div>
           </Panel>
         </div>
@@ -823,12 +876,13 @@ export function BoardPage() {
           <Panel className={isTeacherBoard ? 'lg:col-span-2' : ''}>
             <div className="flex items-center justify-between gap-3">
               <h2 className="font-display text-3xl text-[#EAF2F5]">올라온 바람</h2>
-              <span className="rounded-full bg-[#07111B]/70 px-3 py-1 text-sm text-[#8AA0B0]">{state.wishes.length}개</span>
+              <span className="rounded-full bg-[#07111B]/70 px-3 py-1 text-sm text-[#8AA0B0]">{sortedWishes.length}개</span>
             </div>
             <div className="mt-4 grid gap-3">
-              {state.wishes.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0]">{topicMeta.wish.empty}</p> : null}
-              {state.wishes.map((wish) => {
+              {sortedWishes.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0]">{topicMeta.wish.empty}</p> : null}
+              {sortedWishes.map((wish) => {
                 const canEdit = isTeacherBoard || session?.nickname === wish.nickname
+                const liked = Boolean(session && wish.votes.includes(session.nickname))
                 return (
                   <div key={wish.id} className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
                     {editWishId === wish.id ? (
@@ -848,26 +902,39 @@ export function BoardPage() {
                         <p className="leading-7 text-[#EAF2F5]">{wish.body}</p>
                         <div className="mt-3 flex items-center justify-between gap-3">
                           <span className="text-sm text-[#8AA0B0]">{wish.nickname}</span>
-                          {canEdit ? (
-                            <div className="flex gap-2">
-                              <button
-                                className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#B7C7D2] hover:bg-white/10"
-                                onClick={() => { setEditWishId(wish.id); setEditWishBody(wish.body) }}
-                                type="button"
-                                aria-label="수정"
-                              >
-                                <Pencil size={17} />
-                              </button>
-                              <button
-                                className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#B7C7D2] hover:bg-white/10"
-                                onClick={() => removeWish(wish.id)}
-                                type="button"
-                                aria-label="삭제"
-                              >
-                                <Trash2 size={17} />
-                              </button>
-                            </div>
-                          ) : null}
+                          <div className="flex items-center gap-2">
+                            <button
+                              className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-bold transition ${
+                                liked ? 'bg-[#FFD37A]/20 text-[#FFD37A]' : 'bg-white/10 text-[#B7C7D2] hover:bg-[#FFD37A]/15 hover:text-[#FFD37A]'
+                              }`}
+                              onClick={() => likeWish(wish.id)}
+                              disabled={isTeacherBoard || !session}
+                              type="button"
+                            >
+                              <Heart size={16} fill={liked ? 'currentColor' : 'none'} />
+                              {wish.votes.length}
+                            </button>
+                            {canEdit ? (
+                              <div className="flex gap-2">
+                                <button
+                                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#B7C7D2] hover:bg-white/10"
+                                  onClick={() => { setEditWishId(wish.id); setEditWishBody(wish.body) }}
+                                  type="button"
+                                  aria-label="수정"
+                                >
+                                  <Pencil size={17} />
+                                </button>
+                                <button
+                                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#B7C7D2] hover:bg-white/10"
+                                  onClick={() => removeWish(wish.id)}
+                                  type="button"
+                                  aria-label="삭제"
+                                >
+                                  <Trash2 size={17} />
+                                </button>
+                              </div>
+                            ) : null}
+                          </div>
                         </div>
                       </>
                     )}

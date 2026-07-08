@@ -21,6 +21,7 @@ export interface Wish {
   id: string
   nickname: string
   body: string
+  votes: string[]
   createdAt: string
 }
 
@@ -29,6 +30,7 @@ export interface SurveyResponse {
   nickname: string
   questionKey: string
   body: string
+  votes: string[]
   createdAt: string
 }
 
@@ -145,8 +147,10 @@ type Action =
   | { type: 'name/vote'; nickname: string; candidateId: string }
   | { type: 'name/confirm'; name: string }
   | { type: 'wish/add'; nickname: string; body: string }
+  | { type: 'wish/vote'; nickname: string; wishId: string }
   | { type: 'wish/delete'; wishId: string }
   | { type: 'survey/upsert'; nickname: string; questionKey: string; body: string }
+  | { type: 'survey/vote'; nickname: string; responseId: string }
   | { type: 'proposal/add'; nickname: string; body: string; reason: string; valueCard: string; revisionOfNo: number | null }
   | { type: 'proposal/vote'; nickname: string; proposalId: string }
   | { type: 'proposal/adopt'; proposalId: string; valueCard?: string; adoptedNo?: number }
@@ -163,8 +167,9 @@ function normalizeLoaded(raw: unknown): V2State {
   return {
     ...loaded,
     remote: { ...initialState.remote, ...(loaded.remote ?? {}) },
-    nameCandidates: loaded.nameCandidates.map((candidate) => ({ ...candidate, reason: candidate.reason ?? '' })),
-    surveyResponses: loaded.surveyResponses ?? [],
+    nameCandidates: loaded.nameCandidates.map((candidate) => ({ ...candidate, reason: candidate.reason ?? '', votes: candidate.votes ?? [] })),
+    wishes: (loaded.wishes ?? []).map((wish) => ({ ...wish, votes: wish.votes ?? [] })),
+    surveyResponses: (loaded.surveyResponses ?? []).map((response) => ({ ...response, votes: response.votes ?? [] })),
     adoptedCodes: loaded.adoptedCodes.map((code) => ({
       ...code,
       tags: normalizeTags((code as AdoptedCode).tags, (code as AdoptedCode).valueCard ? [(code as AdoptedCode).valueCard ?? ''] : ['책임']),
@@ -184,15 +189,6 @@ function loadState() {
 
 function nextCodeNo(codes: AdoptedCode[]) {
   return codes.reduce((max, code) => Math.max(max, code.no), 0) + 1
-}
-
-function voteOnce<T extends { votes: string[]; status?: ProposalStatus }>(items: T[], nickname: string, selectedId: string, getId: (item: T) => string) {
-  return items.map((item) => {
-    const active = !item.status || item.status === 'pending'
-    const votes = active ? item.votes.filter((vote) => vote !== nickname) : item.votes
-    if (active && getId(item) === selectedId) return { ...item, votes: [...votes, nickname] }
-    return { ...item, votes }
-  })
 }
 
 function toggleVote<T extends { votes: string[] }>(items: T[], nickname: string, selectedId: string, getId: (item: T) => string) {
@@ -262,10 +258,18 @@ function reducer(state: V2State, action: Action): V2State {
       const nickname = clamp(action.nickname, 16)
       const body = clamp(action.body, 160)
       if (!nickname || !body) return state
-      const already = state.wishes.some((wish) => wish.nickname === nickname)
-      const wish: Wish = { id: crypto.randomUUID(), nickname, body, createdAt: new Date().toISOString() }
-      return { ...state, wishes: already ? state.wishes.map((item) => (item.nickname === nickname ? wish : item)) : [wish, ...state.wishes] }
+      const existing = state.wishes.find((wish) => wish.nickname === nickname)
+      const wish: Wish = {
+        id: existing?.id ?? crypto.randomUUID(),
+        nickname,
+        body,
+        votes: existing?.votes ?? [],
+        createdAt: existing?.createdAt ?? new Date().toISOString(),
+      }
+      return { ...state, wishes: existing ? state.wishes.map((item) => (item.nickname === nickname ? wish : item)) : [wish, ...state.wishes] }
     }
+    case 'wish/vote':
+      return { ...state, wishes: toggleVote(state.wishes, clamp(action.nickname, 16), action.wishId, (item) => item.id) }
     case 'wish/delete':
       return { ...state, wishes: state.wishes.filter((wish) => wish.id !== action.wishId) }
     case 'survey/upsert': {
@@ -273,15 +277,24 @@ function reducer(state: V2State, action: Action): V2State {
       const questionKey = clamp(action.questionKey, 60)
       const body = clamp(action.body, 600)
       if (!nickname || !questionKey || !body) return state
-      const response: SurveyResponse = { id: crypto.randomUUID(), nickname, questionKey, body, createdAt: new Date().toISOString() }
-      const exists = state.surveyResponses.some((item) => item.nickname === nickname && item.questionKey === questionKey)
+      const existing = state.surveyResponses.find((item) => item.nickname === nickname && item.questionKey === questionKey)
+      const response: SurveyResponse = {
+        id: existing?.id ?? crypto.randomUUID(),
+        nickname,
+        questionKey,
+        body,
+        votes: existing?.votes ?? [],
+        createdAt: existing?.createdAt ?? new Date().toISOString(),
+      }
       return {
         ...state,
-        surveyResponses: exists
+        surveyResponses: existing
           ? state.surveyResponses.map((item) => (item.nickname === nickname && item.questionKey === questionKey ? response : item))
           : [response, ...state.surveyResponses],
       }
     }
+    case 'survey/vote':
+      return { ...state, surveyResponses: toggleVote(state.surveyResponses, clamp(action.nickname, 16), action.responseId, (item) => item.id) }
     case 'proposal/add': {
       const nickname = clamp(action.nickname, 16)
       const body = clamp(action.body, 180)
@@ -303,7 +316,15 @@ function reducer(state: V2State, action: Action): V2State {
       return { ...state, proposals: [proposal, ...state.proposals].slice(0, 160) }
     }
     case 'proposal/vote':
-      return { ...state, proposals: voteOnce(state.proposals, clamp(action.nickname, 16), action.proposalId, (item) => item.id) }
+      return {
+        ...state,
+        proposals: state.proposals.map((proposal) => {
+          const nickname = clamp(action.nickname, 16)
+          if (!nickname || proposal.status !== 'pending' || proposal.id !== action.proposalId) return proposal
+          const voted = proposal.votes.includes(nickname)
+          return { ...proposal, votes: voted ? proposal.votes.filter((vote) => vote !== nickname) : [...proposal.votes, nickname] }
+        }),
+      }
     case 'proposal/adopt': {
       const proposal = state.proposals.find((item) => item.id === action.proposalId)
       if (!proposal || proposal.status !== 'pending') return state
@@ -405,8 +426,10 @@ interface V2ContextValue {
   voteName: (candidateId: string, nickname?: string) => void
   confirmName: (name: string) => void
   addWish: (body: string, nickname?: string) => void
+  voteWish: (wishId: string, nickname?: string) => void
   deleteWish: (wishId: string) => void
   upsertSurveyResponse: (response: { questionKey: string; body: string; nickname?: string }) => void
+  voteSurveyResponse: (responseId: string, nickname?: string) => void
   addProposal: (proposal: { body: string; reason: string; valueCard: string; revisionOfNo: number | null; nickname?: string }) => void
   voteProposal: (proposalId: string, nickname?: string) => void
   adoptProposal: (proposalId: string, valueCard?: string, adoptedNo?: number) => void
@@ -450,8 +473,10 @@ export function V2Provider({ children }: { children: ReactNode }) {
       voteName: (candidateId, explicitNickname) => dispatch({ type: 'name/vote', candidateId, nickname: explicitNickname ?? nickname }),
       confirmName: (name) => dispatch({ type: 'name/confirm', name }),
       addWish: (body, explicitNickname) => dispatch({ type: 'wish/add', body, nickname: explicitNickname ?? nickname }),
+      voteWish: (wishId, explicitNickname) => dispatch({ type: 'wish/vote', wishId, nickname: explicitNickname ?? nickname }),
       deleteWish: (wishId) => dispatch({ type: 'wish/delete', wishId }),
       upsertSurveyResponse: (response) => dispatch({ type: 'survey/upsert', ...response, nickname: response.nickname ?? nickname }),
+      voteSurveyResponse: (responseId, explicitNickname) => dispatch({ type: 'survey/vote', responseId, nickname: explicitNickname ?? nickname }),
       addProposal: (proposal) => dispatch({ type: 'proposal/add', ...proposal, nickname: proposal.nickname ?? nickname }),
       voteProposal: (proposalId, explicitNickname) => dispatch({ type: 'proposal/vote', proposalId, nickname: explicitNickname ?? nickname }),
       adoptProposal: (proposalId, valueCard, adoptedNo) => dispatch({ type: 'proposal/adopt', proposalId, valueCard, adoptedNo }),

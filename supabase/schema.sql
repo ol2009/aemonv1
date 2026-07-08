@@ -78,6 +78,15 @@ create table if not exists code_votes (
   primary key (class_id, nickname, code_id)
 );
 
+create table if not exists post_votes (
+  class_id uuid not null references classes(id) on delete cascade,
+  nickname text not null,
+  post_type text not null check (post_type in ('wish', 'risk')),
+  post_id uuid not null,
+  created_at timestamptz not null default now(),
+  primary key (class_id, nickname, post_type, post_id)
+);
+
 create table if not exists chat_logs (
   id uuid primary key default gen_random_uuid(),
   class_id uuid not null references classes(id) on delete cascade,
@@ -95,6 +104,7 @@ create index if not exists wishes_class_created_idx on wishes(class_id, created_
 create index if not exists survey_responses_class_created_idx on survey_responses(class_id, created_at desc);
 create index if not exists codes_class_status_idx on codes(class_id, status);
 create index if not exists code_votes_class_code_idx on code_votes(class_id, code_id);
+create index if not exists post_votes_class_post_idx on post_votes(class_id, post_type, post_id);
 create index if not exists chat_logs_class_created_idx on chat_logs(class_id, created_at desc);
 
 alter table classes enable row level security;
@@ -104,6 +114,7 @@ alter table wishes enable row level security;
 alter table survey_responses enable row level security;
 alter table codes enable row level security;
 alter table code_votes enable row level security;
+alter table post_votes enable row level security;
 alter table chat_logs enable row level security;
 
 drop policy if exists "classes public read" on classes;
@@ -170,6 +181,11 @@ create policy "codes authenticated update" on codes for update to authenticated 
 
 drop policy if exists "code votes public" on code_votes;
 create policy "code votes public" on code_votes for all using (true) with check (length(trim(nickname)) between 1 and 16);
+
+drop policy if exists "post votes public" on post_votes;
+create policy "post votes public" on post_votes
+  for all using (true)
+  with check (length(trim(nickname)) between 1 and 16 and post_type in ('wish', 'risk'));
 
 drop policy if exists "chat logs authenticated" on chat_logs;
 create policy "chat logs authenticated" on chat_logs for all to authenticated using (true) with check (true);

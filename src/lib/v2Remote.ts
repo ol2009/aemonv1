@@ -60,6 +60,14 @@ type CodeVoteRow = {
   code_id: string
 }
 
+type PostVoteKind = 'wish' | 'risk'
+
+type PostVoteRow = {
+  nickname: string
+  post_type: PostVoteKind
+  post_id: string
+}
+
 type ChatLogRow = {
   id: string
   question: string
@@ -132,21 +140,23 @@ function mapNameCandidates(rows: NameCandidateRow[], votes: NameVoteRow[]): Name
   }))
 }
 
-function mapWishes(rows: WishRow[]): Wish[] {
+function mapWishes(rows: WishRow[], votes: PostVoteRow[] = []): Wish[] {
   return rows.map((row) => ({
     id: row.id,
     nickname: row.nickname,
     body: row.body,
+    votes: votes.filter((vote) => vote.post_type === 'wish' && vote.post_id === row.id).map((vote) => vote.nickname),
     createdAt: row.created_at,
   }))
 }
 
-function mapSurveyResponses(rows: SurveyResponseRow[]): SurveyResponse[] {
+function mapSurveyResponses(rows: SurveyResponseRow[], votes: PostVoteRow[] = []): SurveyResponse[] {
   return rows.map((row) => ({
     id: row.id,
     nickname: row.nickname,
     questionKey: row.question_key,
     body: row.body,
+    votes: votes.filter((vote) => vote.post_type === 'risk' && vote.post_id === row.id).map((vote) => vote.nickname),
     createdAt: row.created_at,
   }))
 }
@@ -310,7 +320,7 @@ export async function fetchRemoteClassBundle(classCode: string): Promise<Partial
   if (!classRow) throw new Error('학급 코드를 찾지 못했습니다.')
 
   const classId = classRow.id
-  const [candidateResult, nameVoteResult, wishResult, surveyResult, codeResult, codeVoteResult, chatResult] = await Promise.all([
+  const [candidateResult, nameVoteResult, wishResult, surveyResult, codeResult, codeVoteResult, chatResult, postVoteResult] = await Promise.all([
     client.from('name_candidates').select('id,nickname,name,reason,created_at').eq('class_id', classId).order('created_at', { ascending: false }),
     client.from('name_votes').select('nickname,candidate_id').eq('class_id', classId),
     client.from('wishes').select('id,nickname,body,created_at').eq('class_id', classId).order('created_at', { ascending: false }),
@@ -327,11 +337,13 @@ export async function fetchRemoteClassBundle(classCode: string): Promise<Partial
       .eq('class_id', classId)
       .order('created_at', { ascending: false })
       .limit(120),
+    client.from('post_votes').select('nickname,post_type,post_id').eq('class_id', classId),
   ])
 
   for (const result of [candidateResult, nameVoteResult, wishResult, surveyResult, codeResult, codeVoteResult, chatResult]) {
     if (result.error && !isMissingTableError(result.error)) throw new Error(toMessage(result.error))
   }
+  if (postVoteResult.error && !isMissingTableError(postVoteResult.error)) throw new Error(toMessage(postVoteResult.error))
   const missingTables: string[] = []
   if (isMissingTableError(candidateResult.error)) missingTables.push('name_candidates')
   if (isMissingTableError(nameVoteResult.error)) missingTables.push('name_votes')
@@ -352,11 +364,12 @@ export async function fetchRemoteClassBundle(classCode: string): Promise<Partial
   const codeRows = (codeResult.data ?? []) as CodeRow[]
   const codeVoteRows = (codeVoteResult.data ?? []) as CodeVoteRow[]
   const chatRows = (chatResult.data ?? []) as ChatLogRow[]
+  const postVoteRows = postVoteResult.error ? [] : ((postVoteResult.data ?? []) as PostVoteRow[])
   return {
     ...mapClass(classRow),
     nameCandidates: mapNameCandidates(candidateRows, nameVoteRows),
-    wishes: mapWishes(wishRows),
-    surveyResponses: mapSurveyResponses(surveyRows),
+    wishes: mapWishes(wishRows, postVoteRows),
+    surveyResponses: mapSurveyResponses(surveyRows, postVoteRows),
     proposals: mapProposals(codeRows, codeVoteRows),
     adoptedCodes: mapAdoptedCodes(codeRows),
     chatLogs: mapChatLogs(chatRows),
@@ -447,6 +460,31 @@ export async function deleteRemoteWish(wishId: string) {
   if (error) throw new Error(toMessage(error))
 }
 
+export async function toggleRemotePostLike(args: { classId: string; nickname: string; postType: PostVoteKind; postId: string }) {
+  const client = ensureClient()
+  const key = { class_id: args.classId, nickname: args.nickname.trim(), post_type: args.postType, post_id: args.postId }
+  const { data, error: readError } = await client.from('post_votes').select('post_id').match(key).maybeSingle()
+  if (readError) {
+    if (isMissingTableError(readError)) return
+    throw new Error(toMessage(readError))
+  }
+
+  if (data) {
+    const { error } = await client.from('post_votes').delete().match(key)
+    if (error) {
+      if (isMissingTableError(error)) return
+      throw new Error(toMessage(error))
+    }
+    return
+  }
+
+  const { error } = await client.from('post_votes').insert(key)
+  if (error) {
+    if (isMissingTableError(error)) return
+    throw new Error(toMessage(error))
+  }
+}
+
 export async function addRemoteCodeProposal(args: {
   classId: string
   nickname: string
@@ -512,11 +550,17 @@ export async function deleteRemoteAdoptedCode(codeId: string) {
 
 export async function voteRemoteCodeProposal(args: { classId: string; nickname: string; proposalId: string }) {
   const client = ensureClient()
-  const base = { class_id: args.classId, nickname: args.nickname.trim() }
-  const { error: deleteError } = await client.from('code_votes').delete().match(base)
-  if (deleteError) throw new Error(toMessage(deleteError))
+  const key = { class_id: args.classId, nickname: args.nickname.trim(), code_id: args.proposalId }
+  const { data, error: readError } = await client.from('code_votes').select('code_id').match(key).maybeSingle()
+  if (readError) throw new Error(toMessage(readError))
 
-  const { error } = await client.from('code_votes').insert({ ...base, code_id: args.proposalId })
+  if (data) {
+    const { error } = await client.from('code_votes').delete().match(key)
+    if (error) throw new Error(toMessage(error))
+    return
+  }
+
+  const { error } = await client.from('code_votes').insert(key)
   if (error) throw new Error(toMessage(error))
 }
 
