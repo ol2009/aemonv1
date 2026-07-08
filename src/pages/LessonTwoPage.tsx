@@ -261,11 +261,8 @@ function QrBlock({ title, url }: { title: string; url: string }) {
 function AemonScene({ name, line, caption, stage = 0 }: { name: string; line: string; caption: string; stage?: number }) {
   const sceneKey = useMemo(() => `aemon-${name}-${line}-${caption}-${stage}`, [caption, line, name, stage])
   const dialogueParts = useMemo(() => [line, caption].filter(Boolean), [caption, line])
-  const { activeText, activeDone, activeDialogueKey, handleActiveDone, partIndex } = useSequencedDialogue(sceneKey, dialogueParts)
-  const textClass =
-    partIndex === 0
-      ? 'font-display mt-3 min-h-[4.5rem] text-4xl leading-tight text-[#EAF2F5]'
-      : 'mt-4 min-h-[4.5rem] text-lg leading-8 text-[#B7C7D2]'
+  const { activeText, activeDone, activeDialogueKey, handleActiveDone } = useSequencedDialogue(sceneKey, dialogueParts)
+  const textClass = 'font-display mt-3 min-h-[4.5rem] break-keep text-2xl leading-snug text-[#EAF2F5] sm:text-3xl'
 
   return (
     <Panel className="relative min-h-[620px] overflow-hidden p-0">
@@ -286,11 +283,8 @@ function AemonScene({ name, line, caption, stage = 0 }: { name: string; line: st
 function ProfessorCaseScene({ line, caption }: { line: string; caption: string }) {
   const sceneKey = useMemo(() => `professor-${line}-${caption}`, [caption, line])
   const dialogueParts = useMemo(() => [line, caption].filter(Boolean), [caption, line])
-  const { activeText, activeDone, activeDialogueKey, handleActiveDone, partIndex } = useSequencedDialogue(sceneKey, dialogueParts)
-  const textClass =
-    partIndex === 0
-      ? 'font-display mt-3 min-h-[4.5rem] text-4xl leading-tight text-[#EAF2F5]'
-      : 'mt-4 min-h-[4.5rem] text-lg leading-8 text-[#B7C7D2]'
+  const { activeText, activeDone, activeDialogueKey, handleActiveDone } = useSequencedDialogue(sceneKey, dialogueParts)
+  const textClass = 'font-display mt-3 min-h-[4.5rem] break-keep text-2xl leading-snug text-[#EAF2F5] sm:text-3xl'
 
   return (
     <Panel className="relative min-h-[620px] overflow-hidden p-0">
@@ -323,11 +317,8 @@ function VisualCaseScene({
 }) {
   const sceneKey = useMemo(() => `visual-case-${label}-${title}-${line}-${caption}`, [caption, label, line, title])
   const dialogueParts = useMemo(() => [line, caption].filter(Boolean), [caption, line])
-  const { activeText, activeDone, activeDialogueKey, handleActiveDone, partIndex } = useSequencedDialogue(sceneKey, dialogueParts)
-  const textClass =
-    partIndex === 0
-      ? 'font-display mt-3 min-h-[4.5rem] break-keep text-4xl leading-tight text-[#EAF2F5]'
-      : 'mt-4 min-h-[4.5rem] break-keep text-lg leading-8 text-[#B7C7D2]'
+  const { activeText, activeDone, activeDialogueKey, handleActiveDone } = useSequencedDialogue(sceneKey, dialogueParts)
+  const textClass = 'font-display mt-3 min-h-[4.5rem] break-keep text-2xl leading-snug text-[#EAF2F5] sm:text-3xl'
 
   return (
     <Panel className="relative min-h-[700px] overflow-hidden p-0">

@@ -134,13 +134,7 @@ function compactReason(reason: string) {
   return `${trimmed.slice(0, 34)}...`
 }
 
-function dialogueTextClass(text: string) {
-  const length = Array.from(text).length
-  if (length <= 18) return 'text-5xl sm:text-6xl'
-  if (length <= 32) return 'text-4xl sm:text-5xl'
-  if (length <= 48) return 'text-3xl sm:text-4xl'
-  return 'text-2xl sm:text-3xl'
-}
+const dialogueTextClass = 'text-2xl sm:text-3xl'
 
 function TypewriterText({
   text,
@@ -337,7 +331,7 @@ function VisualNovelScene({
       ) : null}
       <div className="absolute inset-x-5 bottom-5 rounded-[22px] border border-white/15 bg-[#07111B]/88 p-6 shadow-2xl backdrop-blur">
         <p className="font-data text-sm text-[#FFD37A]">{speaker}</p>
-        <p className={`font-display mt-3 min-h-[4.5rem] break-keep leading-tight text-[#EAF2F5] ${dialogueTextClass(activeText)}`}>
+        <p className={`font-display mt-3 min-h-[4.5rem] break-keep leading-snug text-[#EAF2F5] ${dialogueTextClass}`}>
           <TypewriterText
             key={activeDialogueKey}
             text={activeText}
@@ -385,7 +379,7 @@ function CaseVisualScene({
             {title}
           </span>
         </div>
-        <p className={`font-display mt-3 min-h-[4.5rem] break-keep leading-tight text-[#EAF2F5] ${dialogueTextClass(activeText)}`}>
+        <p className={`font-display mt-3 min-h-[4.5rem] break-keep leading-snug text-[#EAF2F5] ${dialogueTextClass}`}>
           <TypewriterText
             key={activeDialogueKey}
             text={activeText}
