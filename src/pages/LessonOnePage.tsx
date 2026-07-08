@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, Check, Heart, Pencil, Play, QrCode, RefreshCw, Trash2 } from 'lucide-react'
@@ -207,6 +207,14 @@ function StepShell({
   )
 }
 
+type DialogueGateContextValue = {
+  isDialogueWaiting: boolean
+  startDialogue: (key: string) => void
+  finishDialogue: (key: string) => void
+}
+
+const DialogueGateContext = createContext<DialogueGateContextValue | null>(null)
+
 function StepControls({
   stepIndex,
   onPrev,
@@ -220,6 +228,9 @@ function StepControls({
   nextLabel?: string
   nextDisabled?: boolean
 }) {
+  const dialogueGate = useContext(DialogueGateContext)
+  const hideNext = Boolean(dialogueGate?.isDialogueWaiting)
+
   return (
     <div className="mt-4 flex justify-end gap-2">
       <Button
@@ -233,16 +244,20 @@ function StepControls({
         <ArrowLeft size={18} />
         이전
       </Button>
-      <Button
-        disabled={nextDisabled}
-        onClick={() => {
-          unlockDialogueSound()
-          onNext()
-        }}
-      >
-        {nextLabel}
-        <ArrowRight size={18} />
-      </Button>
+      {hideNext ? (
+        <div className="min-h-12 min-w-28" aria-live="polite" />
+      ) : (
+        <Button
+          disabled={nextDisabled}
+          onClick={() => {
+            unlockDialogueSound()
+            onNext()
+          }}
+        >
+          {nextLabel}
+          <ArrowRight size={18} />
+        </Button>
+      )}
     </div>
   )
 }
@@ -273,6 +288,19 @@ function VisualNovelScene({
   const activeText = showingCaption ? captionText : line
   const activeDone = showingCaption ? captionDone : lineDone
   const handleActiveDone = showingCaption ? handleCaptionDone : handleLineDone
+  const dialogueGate = useContext(DialogueGateContext)
+  const startDialogue = dialogueGate?.startDialogue
+  const finishDialogue = dialogueGate?.finishDialogue
+  const dialogueKey = useMemo(() => `visual-${speaker}-${line}-${captionText}`, [captionText, line, speaker])
+  const dialogueDone = captionText ? captionDone : lineDone
+
+  useEffect(() => {
+    startDialogue?.(dialogueKey)
+  }, [startDialogue, dialogueKey])
+
+  useEffect(() => {
+    if (dialogueDone) finishDialogue?.(dialogueKey)
+  }, [dialogueDone, finishDialogue, dialogueKey])
 
   return (
     <Panel className="relative min-h-[650px] overflow-hidden p-0">
@@ -322,6 +350,19 @@ function CaseVisualScene({
   const activeText = showingCaption ? caption : line
   const activeDone = showingCaption ? captionDone : lineDone
   const handleActiveDone = showingCaption ? handleCaptionDone : handleLineDone
+  const dialogueGate = useContext(DialogueGateContext)
+  const startDialogue = dialogueGate?.startDialogue
+  const finishDialogue = dialogueGate?.finishDialogue
+  const dialogueKey = useMemo(() => `case-${speaker}-${title}-${line}-${caption}`, [caption, line, speaker, title])
+  const dialogueDone = captionDone
+
+  useEffect(() => {
+    startDialogue?.(dialogueKey)
+  }, [startDialogue, dialogueKey])
+
+  useEffect(() => {
+    if (dialogueDone) finishDialogue?.(dialogueKey)
+  }, [dialogueDone, finishDialogue, dialogueKey])
 
   return (
     <Panel className="relative min-h-[640px] overflow-hidden p-0 sm:min-h-[660px]">
@@ -394,6 +435,21 @@ export function LessonOnePage() {
   const [surveyRefreshMessage, setSurveyRefreshMessage] = useState('')
   const [editWishId, setEditWishId] = useState('')
   const [editWishBody, setEditWishBody] = useState('')
+  const [dialogueGateState, setDialogueGateState] = useState({ key: '', ready: true })
+  const startDialogue = useCallback((key: string) => {
+    setDialogueGateState((current) => (current.key === key && !current.ready ? current : { key, ready: false }))
+  }, [])
+  const finishDialogue = useCallback((key: string) => {
+    setDialogueGateState((current) => (current.key === key ? { key, ready: true } : current))
+  }, [])
+  const dialogueGateValue = useMemo<DialogueGateContextValue>(
+    () => ({
+      isDialogueWaiting: !dialogueGateState.ready,
+      startDialogue,
+      finishDialogue,
+    }),
+    [dialogueGateState.ready, finishDialogue, startDialogue],
+  )
 
   useV2RemoteSync(state.classCode, Boolean(state.classCode))
 
@@ -610,6 +666,7 @@ export function LessonOnePage() {
   }
 
   return (
+    <DialogueGateContext.Provider value={dialogueGateValue}>
     <StepShell>
       {step === 'director-1' ? (
         <>
@@ -1406,5 +1463,6 @@ export function LessonOnePage() {
         </>
       ) : null}
     </StepShell>
+    </DialogueGateContext.Provider>
   )
 }
