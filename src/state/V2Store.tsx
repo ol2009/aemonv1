@@ -191,12 +191,12 @@ function nextCodeNo(codes: AdoptedCode[]) {
   return codes.reduce((max, code) => Math.max(max, code.no), 0) + 1
 }
 
-function toggleVote<T extends { votes: string[] }>(items: T[], nickname: string, selectedId: string, getId: (item: T) => string) {
+function addVote<T extends { votes: string[] }>(items: T[], nickname: string, selectedId: string, getId: (item: T) => string) {
   if (!nickname) return items
   return items.map((item) => {
     if (getId(item) !== selectedId) return item
-    const already = item.votes.includes(nickname)
-    return { ...item, votes: already ? item.votes.filter((vote) => vote !== nickname) : [...item.votes, nickname] }
+    if (item.votes.includes(nickname)) return item
+    return { ...item, votes: [...item.votes, nickname] }
   })
 }
 
@@ -251,7 +251,7 @@ function reducer(state: V2State, action: Action): V2State {
       return { ...state, nameCandidates: [candidate, ...state.nameCandidates].slice(0, 80) }
     }
     case 'name/vote':
-      return { ...state, nameCandidates: toggleVote(state.nameCandidates, clamp(action.nickname, 16), action.candidateId, (item) => item.id) }
+      return { ...state, nameCandidates: addVote(state.nameCandidates, clamp(action.nickname, 16), action.candidateId, (item) => item.id) }
     case 'name/confirm':
       return { ...state, aemonName: clamp(action.name, 12) || state.aemonName }
     case 'wish/add': {
@@ -269,7 +269,7 @@ function reducer(state: V2State, action: Action): V2State {
       return { ...state, wishes: existing ? state.wishes.map((item) => (item.nickname === nickname ? wish : item)) : [wish, ...state.wishes] }
     }
     case 'wish/vote':
-      return { ...state, wishes: toggleVote(state.wishes, clamp(action.nickname, 16), action.wishId, (item) => item.id) }
+      return { ...state, wishes: addVote(state.wishes, clamp(action.nickname, 16), action.wishId, (item) => item.id) }
     case 'wish/delete':
       return { ...state, wishes: state.wishes.filter((wish) => wish.id !== action.wishId) }
     case 'survey/upsert': {
@@ -294,7 +294,7 @@ function reducer(state: V2State, action: Action): V2State {
       }
     }
     case 'survey/vote':
-      return { ...state, surveyResponses: toggleVote(state.surveyResponses, clamp(action.nickname, 16), action.responseId, (item) => item.id) }
+      return { ...state, surveyResponses: addVote(state.surveyResponses, clamp(action.nickname, 16), action.responseId, (item) => item.id) }
     case 'proposal/add': {
       const nickname = clamp(action.nickname, 16)
       const body = clamp(action.body, 180)
@@ -321,8 +321,8 @@ function reducer(state: V2State, action: Action): V2State {
         proposals: state.proposals.map((proposal) => {
           const nickname = clamp(action.nickname, 16)
           if (!nickname || proposal.status !== 'pending' || proposal.id !== action.proposalId) return proposal
-          const voted = proposal.votes.includes(nickname)
-          return { ...proposal, votes: voted ? proposal.votes.filter((vote) => vote !== nickname) : [...proposal.votes, nickname] }
+          if (proposal.votes.includes(nickname)) return proposal
+          return { ...proposal, votes: [...proposal.votes, nickname] }
         }),
       }
     case 'proposal/adopt': {

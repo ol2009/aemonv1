@@ -774,7 +774,7 @@ export function BoardPage() {
                           liked ? 'bg-[#FFD37A]/20 text-[#FFD37A]' : 'bg-white/10 text-[#B7C7D2] hover:bg-[#FFD37A]/15 hover:text-[#FFD37A]'
                         }`}
                         onClick={() => likeRisk(response.id)}
-                        disabled={isTeacherBoard || !session}
+                        disabled={isTeacherBoard || !session || liked}
                         type="button"
                       >
                         <Heart size={16} fill={liked ? 'currentColor' : 'none'} />
@@ -832,7 +832,7 @@ export function BoardPage() {
                     key={candidate.id}
                     className={`rounded-2xl border p-4 text-left transition ${liked ? 'border-[#FFD37A] bg-[#FFD37A]/10' : 'border-white/10 bg-[#07111B]/45 hover:border-[#FFD37A]/40'}`}
                     onClick={() => likeName(candidate.id)}
-                    disabled={isTeacherBoard}
+                    disabled={isTeacherBoard || liked}
                     type="button"
                   >
                     <div className="flex items-start justify-between gap-3">
@@ -908,7 +908,7 @@ export function BoardPage() {
                                 liked ? 'bg-[#FFD37A]/20 text-[#FFD37A]' : 'bg-white/10 text-[#B7C7D2] hover:bg-[#FFD37A]/15 hover:text-[#FFD37A]'
                               }`}
                               onClick={() => likeWish(wish.id)}
-                              disabled={isTeacherBoard || !session}
+                              disabled={isTeacherBoard || !session || liked}
                               type="button"
                             >
                               <Heart size={16} fill={liked ? 'currentColor' : 'none'} />
@@ -1014,7 +1014,7 @@ export function BoardPage() {
                       key={proposal.id}
                       className={`rounded-2xl border p-4 text-left transition ${voted ? 'border-[#9B7CFF] bg-[#9B7CFF]/12' : 'border-white/10 bg-[#07111B]/45 hover:border-[#9B7CFF]/40'}`}
                       onClick={() => voteCode(proposal.id)}
-                      disabled={isTeacherBoard}
+                      disabled={isTeacherBoard || voted}
                       type="button"
                     >
                       <div className="flex items-start justify-between gap-3">

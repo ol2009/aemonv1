@@ -99,6 +99,11 @@ function isMissingTableError(error: unknown) {
   return candidate?.code === 'PGRST205' || candidate?.message?.includes("Could not find the table") || candidate?.status === 404
 }
 
+function isDuplicateError(error: unknown) {
+  const candidate = error as { code?: string }
+  return candidate?.code === '23505'
+}
+
 function ensureClient() {
   if (!isRemoteReady() || !supabase) {
     throw new Error('Supabase 환경변수가 설정되어 있지 않습니다.')
@@ -391,17 +396,8 @@ export async function addRemoteNameCandidate(args: { classId: string; nickname: 
 export async function toggleRemoteNameLike(args: { classId: string; nickname: string; candidateId: string }) {
   const client = ensureClient()
   const key = { class_id: args.classId, nickname: args.nickname.trim(), candidate_id: args.candidateId }
-  const { data, error: readError } = await client.from('name_votes').select('candidate_id').match(key).maybeSingle()
-  if (readError) throw new Error(toMessage(readError))
-
-  if (data) {
-    const { error } = await client.from('name_votes').delete().match(key)
-    if (error) throw new Error(toMessage(error))
-    return
-  }
-
   const { error } = await client.from('name_votes').insert(key)
-  if (error) throw new Error(toMessage(error))
+  if (error && !isDuplicateError(error)) throw new Error(toMessage(error))
 }
 
 export async function confirmRemoteName(args: { classId: string; aemonName: string }) {
@@ -463,24 +459,9 @@ export async function deleteRemoteWish(wishId: string) {
 export async function toggleRemotePostLike(args: { classId: string; nickname: string; postType: PostVoteKind; postId: string }) {
   const client = ensureClient()
   const key = { class_id: args.classId, nickname: args.nickname.trim(), post_type: args.postType, post_id: args.postId }
-  const { data, error: readError } = await client.from('post_votes').select('post_id').match(key).maybeSingle()
-  if (readError) {
-    if (isMissingTableError(readError)) return
-    throw new Error(toMessage(readError))
-  }
-
-  if (data) {
-    const { error } = await client.from('post_votes').delete().match(key)
-    if (error) {
-      if (isMissingTableError(error)) return
-      throw new Error(toMessage(error))
-    }
-    return
-  }
-
   const { error } = await client.from('post_votes').insert(key)
   if (error) {
-    if (isMissingTableError(error)) return
+    if (isMissingTableError(error) || isDuplicateError(error)) return
     throw new Error(toMessage(error))
   }
 }
@@ -551,17 +532,8 @@ export async function deleteRemoteAdoptedCode(codeId: string) {
 export async function voteRemoteCodeProposal(args: { classId: string; nickname: string; proposalId: string }) {
   const client = ensureClient()
   const key = { class_id: args.classId, nickname: args.nickname.trim(), code_id: args.proposalId }
-  const { data, error: readError } = await client.from('code_votes').select('code_id').match(key).maybeSingle()
-  if (readError) throw new Error(toMessage(readError))
-
-  if (data) {
-    const { error } = await client.from('code_votes').delete().match(key)
-    if (error) throw new Error(toMessage(error))
-    return
-  }
-
   const { error } = await client.from('code_votes').insert(key)
-  if (error) throw new Error(toMessage(error))
+  if (error && !isDuplicateError(error)) throw new Error(toMessage(error))
 }
 
 export async function adoptRemoteCodeProposal(args: { proposalId: string; adoptedNo: number; valueCard: string }) {
