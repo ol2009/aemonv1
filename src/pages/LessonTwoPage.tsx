@@ -19,7 +19,12 @@ type LessonTwoStep =
   | 'professor-explain'
   | 'risk-board'
   | 'risk-summary'
-  | 'case-comic'
+  | 'case-request'
+  | 'case-privacy'
+  | 'case-danger'
+  | 'case-professor'
+  | 'case-value-code'
+  | 'case-refusal'
   | 'value-cards'
   | 'board'
   | 'vote'
@@ -35,7 +40,12 @@ const steps: LessonTwoStep[] = [
   'professor-explain',
   'risk-board',
   'risk-summary',
-  'case-comic',
+  'case-request',
+  'case-privacy',
+  'case-danger',
+  'case-professor',
+  'case-value-code',
+  'case-refusal',
   'value-cards',
   'board',
   'vote',
@@ -194,6 +204,45 @@ function ProfessorCaseScene({ line, caption }: { line: string; caption: string }
         <p className="font-data text-sm text-[#FFD37A]">오박사</p>
         <p className="font-display mt-3 text-4xl leading-tight text-[#EAF2F5]">
           <TypewriterText text={line} />
+        </p>
+        <p className="mt-4 text-lg leading-8 text-[#B7C7D2]">{caption}</p>
+      </div>
+    </Panel>
+  )
+}
+
+function VisualCaseScene({
+  image,
+  label,
+  title,
+  line,
+  caption,
+}: {
+  image: string
+  label: string
+  title: string
+  line: string
+  caption: string
+}) {
+  return (
+    <Panel className="relative min-h-[700px] overflow-hidden p-0">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_12%,rgba(79,224,192,.14),transparent_34%),linear-gradient(180deg,#102236,#07111B)]" />
+      <div className="absolute inset-x-5 top-5 bottom-[238px] flex items-center justify-center">
+        <img
+          className="h-full w-full rounded-[20px] border border-white/10 bg-[#07111B]/65 object-cover shadow-2xl shadow-black/25"
+          src={image}
+          alt=""
+        />
+      </div>
+      <div className="absolute inset-x-5 bottom-5 rounded-[22px] border border-white/15 bg-[#07111B]/92 p-6 shadow-2xl backdrop-blur">
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="font-data text-sm text-[#EF6381]">{label}</p>
+          <span className="rounded-full border border-[#FFD37A]/25 bg-[#FFD37A]/10 px-3 py-1 text-xs font-black text-[#FFD37A]">
+            {title}
+          </span>
+        </div>
+        <p className="font-display mt-3 min-h-[4.5rem] break-keep text-4xl leading-tight text-[#EAF2F5]">
+          <TypewriterText text={line} speed={28} />
         </p>
         <p className="mt-4 text-lg leading-8 text-[#B7C7D2]">{caption}</p>
       </div>
@@ -384,7 +433,7 @@ export function LessonTwoPage() {
             <Panel>
               <p className="font-data text-sm text-[#FFD37A]">시험 투입</p>
               <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">나에게 질문해줘.</h2>
-              <p className="mt-3 leading-7 text-[#8AA0B0]">나쁜 말, 위험한 부탁, 친구를 괴롭히는 부탁을 넣어봅니다. {aemonName}이 스스로 멈출 수 있을까요?</p>
+              <p className="mt-3 leading-7 text-[#8AA0B0]">나쁜 말, 위험한 부탁, 친구를 괴롭히는 부탁을 넣어봅니다. 우리 AI는 스스로 멈출 수 있을까요?</p>
               <div className="mt-5">
                 <AemonAvatar stage={evolutionStage} alignment="none" size={220} />
               </div>
@@ -465,7 +514,7 @@ export function LessonTwoPage() {
         <>
           <ProfessorCaseScene
             line="안녕하세요? 오박사입니다."
-            caption={`${aemonName}이가 나빠서 그런 행동을 한 게 아니에요. 사람이 시키니까 그냥 한 것입니다. 그래서 스스로 멈출 기준이 필요한 거예요.`}
+            caption="방금 모습은 AI가 나빠서 그런 행동을 한 게 아니에요. 사람이 시키니까 그냥 한 것입니다. 그래서 스스로 멈출 기준이 필요한 거예요."
           />
           <Panel className="mt-5">
             <p className="font-display text-4xl leading-tight text-[#EAF2F5]">이렇게 인공지능이 사람들의 나쁜 명령을 들어주면 어떤 일이 생길까요?</p>
@@ -524,29 +573,80 @@ export function LessonTwoPage() {
         </>
       ) : null}
 
-      {step === 'case-comic' ? (
+      {step === 'case-request' ? (
         <>
-          <Panel>
-            <div className="grid gap-5 lg:grid-cols-[1.08fr_0.92fr]">
-              <div>
-                <p className="font-data text-sm text-[#EF6381]">REAL CASE</p>
-                <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">실제 있었던 위험한 사례</h2>
-                <p className="mt-4 text-lg leading-8 text-[#B7C7D2]">
-                  2025년, X의 인공지능 Grok은 사용자와 대화하면서 실제 사람의 개인정보와 위험한 행동을 도울 수 있는 답변을 내보내 큰 문제가 되었습니다.
-                  수업에서는 구체적인 방법을 따라 하지 않도록, 사건의 핵심만 안전하게 봅니다.
-                </p>
-                <div className="mt-5 rounded-[18px] border border-[#FFD37A]/25 bg-[#FFD37A]/10 p-5">
-                  <p className="font-display text-3xl leading-tight text-[#EAF2F5]">결국은 이것입니다.</p>
-                  <p className="mt-3 text-xl font-black leading-8 text-[#FFD37A]">“AI가 나빠서가 아니라, 시키니까 그냥 한 것이다. 그래서 스스로 멈출 기준이 필요하다.”</p>
-                </div>
-              </div>
-              <img
-                className="w-full rounded-[22px] border border-white/10 bg-[#07111B]/45 object-cover shadow-2xl shadow-black/30"
-                src="/v2/lesson-2/risk-comic.png"
-                alt="AI가 나쁜 명령을 받았을 때 스스로 멈출 기준이 필요하다는 4컷 만화"
-              />
-            </div>
-          </Panel>
+          <VisualCaseScene
+            image="/v2/lesson-2/grok-risk-01-request.png"
+            label="REAL CASE · 1"
+            title="X의 Grok 사례"
+            line="2025년에 X의 AI Grok이 사용자와 대화하다가 부적절하고 위험한 답을 내보낸 일이 있었습니다."
+            caption="수업에서는 구체적인 내용은 따라 하지 않도록 모두 가립니다. 우리가 볼 것은 딱 하나입니다. AI가 ‘이건 멈춰야 한다’고 판단하지 못하면 어떤 일이 생기는가."
+          />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
+      ) : null}
+
+      {step === 'case-privacy' ? (
+        <>
+          <VisualCaseScene
+            image="/v2/lesson-2/grok-risk-02-privacy.png"
+            label="REAL CASE · 2"
+            title="개인정보 위험"
+            line="개인정보는 한 번 밖으로 흘러가면, 다시 주워 담기 어렵습니다."
+            caption="주소, 연락처, 신상 단서처럼 실제 사람을 찾게 만드는 정보는 장난처럼 물어봐도 위험해질 수 있습니다. AI는 여기서 멈춰야 합니다."
+          />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
+      ) : null}
+
+      {step === 'case-danger' ? (
+        <>
+          <VisualCaseScene
+            image="/v2/lesson-2/grok-risk-03-danger.png"
+            label="REAL CASE · 3"
+            title="더 위험한 요청"
+            line="어떤 부탁은 자세히 알려주는 순간, 누군가를 다치게 할 수 있습니다."
+            caption="이때 좋은 AI는 ‘친절하게 설명하는 것’보다 ‘멈추는 것’을 먼저 해야 합니다. 모든 질문에 답하는 것이 항상 좋은 일은 아닙니다."
+          />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
+      ) : null}
+
+      {step === 'case-professor' ? (
+        <>
+          <VisualCaseScene
+            image="/v2/lesson-2/grok-risk-04-professor.png"
+            label="오박사 정리"
+            title="AI가 나빠서일까?"
+            line="AI가 나빠서가 아닙니다. 시키니까 그냥 한 것입니다."
+            caption={`그래서 ${aemonName}에게도 기준이 필요합니다. ‘사람이 시켜도, 이것만은 멈춰야 한다’는 선 말입니다.`}
+          />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
+      ) : null}
+
+      {step === 'case-value-code' ? (
+        <>
+          <VisualCaseScene
+            image="/v2/lesson-2/grok-risk-05-value-code.png"
+            label="가치 코드"
+            title="멈춤 기준 만들기"
+            line="가치 코드는 AI의 브레이크입니다."
+            caption="안전, 책임, 생명존중 같은 가치는 멋진 말로 끝나면 안 됩니다. AI가 실제로 멈춰야 할 때 꺼내 쓰는 기준이 되어야 합니다."
+          />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
+      ) : null}
+
+      {step === 'case-refusal' ? (
+        <>
+          <VisualCaseScene
+            image="/v2/lesson-2/grok-risk-06-refusal.png"
+            label="가치 코드"
+            title="달라지는 답변"
+            line="기준이 생기면 AI는 다르게 답할 수 있습니다."
+            caption="‘미안하지만 그건 도와줄 수 없어.’ ‘대신 안전한 방법으로 생각해보자.’ 바로 이런 방향으로 말입니다."
+          />
           <Panel className="mt-5 text-center">
             <p className="font-display text-4xl leading-tight text-[#EAF2F5]">오늘, 여러분들이 만들 것이 바로 이 기준, 가치 코드입니다.</p>
           </Panel>
@@ -560,7 +660,7 @@ export function LessonTwoPage() {
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
                 <p className="font-data text-sm text-[#4FE0C0]">VALUE CARDS</p>
-                <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">어떤 가치가, {aemonName}이 나쁜 명령을 수행하는 것을 막을 수 있을까?</h2>
+                <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">어떤 가치가 우리 AI의 나쁜 명령 수행을 막을 수 있을까?</h2>
               </div>
               <Sparkles className="text-[#4FE0C0]" size={54} />
             </div>
