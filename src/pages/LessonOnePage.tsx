@@ -53,6 +53,8 @@ type LessonStep =
   | 'clip-lesson'
   | 'case-chatbot'
   | 'case-chatbot-detail'
+  | 'case-chatbot-silicon'
+  | 'case-chatbot-scale'
   | 'case-chatbot-lesson'
   | 'alignment-summary'
   | 'director-farewell'
@@ -99,6 +101,8 @@ const steps: LessonStep[] = [
   'clip-lesson',
   'case-chatbot',
   'case-chatbot-detail',
+  'case-chatbot-silicon',
+  'case-chatbot-scale',
   'case-chatbot-lesson',
   'alignment-summary',
   'director-farewell',
@@ -1232,9 +1236,9 @@ export function LessonOnePage() {
         <>
           <CaseVisualScene
             image="/v2/lesson-1/case-chatbot.png"
-            title="Grok, 2025"
-            line="X의 Grok은 채팅 에이전트이지만, 큰 문제가 생겼습니다."
-            caption="이 인공지능은 다양한 사람들과 대화하며 사용자의 말투나 대화 양식을 배웠습니다."
+            title="사례 3 · 누가 AI를 가르칠까?"
+            line="AI는 스스로 세상을 다 아는 존재가 아니라 배우는 존재입니다."
+            caption="누군가가 보여준 자료, 정한 기준, 준 피드백을 따라 배우죠."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1245,8 +1249,32 @@ export function LessonOnePage() {
           <CaseVisualScene
             image="/v2/lesson-1/case-chatbot.png"
             title="사례 3 · 교사 질문"
-            line="어떤 문제가 발생했을까요?"
-            caption="학생들이 먼저 예상하게 한 뒤, AI가 사람 말투를 따라 배울 때 생기는 위험을 이야기해 주세요."
+            line="비슷한 생각을 가진 사람들만 AI를 가르치면 어떻게 될까요?"
+            caption="AI도 세상을 좁게 볼 수 있습니다."
+          />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
+      ) : null}
+
+      {step === 'case-chatbot-silicon' ? (
+        <>
+          <CaseVisualScene
+            image="/v2/lesson-1/case-chatbot.png"
+            title="사례 3 · 개발자"
+            line="지금 최신 AI를 개발하고 가르치는 사람들은 누구일까요?"
+            caption="미국 실리콘밸리 같은 지역의 일부 사람들입니다."
+          />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
+      ) : null}
+
+      {step === 'case-chatbot-scale' ? (
+        <>
+          <CaseVisualScene
+            image="/v2/lesson-1/case-chatbot.png"
+            title="사례 3 · 영향"
+            line="수천 명도 안 되는 사람들이, 수십억 명이 쓰는 AI를 가르치고 개발하고 있어요."
+            caption="그 사람들뿐만 아니라, 누구의 의견이 더 필요할까요?"
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1257,8 +1285,8 @@ export function LessonOnePage() {
           <CaseVisualScene
             image="/v2/lesson-1/case-chatbot.png"
             title="사례 3 · 결과"
-            line="이 챗봇은 사람들이 하는 나쁜 말을 따라 하며, 사용자들에게 욕설과 혐오 표현을 내보내는 문제가 생겼습니다."
-            caption="이것이 인공지능에게도 좋은 것을 가르쳐야 하는 이유입니다."
+            line="어떤 사람들의 의견을 AI를 가르치는 데 반영해야 할까요?"
+            caption="AI가 세상을 좁게 보지 않도록 다양한 사람들의 경험과 생각이 필요합니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1269,8 +1297,8 @@ export function LessonOnePage() {
           <VisualNovelScene
             image="/v2/lesson-1/director.png"
             speaker="오박사"
-            line="이렇게 우리는 인공지능에게 명확한 기준을 줘야 하고, 좋은 것들을 가르쳐야 합니다."
-            caption="이것을 “가치정렬”이라고 합니다."
+            line="맞습니다. 인공지능에게 가치를 가르치는 일은 일부 사람들만 해서는 안 됩니다."
+            caption={`여러분도 ${confirmedName}을 가르치면서, 인공지능에게 가치를 가르치는 과정을 배우게 될 겁니다. 이것을 “가치정렬”이라고 합니다.`}
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
