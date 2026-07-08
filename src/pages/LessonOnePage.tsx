@@ -1025,7 +1025,7 @@ export function LessonOnePage() {
             image="/v2/lesson-1/director.png"
             speaker="오박사"
             line="가치코드는 AI가 행동하기 전에 확인하는 기준입니다."
-            caption="무엇을 해도 되는지, 무엇은 멈춰야 하는지 알려주는 우리 반의 약속입니다."
+            caption={`무엇을 해도 되는지, 무엇은 멈춰야 하는지 알려주는 ${confirmedName}의 마음 안 약속입니다.`}
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
