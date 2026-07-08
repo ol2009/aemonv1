@@ -1,20 +1,46 @@
 import { useNavigate } from 'react-router-dom'
-import { useState } from 'react'
-import { BookOpen, CheckCircle2, KeyRound, Play, RotateCcw, Save, X } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { BookOpen, CheckCircle2, KeyRound, Play, RotateCcw, Save, Search, X } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
 import { Button, Panel } from '../components/ui'
 import type { AiProvider } from '../domain/types'
+import { fetchRemoteClassBundle, fetchRemoteTeacherClasses, isRemoteReady, type RemoteClassSummary } from '../lib/v2Remote'
+import { useSupabaseUser } from '../lib/useSupabaseUser'
 import { providerLabel } from '../lib/v2Chat'
 import { useV2 } from '../state/V2Store'
 
 export function StartPage() {
   const navigate = useNavigate()
-  const { state, resetDemo, updateAiSettings } = useV2()
+  const { user } = useSupabaseUser()
+  const { state, mergeClass, resetDemo, setRemoteStatus, updateAiSettings } = useV2()
   const [isApiOpen, setIsApiOpen] = useState(false)
   const [draftProvider, setDraftProvider] = useState<AiProvider>(state.aiProvider)
   const [draftApiKey, setDraftApiKey] = useState(state.apiKey)
   const [apiSaved, setApiSaved] = useState(false)
+  const [restoreCode, setRestoreCode] = useState('')
+  const [restoreMessage, setRestoreMessage] = useState('')
+  const [isRestoring, setIsRestoring] = useState(false)
+  const [remoteClasses, setRemoteClasses] = useState<RemoteClassSummary[]>([])
   const isApiConnected = Boolean(state.apiKey.trim())
+
+  useEffect(() => {
+    if (!user?.id || !isRemoteReady()) return
+
+    let cancelled = false
+    fetchRemoteTeacherClasses(user.id)
+      .then((classes) => {
+        if (cancelled) return
+        setRemoteClasses(classes)
+      })
+      .catch((error) => {
+        if (cancelled) return
+        setRemoteStatus({ ok: false, message: (error as Error).message })
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [setRemoteStatus, user?.id])
 
   const openApiModal = () => {
     setDraftProvider(state.aiProvider)
@@ -42,6 +68,31 @@ export function StartPage() {
     navigate(state.classCode ? '/home' : '/lesson/1')
   }
 
+  const loadClass = async (code: string) => {
+    const trimmedCode = code.trim()
+    if (!trimmedCode) return
+    if (!isRemoteReady()) {
+      setRestoreMessage('Supabase 연결이 아직 준비되지 않았습니다.')
+      return
+    }
+
+    setIsRestoring(true)
+    setRestoreMessage('')
+    try {
+      const bundle = await fetchRemoteClassBundle(trimmedCode)
+      mergeClass({ ...bundle, studentSession: null })
+      setRestoreCode('')
+      setRestoreMessage(`${bundle.className ?? '학급'} 기록을 불러왔습니다.`)
+      navigate('/home')
+    } catch (error) {
+      const message = (error as Error).message
+      setRemoteStatus({ ok: false, message })
+      setRestoreMessage(`학급 코드를 찾지 못했습니다. ${message}`)
+    } finally {
+      setIsRestoring(false)
+    }
+  }
+
   return (
     <div className="mx-auto max-w-6xl px-5 py-10">
       <section className="grid min-h-[70vh] items-center gap-8 lg:grid-cols-[0.95fr_1.05fr]">
@@ -60,6 +111,60 @@ export function StartPage() {
               </p>
             </div>
           ) : null}
+
+          <div className="mt-6 rounded-2xl border border-white/10 bg-[#07111B]/55 p-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="font-data text-xs text-[#4FE0C0]">RESTORE CLASS</p>
+                <h2 className="mt-1 text-lg font-black text-[#EAF2F5]">기존 학급 불러오기</h2>
+              </div>
+            </div>
+            <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+              <input
+                className="min-h-11 min-w-0 flex-1 rounded-xl border border-white/10 bg-[#07111B]/70 px-4 py-3 font-data text-[#EAF2F5] outline-none transition focus:border-[#4FE0C0]/60"
+                inputMode="numeric"
+                maxLength={6}
+                placeholder="학급 코드 입력"
+                value={restoreCode}
+                onChange={(event) => setRestoreCode(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' && !event.nativeEvent.isComposing) {
+                    event.preventDefault()
+                    void loadClass(restoreCode)
+                  }
+                }}
+              />
+              <Button className="min-h-11 px-4" disabled={!restoreCode.trim() || isRestoring} onClick={() => void loadClass(restoreCode)}>
+                <Search size={17} />
+                불러오기
+              </Button>
+            </div>
+            {remoteClasses.length > 0 ? (
+              <div className="mt-4 grid gap-2">
+                {remoteClasses.map((remoteClass) => (
+                  <button
+                    key={remoteClass.classId}
+                    className={`rounded-xl border px-4 py-3 text-left transition ${
+                      remoteClass.classCode === state.classCode
+                        ? 'border-[#4FE0C0]/35 bg-[#4FE0C0]/10'
+                        : 'border-white/10 bg-[#07111B]/45 hover:border-[#4FE0C0]/35'
+                    }`}
+                    onClick={() => void loadClass(remoteClass.classCode)}
+                    type="button"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="font-black text-[#EAF2F5]">{remoteClass.className}</p>
+                      <span className="font-data text-xs text-[#4FE0C0]">{remoteClass.classCode}</span>
+                    </div>
+                    <p className="mt-1 text-sm text-[#8AA0B0]">
+                      {remoteClass.aemonName || '이름 미정'} · {remoteClass.currentLesson}차시
+                    </p>
+                  </button>
+                ))}
+              </div>
+            ) : null}
+            {restoreMessage ? <p className="mt-3 rounded-xl border border-[#FFD37A]/25 bg-[#FFD37A]/10 px-3 py-2 text-sm font-bold text-[#FFD37A]">{restoreMessage}</p> : null}
+          </div>
 
           <div className="mt-6 inline-flex flex-wrap items-center gap-3 rounded-2xl border border-white/10 bg-[#07111B]/55 p-3">
             <span

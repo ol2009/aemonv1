@@ -254,6 +254,39 @@ export async function createRemoteClass(input: { className: string; teacherId?: 
   throw new Error(toMessage(lastError))
 }
 
+export interface RemoteClassSummary {
+  classId: string
+  className: string
+  classCode: string
+  currentLesson: number
+  aemonName: string
+  createdAt: string
+}
+
+export async function fetchRemoteTeacherClasses(teacherId: string): Promise<RemoteClassSummary[]> {
+  const client = ensureClient()
+  const trimmedTeacherId = teacherId.trim()
+  if (!trimmedTeacherId) return []
+
+  const { data, error } = await client
+    .from('classes')
+    .select('id,name,code,current_lesson,aemon_name,created_at')
+    .eq('teacher_id', trimmedTeacherId)
+    .order('created_at', { ascending: false })
+    .limit(12)
+
+  if (error) throw new Error(toMessage(error))
+
+  return ((data ?? []) as ClassRow[]).map((row) => ({
+    classId: row.id,
+    className: row.name,
+    classCode: row.code,
+    currentLesson: row.current_lesson,
+    aemonName: row.aemon_name ?? '',
+    createdAt: row.created_at,
+  }))
+}
+
 export async function restoreRemoteClassSnapshot(input: {
   classId?: string
   className: string
