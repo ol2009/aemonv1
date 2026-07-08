@@ -64,6 +64,8 @@ type LessonStep =
   | 'wish-question'
   | 'wish'
   | 'wish-thanks'
+  | 'value-code-intro'
+  | 'value-code-meaning'
   | 'aemon-rule-question'
   | 'demo'
   | 'wrap'
@@ -109,6 +111,8 @@ const steps: LessonStep[] = [
   'wish-question',
   'wish',
   'wish-thanks',
+  'value-code-intro',
+  'value-code-meaning',
   'aemon-rule-question',
   'demo',
   'wrap',
@@ -998,6 +1002,30 @@ export function LessonOnePage() {
             speaker={confirmedName}
             line="나도 힘내서 너네가 바라는 대로 멋지게 커볼게!"
             caption="내가 어떤 인공지능이 되면 좋을지 알려줘서 고마워."
+          />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
+      ) : null}
+
+      {step === 'value-code-intro' ? (
+        <>
+          <VisualNovelScene
+            image="/v2/lesson-1/director.png"
+            speaker="오박사"
+            line="방금 모은 바람은 그냥 소원이 아닙니다."
+            caption={`이 바람을 ${confirmedName}이 지켜야 할 약속으로 바꾸면, 그것이 가치코드가 됩니다.`}
+          />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
+      ) : null}
+
+      {step === 'value-code-meaning' ? (
+        <>
+          <VisualNovelScene
+            image="/v2/lesson-1/director.png"
+            speaker="오박사"
+            line="가치코드는 AI가 행동하기 전에 확인하는 기준입니다."
+            caption="무엇을 해도 되는지, 무엇은 멈춰야 하는지 알려주는 우리 반의 약속입니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
