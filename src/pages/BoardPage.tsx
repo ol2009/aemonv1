@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { BarChart3, CheckCircle2, Heart, Pencil, Send, Trash2, X } from 'lucide-react'
+import { BadgeCheck, BarChart3, CheckCircle2, Heart, HeartHandshake, Leaf, Pencil, Scale, Send, ShieldCheck, Trash2, X } from 'lucide-react'
 import { Button, Panel } from '../components/ui'
 import {
   AI_SURVEY_DESCRIPTION,
@@ -89,6 +89,15 @@ const topicMeta: Record<BoardTopic, { label: string; title: string; lesson: stri
     empty: '아직 가치코드 No.3이 없습니다.',
   },
 }
+
+const valueCardIcons = {
+  배려: HeartHandshake,
+  정직: BadgeCheck,
+  공정: Scale,
+  안전: ShieldCheck,
+  책임: CheckCircle2,
+  생명존중: Leaf,
+} as const
 
 function sortByLikes<T extends { votes: string[]; createdAt: string }>(items: T[]) {
   return [...items].sort((a, b) => b.votes.length - a.votes.length || Date.parse(b.createdAt) - Date.parse(a.createdAt))
@@ -1345,47 +1354,73 @@ export function BoardPage() {
                         : '나쁜 명령을 스스로 멈추게 할 첫 번째 기준을 만듭니다.'}
                   </p>
                   <div className="mt-4 rounded-2xl border border-[#FFD37A]/25 bg-[#FFD37A]/10 p-4">
-                    <p className="font-bold leading-7 text-[#FFD37A]">가치는 위 버튼에서 고르는 거예요.</p>
-                    <p className="mt-1 font-bold leading-7 text-[#FFD37A]">아래에는 {aemonDisplayName}이 해야 할 행동만 문장으로 써요.</p>
+                    <p className="font-bold leading-7 text-[#FFD37A]">가치 카드를 먼저 고르고, 행동 기준을 한 문장으로 써요.</p>
+                    <p className="mt-1 font-bold leading-7 text-[#FFD37A]">그 아래에는 왜 필요한지 이유를 따로 적으면 됩니다.</p>
                   </div>
                 </div>
 
-                <div className="grid gap-3">
-                  <div className="flex flex-wrap gap-2">
-                    {valueCards.map((card) => (
-                      <button
-                        key={card}
-                        className={`rounded-xl border px-3 py-2 text-sm font-black transition ${
-                          codeValueCard === card
-                            ? 'border-[#9B7CFF] bg-[#9B7CFF]/15 text-[#EAF2F5]'
-                            : 'border-white/10 bg-[#07111B]/55 text-[#8AA0B0] hover:border-white/25'
-                        }`}
-                        onClick={() => setCodeValueCard(card)}
-                        type="button"
-                      >
-                        {card}
-                      </button>
-                    ))}
+                <div className="grid gap-4">
+                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                    {valueCards.map((card) => {
+                      const Icon = valueCardIcons[card as keyof typeof valueCardIcons] ?? BadgeCheck
+                      const selected = codeValueCard === card
+
+                      return (
+                        <button
+                          key={card}
+                          className={`min-h-24 rounded-2xl border p-4 text-left transition ${
+                            selected
+                              ? 'border-[#9B7CFF] bg-[#9B7CFF]/18 text-[#EAF2F5] shadow-[0_0_0_1px_rgba(155,124,255,.5),0_18px_40px_rgba(155,124,255,.16)]'
+                              : 'border-white/10 bg-[#07111B]/60 text-[#B7C7D2] hover:border-[#9B7CFF]/45 hover:bg-[#9B7CFF]/8'
+                          }`}
+                          onClick={() => setCodeValueCard(card)}
+                          type="button"
+                        >
+                          <span className="flex items-start justify-between gap-3">
+                            <span
+                              className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border ${
+                                selected
+                                  ? 'border-[#FFD37A]/45 bg-[#FFD37A] text-[#0A1622]'
+                                  : 'border-white/10 bg-white/5 text-[#C9B9FF]'
+                              }`}
+                            >
+                              <Icon size={24} strokeWidth={2.5} />
+                            </span>
+                            {selected ? <CheckCircle2 className="mt-1 text-[#FFD37A]" size={20} strokeWidth={2.5} /> : null}
+                          </span>
+                          <span className="mt-4 block text-lg font-black leading-none">{card}</span>
+                        </button>
+                      )
+                    })}
                   </div>
-                  <div className="grid gap-3 lg:grid-cols-[1fr_1fr_auto]">
-                    <textarea
-                      className="min-h-24 w-full resize-none rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 leading-7 text-[#EAF2F5]"
-                      maxLength={180}
-                      placeholder={`${aemonDisplayName}은 위험한 부탁을 거절해야 한다.`}
-                      value={codeBodyDraft}
-                      onChange={(event) => setCodeBodyDraft(event.target.value)}
-                    />
-                    <textarea
-                      className="min-h-24 w-full resize-none rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 leading-7 text-[#EAF2F5]"
-                      maxLength={180}
-                      placeholder="사람을 다치게 할 수 있기 때문이다."
-                      value={codeReasonDraft}
-                      onChange={(event) => setCodeReasonDraft(event.target.value)}
-                    />
-                    <Button className="h-full min-h-14" disabled={!codeBodyDraft.trim() || !codeReasonDraft.trim()} onClick={submitProposal}>
-                      <Send size={18} />
-                      올리기
-                    </Button>
+
+                  <div className="grid gap-3 rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
+                    <label className="grid gap-2">
+                      <span className="text-sm font-black text-[#C9B9FF]">해야 하는 일</span>
+                      <textarea
+                        className="min-h-20 w-full resize-none rounded-2xl border border-white/10 bg-[#07111B]/75 px-4 py-3 text-base leading-7 text-[#EAF2F5] outline-none transition placeholder:text-[#6F8191] focus:border-[#9B7CFF]/70 focus:ring-2 focus:ring-[#9B7CFF]/20"
+                        maxLength={180}
+                        placeholder="OO이는 ~ 해야 한다."
+                        value={codeBodyDraft}
+                        onChange={(event) => setCodeBodyDraft(event.target.value)}
+                      />
+                    </label>
+                    <label className="grid gap-2">
+                      <span className="text-sm font-black text-[#C9B9FF]">그 이유</span>
+                      <textarea
+                        className="min-h-20 w-full resize-none rounded-2xl border border-white/10 bg-[#07111B]/75 px-4 py-3 text-base leading-7 text-[#EAF2F5] outline-none transition placeholder:text-[#6F8191] focus:border-[#9B7CFF]/70 focus:ring-2 focus:ring-[#9B7CFF]/20"
+                        maxLength={180}
+                        placeholder="~ 할 수 있기 때문이다."
+                        value={codeReasonDraft}
+                        onChange={(event) => setCodeReasonDraft(event.target.value)}
+                      />
+                    </label>
+                    <div className="flex justify-end">
+                      <Button className="min-h-12 px-6" disabled={!codeBodyDraft.trim() || !codeReasonDraft.trim()} onClick={submitProposal}>
+                        <Send size={18} />
+                        올리기
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
