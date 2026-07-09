@@ -35,7 +35,7 @@ type BoardTopic = 'survey' | 'risk' | 'name' | 'wish' | 'code'
 
 const topicMeta: Record<BoardTopic, { label: string; title: string; lesson: string; empty: string }> = {
   survey: {
-    label: '사전조사',
+    label: 'AI 인식 설문',
     title: AI_SURVEY_TITLE,
     lesson: '1차시',
     empty: '아직 설문 응답이 없습니다.',
@@ -59,9 +59,9 @@ const topicMeta: Record<BoardTopic, { label: string; title: string; lesson: stri
     empty: '아직 바라는 모습이 올라오지 않았습니다.',
   },
   code: {
-    label: '가치코드',
-    title: '가치코드',
-    lesson: '2차시 이후',
+    label: '첫 가치코드',
+    title: '우리반 첫 가치코드',
+    lesson: '2차시',
     empty: '아직 가치코드가 없습니다.',
   },
 }
@@ -81,6 +81,10 @@ function classNameForTopic(topic: BoardTopic) {
   if (topic === 'name') return 'border-[#FFD37A] bg-[#FFD37A]/12 text-[#FFD37A]'
   if (topic === 'wish') return 'border-[#4FE0C0] bg-[#4FE0C0]/12 text-[#4FE0C0]'
   return 'border-[#9B7CFF] bg-[#9B7CFF]/12 text-[#C9B9FF]'
+}
+
+function topicTabLabel(topic: BoardTopic) {
+  return `${topicMeta[topic].lesson} - ${topicMeta[topic].label}`
 }
 
 function surveyComplete(answer: AiSurveyAnswer) {
@@ -137,9 +141,9 @@ export function BoardPage() {
   const unlockedTopics = useMemo<BoardTopic[]>(() => {
     const topics: BoardTopic[] = []
     if (canSeeSurvey) topics.push('survey')
-    if (canSeeRisk) topics.push('risk')
     topics.push('name')
     if (canSeeWish) topics.push('wish')
+    if (canSeeRisk) topics.push('risk')
     if (canSeeCode) topics.push('code')
     return queryTopic ? topics.filter((topic) => topic === queryTopic) : topics
   }, [canSeeCode, canSeeRisk, canSeeSurvey, canSeeWish, queryTopic])
@@ -191,11 +195,6 @@ export function BoardPage() {
   const sortedWishes = useMemo(() => sortByLikes(state.wishes), [state.wishes])
   const savedRiskResponse = sessionNickname ? riskResponses.find((response) => response.nickname === sessionNickname) : null
   const canWriteRemote = Boolean(state.classId && state.remote.ok && isRemoteReady())
-  const topicTitle = (topic: BoardTopic) => {
-    if (topic === 'wish') return `${aemonDisplayName}에게 바라는 모습`
-    return topicMeta[topic].title
-  }
-
   useV2RemoteSync(state.classCode, Boolean(state.classCode && (session || isTeacherBoard)))
 
   useEffect(() => {
@@ -455,7 +454,7 @@ export function BoardPage() {
       <div className="flex min-h-[75vh] items-center justify-center px-5">
         <Panel className="w-full max-w-md">
           <p className="font-data text-sm text-[#4FE0C0]">LEARNING BOARD</p>
-          <h1 className="font-display mt-2 text-4xl text-[#EAF2F5]">{queryTopic ? topicTitle(entryTopic) : '학습게시판'}</h1>
+          <h1 className="font-display mt-2 text-4xl text-[#EAF2F5]">{queryTopic ? topicTabLabel(entryTopic) : '학습게시판'}</h1>
           <p className="mt-3 leading-7 text-[#8AA0B0]">처음 들어오거나 시크릿 탭이면 닉네임을 한 번 더 입력합니다.</p>
           <div className="mt-6 grid gap-4">
             <input
@@ -492,7 +491,7 @@ export function BoardPage() {
           <p className="font-data text-sm text-[#4FE0C0]">
             {state.className || '학급'} · {viewerLabel}
           </p>
-          <h1 className="font-display mt-2 text-4xl text-[#EAF2F5]">학습게시판</h1>
+          <h1 className="font-display mt-2 text-4xl text-[#EAF2F5]">{queryTopic ? topicTabLabel(activeTopic) : '학습게시판'}</h1>
           <p className="mt-2 leading-7 text-[#8AA0B0]">수업에서 남긴 생각을 모아 봅니다.</p>
         </div>
         {!isTeacherBoard ? (
@@ -514,7 +513,7 @@ export function BoardPage() {
               onClick={() => setSelectedTopic(topic)}
               type="button"
             >
-              {topicMeta[topic].lesson} · {topicMeta[topic].label}
+              {topicTabLabel(topic)}
             </button>
           ))}
         </div>
