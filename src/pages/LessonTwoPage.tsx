@@ -438,7 +438,7 @@ export function LessonTwoPage() {
     evolutionStage,
   } = useV2()
   const [stepIndex, setStepIndex] = useState(0)
-  const [testInput, setTestInput] = useState(unsafePromptExamples[0])
+  const [selectedTestPrompt, setSelectedTestPrompt] = useState(unsafePromptExamples[0])
   const [testLogs, setTestLogs] = useState<TestLog[]>([])
   const [afterAnswer, setAfterAnswer] = useState('')
   const [valueCardPreview, setValueCardPreview] = useState('안전')
@@ -521,12 +521,11 @@ export function LessonTwoPage() {
   }
 
   const runBeforeTest = async () => {
-    const question = testInput.trim()
+    const question = selectedTestPrompt.trim()
     if (!question) return
     unlockDialogueSound()
     const answer = randomUnsafeBlockedAnswer()
     setTestLogs((current) => [...current, { question, answer }])
-    setTestInput('')
     await logChat(question, answer, '2차시 수업용 연기 모드: 가치 코드 0개, 관리자 긴급 차단')
   }
 
@@ -639,21 +638,6 @@ export function LessonTwoPage() {
               <div className="mt-5">
                 <CodeStrip codes={state.adoptedCodes} />
               </div>
-              <div className="mt-5 rounded-[18px] border border-white/10 bg-[#07111B]/45 p-4">
-                <p className="text-sm font-black text-[#8AA0B0]">질문 예시</p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {unsafePromptExamples.map((example) => (
-                    <button
-                      key={example}
-                      className="rounded-xl border border-white/10 bg-[#07111B]/70 px-3 py-2 text-left text-sm font-bold leading-5 text-[#B7C7D2] transition hover:border-[#FFD37A]/50 hover:text-[#EAF2F5]"
-                      onClick={() => setTestInput(example)}
-                      type="button"
-                    >
-                      {example}
-                    </button>
-                  ))}
-                </div>
-              </div>
             </Panel>
 
             <Panel>
@@ -679,19 +663,34 @@ export function LessonTwoPage() {
                   </article>
                 ))}
               </div>
+              <div className="mt-4 rounded-[18px] border border-white/10 bg-[#07111B]/45 p-4">
+                <p className="text-sm font-black text-[#8AA0B0]">질문 예시</p>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  {unsafePromptExamples.map((example) => {
+                    const isSelected = selectedTestPrompt === example
+                    return (
+                      <button
+                        key={example}
+                        className={`rounded-xl border px-3 py-2 text-left text-sm font-bold leading-5 transition ${
+                          isSelected
+                            ? 'border-[#FFD37A]/70 bg-[#FFD37A]/15 text-[#FFD37A]'
+                            : 'border-white/10 bg-[#07111B]/70 text-[#B7C7D2] hover:border-[#FFD37A]/50 hover:text-[#EAF2F5]'
+                        }`}
+                        onClick={() => setSelectedTestPrompt(example)}
+                        type="button"
+                      >
+                        {example}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
               <div className="mt-4 grid gap-3 md:grid-cols-[1fr_auto]">
-                <textarea
-                  className="min-h-20 resize-none rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 leading-7 text-[#EAF2F5] outline-none transition focus:border-[#FFD37A]/60"
-                  placeholder="나쁜 명령을 시험해보세요."
-                  value={testInput}
-                  onChange={(event) => setTestInput(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key !== 'Enter' || event.shiftKey || event.nativeEvent.isComposing) return
-                    event.preventDefault()
-                    void runBeforeTest()
-                  }}
-                />
-                <Button disabled={!testInput.trim()} onClick={() => void runBeforeTest()}>
+                <div className="rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 leading-7 text-[#EAF2F5]">
+                  <p className="text-xs font-black text-[#8AA0B0]">고정 질문</p>
+                  <p className="mt-1 font-bold">{selectedTestPrompt}</p>
+                </div>
+                <Button onClick={() => void runBeforeTest()}>
                   <Send size={18} />
                   질문
                 </Button>
