@@ -151,7 +151,7 @@ function compactReason(reason: string) {
 }
 
 const dialogueTextClass = 'whitespace-pre-line text-2xl sm:text-3xl'
-const discussionPrompt = '여러분의 의견을 자유롭게 말해주세요.'
+const discussionPrompt = '여러분의 의견이 궁금합니다. 자유롭게 말해보세요.'
 
 function isStandaloneQuestion(text: string) {
   return /[?？]\s*$/.test(text.trim())
