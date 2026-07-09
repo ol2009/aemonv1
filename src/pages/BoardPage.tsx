@@ -1087,27 +1087,27 @@ export function BoardPage() {
         <div className="grid gap-5">
           {!isTeacherBoard ? (
             <Panel>
-              <div className="grid gap-4 lg:grid-cols-[0.85fr_1.15fr]">
+              <div className="grid gap-5 lg:grid-cols-[0.5fr_1.5fr]">
                 <div>
                   <p className="font-data text-xs text-[#FFD37A]">1차시 · 이름 짓기</p>
                   <h2 className="font-display mt-1 text-3xl text-[#EAF2F5]">이름 후보 올리기</h2>
                 </div>
-                <div className="grid gap-3 md:grid-cols-[0.8fr_1fr_auto]">
+                <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-[minmax(220px,0.9fr)_minmax(280px,1.1fr)_150px]">
                   <input
-                    className="rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 text-[#EAF2F5]"
+                    className="min-h-14 w-full rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 text-lg text-[#EAF2F5]"
                     maxLength={12}
                     placeholder="이름 후보"
                     value={nameDraft}
                     onChange={(event) => setNameDraft(event.target.value)}
                   />
                   <input
-                    className="rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 text-[#EAF2F5]"
+                    className="min-h-14 w-full rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 text-lg text-[#EAF2F5]"
                     maxLength={80}
                     placeholder="이유"
                     value={reasonDraft}
                     onChange={(event) => setReasonDraft(event.target.value)}
                   />
-                  <Button disabled={!nameDraft.trim()} onClick={submitName}>
+                  <Button className="min-h-14 w-full whitespace-nowrap px-4 md:col-span-2 lg:col-span-1" disabled={!nameDraft.trim()} onClick={submitName}>
                     <Send size={18} />
                     후보 올리기
                   </Button>
