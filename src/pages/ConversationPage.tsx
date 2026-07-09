@@ -32,11 +32,11 @@ function TypewriterAnswer({ text, onTick }: { text: string; onTick?: () => void 
 }
 
 function stageLabel(stage: number) {
-  if (stage <= 0) return '알'
-  if (stage === 1) return '꼬물이'
-  if (stage === 2) return '아기 드래곤'
-  if (stage === 3) return '중간 드래곤'
-  return '최종 드래곤'
+  if (stage <= 0) return '데이터알'
+  if (stage === 1) return '데이터조각'
+  if (stage === 2) return '데이터의 정령'
+  if (stage === 3) return '데이터 파수꾼'
+  return '데이터 신수'
 }
 
 export function ConversationPage() {

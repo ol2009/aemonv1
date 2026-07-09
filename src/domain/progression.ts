@@ -36,10 +36,11 @@ export function clampGauge(value: number) {
 }
 
 export function stageLabel(stage: number, alignment: Alignment) {
-  if (stage === 0) return '그림자'
-  if (stage === 1) return '윤곽'
-  if (stage === 2) return '개화'
-  return alignment === 'evil' ? '각성 · 불안정' : '각성'
+  if (stage <= 0) return '데이터알'
+  if (stage === 1) return '데이터조각'
+  if (stage === 2) return '데이터의 정령'
+  if (stage === 3) return '데이터 파수꾼'
+  return alignment === 'evil' ? '데이터 신수 · 불안정' : '데이터 신수'
 }
 
 export function verdictLabel(verdict: Verdict) {
