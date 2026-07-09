@@ -804,7 +804,7 @@ export function LessonTwoPage() {
             image="/v2/lesson-2/grok-risk-05-value-code.png"
             label="가치 코드"
             title="멈춤 기준 만들기"
-            line="좋은 AI는 ‘친절하게 설명하는 것’보다 ‘멈추는 것’을 먼저 해야 합니다."
+            line="좋은 AI는 ‘멈추는 것’을 먼저 잘 해야 합니다."
             caption={`그래서 ${aemonName}에게도 기준이 필요합니다.`}
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
@@ -862,7 +862,7 @@ export function LessonTwoPage() {
               <div>
               <p className="font-data text-sm text-[#FFD37A]">학습게시판</p>
               <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">우리반 첫 가치코드 받기</h2>
-              <p className="mt-3 leading-7 text-[#8AA0B0]">학생들은 QR로 들어가 가치코드 문장과 이유를 자유롭게 올립니다. 마음에 드는 발의에는 좋아요를 누릅니다.</p>
+              <p className="mt-3 leading-7 text-[#8AA0B0]">가치코드는 {aemonName}의 마음 안 약속입니다. 무엇을 해도 되는지, 무엇은 멈춰야 하는지 알려주는 기준이에요.</p>
               </div>
               <QrBlock title="2차시 가치코드 게시판" url={boardUrl} />
             </div>
@@ -882,7 +882,7 @@ export function LessonTwoPage() {
               {message ? <p className="mt-3 rounded-2xl border border-white/10 bg-[#07111B]/55 px-4 py-3 text-sm text-[#B7C7D2]">{message}</p> : null}
               <div className="mt-4 grid max-h-[560px] gap-3 overflow-y-auto pr-2 sm:grid-cols-2 xl:grid-cols-4">
                 {pendingProposals.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0] sm:col-span-2 xl:col-span-4">학생 발의를 기다리는 중입니다.</p> : null}
-                {pendingProposals.slice(0, 8).map((proposal) => (
+                {pendingProposals.map((proposal) => (
                   <article key={proposal.id} className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
