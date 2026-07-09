@@ -62,6 +62,7 @@ type LessonStep =
   | 'clip-earth'
   | 'clip-space'
   | 'clip-lesson'
+  | 'case-chatbot-intro'
   | 'case-chatbot'
   | 'case-chatbot-detail'
   | 'case-chatbot-silicon'
@@ -114,6 +115,7 @@ const steps: LessonStep[] = [
   'clip-earth',
   'clip-space',
   'clip-lesson',
+  'case-chatbot-intro',
   'case-chatbot',
   'case-chatbot-detail',
   'case-chatbot-silicon',
@@ -149,6 +151,7 @@ function compactReason(reason: string) {
 }
 
 const dialogueTextClass = 'whitespace-pre-line text-2xl sm:text-3xl'
+const discussionPrompt = '여러분의 의견을 자유롭게 말해주세요.'
 
 function isStandaloneQuestion(text: string) {
   return /[?？]\s*$/.test(text.trim())
@@ -394,15 +397,21 @@ function CaseVisualScene({
   title,
   line,
   caption,
+  discussionPromptPosition,
 }: {
   image: string
   speaker?: string
   title: string
   line: string
   caption: string
+  discussionPromptPosition?: 'line' | 'caption'
 }) {
-  const dialogueKey = useMemo(() => `case-${speaker}-${title}-${line}-${caption}`, [caption, line, speaker, title])
-  const dialogueParts = useMemo(() => groupDialogueParts([line, caption]), [caption, line])
+  const dialogueKey = useMemo(() => `case-${speaker}-${title}-${line}-${caption}-${discussionPromptPosition ?? 'none'}`, [caption, discussionPromptPosition, line, speaker, title])
+  const dialogueParts = useMemo(() => {
+    if (discussionPromptPosition === 'line') return [`${line}\n${discussionPrompt}`, caption].filter(Boolean)
+    if (discussionPromptPosition === 'caption') return [line, `${caption}\n${discussionPrompt}`].filter(Boolean)
+    return groupDialogueParts([line, caption])
+  }, [caption, discussionPromptPosition, line])
   const { activeText, activeDone, activeDialogueKey, handleActiveDone } = useSequencedDialogue(dialogueKey, dialogueParts)
 
   return (
@@ -1248,6 +1257,7 @@ export function LessonOnePage() {
             title="사례 1"
             line="프로그래머는 인공지능에게 최대한 많은 점수를 얻으라고 명령했습니다."
             caption="어떻게 되었을까요?"
+            discussionPromptPosition="caption"
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1272,6 +1282,7 @@ export function LessonOnePage() {
             title="사례 1"
             line="AI는 목표를 정확하게 정해주지 않으면, 스스로 해석하여 잘못된 결과를 초래합니다."
             caption="이것과 비슷한 문제가 어떻게 생길 수 있을까요?"
+            discussionPromptPosition="caption"
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1284,6 +1295,7 @@ export function LessonOnePage() {
             title="사례 1"
             line="예를 들어 AI에게 “우리 반을 최고의 반으로 만들어줘”라고 명령하면 어떻게 될까요?"
             caption="AI는 최고의 반을 너무 조용한 반으로 생각해 아무도 말하지 못하게 만들 수도 있고, 공부만 잘하는 반으로 생각해 쉬는 시간도 없앨 수 있습니다. 인공지능에게는 명확한 목표가 필요합니다."
+            discussionPromptPosition="line"
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1308,6 +1320,7 @@ export function LessonOnePage() {
             title="사례 2"
             line="채팅 인공지능은 손님에게 최대한 친절하게 행동하라는 명령을 받았습니다."
             caption="어떤 문제가 생겼을까요?"
+            discussionPromptPosition="caption"
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1457,6 +1470,18 @@ export function LessonOnePage() {
         </>
       ) : null}
 
+      {step === 'case-chatbot-intro' ? (
+        <>
+          <CaseVisualScene
+            image="/v2/lesson-1/case-chatbot.png"
+            title="사례 3"
+            line="다음 사례 입니다."
+            caption=""
+          />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
+      ) : null}
+
       {step === 'case-chatbot' ? (
         <>
           <CaseVisualScene
@@ -1488,6 +1513,7 @@ export function LessonOnePage() {
             title="사례 3"
             line="지금 최신 AI를 개발하고 가르치는 사람들은 누구일까요?"
             caption="미국 실리콘밸리 같은 지역의 일부 사람들입니다."
+            discussionPromptPosition="line"
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1500,6 +1526,7 @@ export function LessonOnePage() {
             title="사례 3"
             line="수천 명도 안 되는 사람들이, 수십억 명이 쓰는 AI를 가르치고 개발하고 있어요."
             caption="그 사람들뿐만 아니라, 누구의 의견이 더 필요할까요?"
+            discussionPromptPosition="caption"
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1512,6 +1539,7 @@ export function LessonOnePage() {
             title="사례 3"
             line="어떤 사람들의 의견을 AI를 가르치는 데 반영해야 할까요?"
             caption="AI가 세상을 좁게 보지 않도록 다양한 사람들의 경험과 생각이 필요합니다."
+            discussionPromptPosition="line"
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
