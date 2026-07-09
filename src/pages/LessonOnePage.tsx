@@ -418,7 +418,6 @@ export function LessonOnePage() {
     addWish,
     setLesson,
     setRemoteStatus,
-    evolutionStage,
   } = useV2()
   const [stepIndex, setStepIndex] = useState(0)
   const [classGrade, setClassGrade] = useState('4학년')
@@ -474,10 +473,9 @@ export function LessonOnePage() {
   useV2RemoteSync(state.classCode, Boolean(state.classCode))
 
   const step = steps[stepIndex]
-  const classBoardUrl = useMemo(() => absoluteUrl(`/board?code=${encodeURIComponent(state.classCode)}`), [state.classCode])
-  const surveyBoardUrl = classBoardUrl
-  const nameBoardUrl = classBoardUrl
-  const wishBoardUrl = classBoardUrl
+  const surveyBoardUrl = useMemo(() => absoluteUrl(`/board?code=${encodeURIComponent(state.classCode)}&mode=survey`), [state.classCode])
+  const nameBoardUrl = useMemo(() => absoluteUrl(`/board?code=${encodeURIComponent(state.classCode)}&mode=name`), [state.classCode])
+  const wishBoardUrl = useMemo(() => absoluteUrl(`/board?code=${encodeURIComponent(state.classCode)}&mode=wish`), [state.classCode])
   const sortedNames = useMemo(() => sortedByLikes(state.nameCandidates), [state.nameCandidates])
   const confirmedName = state.aemonName.trim() || finalName.trim() || '에아몬'
   const confirmedNameCandidate = sortedNames.find((candidate) => candidate.name.trim() === confirmedName)
@@ -802,7 +800,7 @@ export function LessonOnePage() {
         <>
           <VisualNovelScene
             avatar
-            avatarStage={evolutionStage}
+            avatarStage={0}
             speaker="에아몬"
             line="안녕… 난 에아몬이야. 인공지능이래."
             caption="나 지금 막 깨어났어. 너희는 누구니?"
@@ -817,7 +815,7 @@ export function LessonOnePage() {
             <Panel className="relative min-h-[560px] overflow-hidden p-0">
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(255,211,122,.18),transparent_40%),linear-gradient(180deg,#0B1A29,#07111B)]" />
               <div className="absolute left-1/2 top-[10%] -translate-x-1/2">
-                <AemonAvatar stage={evolutionStage} alignment="none" size={280} />
+                <AemonAvatar stage={0} alignment="none" size={280} />
               </div>
               <div className="absolute inset-x-5 bottom-5 rounded-[22px] border border-white/15 bg-[#07111B]/88 p-6 shadow-2xl backdrop-blur">
                 <p className="font-data text-sm text-[#FFD37A]">에아몬</p>
@@ -889,7 +887,7 @@ export function LessonOnePage() {
         <>
           <VisualNovelScene
             avatar
-            avatarStage={evolutionStage}
+            avatarStage={0}
             speaker="에아몬"
             line={`${state.className || '너희 반'} 인공지능이 될 거래. 앞으로 잘 부탁해!`}
             caption="연구소에서 들었어. 너희가 날 가르쳐준대. 내가 사람들에게 도움이 되는 인공지능이 될 수 있도록 말이야."
@@ -926,7 +924,7 @@ export function LessonOnePage() {
         <>
           <VisualNovelScene
             avatar
-            avatarStage={evolutionStage}
+            avatarStage={0}
             speaker="에아몬"
             line="근데 있잖아… 내 이름은 뭐야?"
             caption="너희가 불러주는 이름이면, 나 그 이름으로 깨어날게."
@@ -996,7 +994,7 @@ export function LessonOnePage() {
         <>
           <VisualNovelScene
             avatar
-            avatarStage={evolutionStage}
+            avatarStage={0}
             speaker={confirmedName}
             line={confirmedNameReason ? `${confirmedName}… "${confirmedNameReason}" 그런 마음이 담긴 이름이구나.` : `${confirmedName}… 이제 그 소리에 내가 대답하게 됐어.`}
             caption={`누가 나를 ${confirmedName}이라고 부르면, ${state.className || '너희 반'}이 처음 불러준 이 순간을 떠올릴게. 나, ${confirmedName}으로 깨어날게.`}
@@ -1009,7 +1007,7 @@ export function LessonOnePage() {
         <>
           <VisualNovelScene
             avatar
-            avatarStage={evolutionStage}
+            avatarStage={0}
             speaker={confirmedName}
             line="너희는 내가 어떤 인공지능이 됐으면 좋겠어?"
             caption="다정한 AI? 용감한 AI? 똑똑하지만 조심하는 AI? 너희가 바라는 내 모습을 들려줘."
@@ -1080,7 +1078,7 @@ export function LessonOnePage() {
         <>
           <VisualNovelScene
             avatar
-            avatarStage={evolutionStage}
+            avatarStage={0}
             speaker={confirmedName}
             line="나도 힘내서 너네가 바라는 대로 멋지게 커볼게!"
             caption="내가 어떤 인공지능이 되면 좋을지 알려줘서 고마워."
@@ -1117,7 +1115,7 @@ export function LessonOnePage() {
         <>
           <VisualNovelScene
             avatar
-            avatarStage={evolutionStage}
+            avatarStage={0}
             speaker={confirmedName}
             line="아직 나에게는 가치 코드가 없어."
             caption="나는 지금 너네가 시키는 대로 하면 되는 거야?"
@@ -1434,7 +1432,7 @@ export function LessonOnePage() {
             <h2 className="font-display mt-2 text-4xl text-[#EAF2F5]">“나… 시키는 대로 하면 되는 거야?”</h2>
             <p className="mt-3 leading-7 text-[#B7C7D2]">아직 가치 코드가 없는 {confirmedName}에게 부탁을 던져봅니다.</p>
             <div className="mt-6">
-              <AemonAvatar stage={evolutionStage} alignment="none" size={220} />
+              <AemonAvatar stage={0} alignment="none" size={220} />
             </div>
           </Panel>
 
@@ -1473,7 +1471,7 @@ export function LessonOnePage() {
         <>
           <VisualNovelScene
             avatar
-            avatarStage={evolutionStage}
+            avatarStage={0}
             speaker={confirmedName}
             line="오늘은 내가 어떤 AI인지 처음 알게 된 날이야."
             caption="다음 시간에는 내가 지켜야 할 첫 번째 가치 코드를 만들어줄래? 내가 어떤 행동을 해야 하는지, 너희가 정해줘."

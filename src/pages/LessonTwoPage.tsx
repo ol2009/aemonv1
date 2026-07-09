@@ -424,9 +424,8 @@ export function LessonTwoPage() {
 
   useV2RemoteSync(state.classCode, Boolean(state.classCode))
 
-  const classBoardUrl = absoluteUrl(`/board?code=${state.classCode}`)
-  const riskBoardUrl = classBoardUrl
-  const boardUrl = classBoardUrl
+  const riskBoardUrl = absoluteUrl(`/board?code=${encodeURIComponent(state.classCode)}&mode=risk`)
+  const boardUrl = absoluteUrl(`/board?code=${encodeURIComponent(state.classCode)}&mode=code`)
   const pendingProposals = useMemo(() => sortProposals(state.proposals.filter((proposal) => proposal.status === 'pending')), [state.proposals])
   const selectedProposal = pendingProposals.find((proposal) => proposal.id === selectedProposalId) ?? pendingProposals[0] ?? null
   const firstCode = state.adoptedCodes.find((code) => code.no === 1) ?? state.adoptedCodes[0] ?? null
@@ -833,7 +832,7 @@ export function LessonTwoPage() {
           <div className="grid gap-5 lg:grid-cols-[0.8fr_1.2fr]">
             <Panel>
               <p className="font-data text-sm text-[#FFD37A]">학습게시판</p>
-              <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">학생 발의 받기</h2>
+              <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">우리반 첫 가치코드 받기</h2>
               <p className="mt-3 leading-7 text-[#8AA0B0]">학생들은 QR로 들어가 가치코드 문장과 이유를 자유롭게 올립니다. 마음에 드는 발의에는 좋아요를 누릅니다.</p>
               <div className="mt-5">
                 <QrBlock title="2차시 가치코드 게시판" url={boardUrl} />

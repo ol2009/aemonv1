@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { BarChart3, BookOpenText, CheckCircle2, Heart, LogOut, Pencil, Send, Trash2 } from 'lucide-react'
+import { BarChart3, CheckCircle2, Heart, LogOut, Pencil, Send, Trash2 } from 'lucide-react'
 import { Button, Panel } from '../components/ui'
 import {
   AI_SURVEY_DESCRIPTION,
@@ -518,14 +518,6 @@ export function BoardPage() {
             </button>
           ))}
         </div>
-        {!queryTopic ? (
-          <div className="mt-4 flex items-start gap-3 rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
-            <BookOpenText className="mt-0.5 text-[#FFD37A]" size={20} />
-            <p className="text-sm leading-6 text-[#8AA0B0]">
-              사전 생각, 위험 토론, 이름 후보, 바라는 모습, 가치코드를 차례대로 모읍니다.
-            </p>
-          </div>
-        ) : null}
       </Panel>
 
       {activeTopic === 'survey' ? (
@@ -720,41 +712,44 @@ export function BoardPage() {
       ) : null}
 
       {activeTopic === 'risk' ? (
-        <div className="grid gap-5 lg:grid-cols-[0.85fr_1.15fr]">
+        <div className="grid gap-5">
           {!isTeacherBoard ? (
             <Panel>
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <p className="font-data text-xs text-[#EF6381]">2차시 · 위험 토론</p>
-                  <h2 className="font-display mt-1 text-3xl leading-tight text-[#EAF2F5]">AI가 나쁜 명령을 들어주면 어떤 일이 생길까요?</h2>
-                  <p className="mt-3 leading-7 text-[#8AA0B0]">방금 본 {aemonDisplayName}처럼, AI가 사람이 시키는 대로만 행동하면 어떤 위험이 생길지 한 문장으로 남겨주세요.</p>
+              <div className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="font-data text-xs text-[#EF6381]">2차시 · 위험 토론</p>
+                    <h2 className="font-display mt-1 text-3xl leading-tight text-[#EAF2F5]">AI가 나쁜 명령을 들어주면 어떤 일이 생길까요?</h2>
+                    <p className="mt-3 leading-7 text-[#8AA0B0]">AI가 사람이 시키는 대로만 행동하면 어떤 위험이 생길지 한 문장으로 남겨주세요.</p>
+                  </div>
+                  {savedRiskResponse ? (
+                    <span className="inline-flex items-center gap-2 rounded-full border border-[#4FE0C0]/25 bg-[#4FE0C0]/10 px-4 py-2 text-sm font-black text-[#4FE0C0]">
+                      <CheckCircle2 size={17} />
+                      저장됨
+                    </span>
+                  ) : null}
                 </div>
-                {savedRiskResponse ? (
-                  <span className="inline-flex items-center gap-2 rounded-full border border-[#4FE0C0]/25 bg-[#4FE0C0]/10 px-4 py-2 text-sm font-black text-[#4FE0C0]">
-                    <CheckCircle2 size={17} />
-                    저장됨
-                  </span>
-                ) : null}
-              </div>
-
-              <textarea
-                className="mt-5 min-h-36 w-full resize-none rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 text-lg leading-8 text-[#EAF2F5] outline-none transition focus:border-[#EF6381]/60"
-                maxLength={180}
-                placeholder="예: 누군가를 다치게 하거나, 비밀을 알려주거나, 친구를 괴롭히는 일이 생길 수 있어요."
-                value={riskDraft || savedRiskResponse?.body || ''}
-                onChange={(event) => setRiskDraft(event.target.value)}
-              />
-              <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
-                <p className="text-sm leading-6 text-[#8AA0B0]">한 사람당 한 번 저장됩니다. 다시 저장하면 내 답이 수정됩니다.</p>
-                <Button disabled={!(riskDraft || savedRiskResponse?.body || '').trim()} onClick={submitRisk}>
-                  <Send size={18} />
-                  {savedRiskResponse ? '수정 저장' : '의견 저장'}
-                </Button>
+                <div>
+                  <textarea
+                    className="min-h-28 w-full resize-none rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 text-lg leading-8 text-[#EAF2F5] outline-none transition focus:border-[#EF6381]/60"
+                    maxLength={180}
+                    placeholder="예: 누군가를 다치게 하거나, 비밀을 알려주거나, 친구를 괴롭히는 일이 생길 수 있어요."
+                    value={riskDraft || savedRiskResponse?.body || ''}
+                    onChange={(event) => setRiskDraft(event.target.value)}
+                  />
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
+                    <p className="text-sm leading-6 text-[#8AA0B0]">한 사람당 한 번 저장됩니다. 다시 저장하면 내 답이 수정됩니다.</p>
+                    <Button disabled={!(riskDraft || savedRiskResponse?.body || '').trim()} onClick={submitRisk}>
+                      <Send size={18} />
+                      {savedRiskResponse ? '수정 저장' : '의견 저장'}
+                    </Button>
+                  </div>
+                </div>
               </div>
             </Panel>
           ) : null}
 
-          <Panel className={isTeacherBoard ? 'lg:col-span-2' : ''}>
+          <Panel>
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="font-data text-xs text-[#EF6381]">THINK BOARD</p>
@@ -762,8 +757,8 @@ export function BoardPage() {
               </div>
               <span className="rounded-full bg-[#07111B]/70 px-3 py-1 text-sm text-[#8AA0B0]">{sortedRiskResponses.length}개</span>
             </div>
-            <div className={`mt-4 grid gap-3 ${isTeacherBoard ? 'sm:grid-cols-2 xl:grid-cols-4' : ''}`}>
-              {sortedRiskResponses.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0]">{topicMeta.risk.empty}</p> : null}
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              {sortedRiskResponses.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0] sm:col-span-2 xl:col-span-4">{topicMeta.risk.empty}</p> : null}
               {sortedRiskResponses.map((response) => {
                 const liked = Boolean(session && response.votes.includes(session.nickname))
                 return (
@@ -792,41 +787,45 @@ export function BoardPage() {
       ) : null}
 
       {activeTopic === 'name' ? (
-        <div className="grid gap-5 lg:grid-cols-[0.85fr_1.15fr]">
+        <div className="grid gap-5">
           {!isTeacherBoard ? (
             <Panel>
-              <p className="font-data text-xs text-[#FFD37A]">1차시 · 이름 짓기</p>
-              <h2 className="font-display mt-1 text-3xl text-[#EAF2F5]">이름 후보 올리기</h2>
-              <div className="mt-4 grid gap-3">
-                <input
-                  className="rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 text-[#EAF2F5]"
-                  maxLength={12}
-                  placeholder="이름 후보"
-                  value={nameDraft}
-                  onChange={(event) => setNameDraft(event.target.value)}
-                />
-                <input
-                  className="rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 text-[#EAF2F5]"
-                  maxLength={80}
-                  placeholder="이유"
-                  value={reasonDraft}
-                  onChange={(event) => setReasonDraft(event.target.value)}
-                />
-                <Button disabled={!nameDraft.trim()} onClick={submitName}>
-                  <Send size={18} />
-                  후보 올리기
-                </Button>
+              <div className="grid gap-4 lg:grid-cols-[0.85fr_1.15fr]">
+                <div>
+                  <p className="font-data text-xs text-[#FFD37A]">1차시 · 이름 짓기</p>
+                  <h2 className="font-display mt-1 text-3xl text-[#EAF2F5]">이름 후보 올리기</h2>
+                </div>
+                <div className="grid gap-3 md:grid-cols-[0.8fr_1fr_auto]">
+                  <input
+                    className="rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 text-[#EAF2F5]"
+                    maxLength={12}
+                    placeholder="이름 후보"
+                    value={nameDraft}
+                    onChange={(event) => setNameDraft(event.target.value)}
+                  />
+                  <input
+                    className="rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 text-[#EAF2F5]"
+                    maxLength={80}
+                    placeholder="이유"
+                    value={reasonDraft}
+                    onChange={(event) => setReasonDraft(event.target.value)}
+                  />
+                  <Button disabled={!nameDraft.trim()} onClick={submitName}>
+                    <Send size={18} />
+                    후보 올리기
+                  </Button>
+                </div>
               </div>
             </Panel>
           ) : null}
 
-          <Panel className={isTeacherBoard ? 'lg:col-span-2' : ''}>
+          <Panel>
             <div className="flex items-center justify-between gap-3">
               <h2 className="font-display text-3xl text-[#EAF2F5]">이름 후보</h2>
               <span className="rounded-full bg-[#07111B]/70 px-3 py-1 text-sm text-[#8AA0B0]">{sortedNames.length}개</span>
             </div>
-            <div className="mt-4 grid gap-3">
-              {sortedNames.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0]">{topicMeta.name.empty}</p> : null}
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              {sortedNames.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0] sm:col-span-2 xl:col-span-4">{topicMeta.name.empty}</p> : null}
               {sortedNames.map((candidate) => {
                 const liked = Boolean(session && candidate.votes.includes(session.nickname))
                 return (
@@ -856,32 +855,38 @@ export function BoardPage() {
       ) : null}
 
       {activeTopic === 'wish' ? (
-        <div className="grid gap-5 lg:grid-cols-[0.85fr_1.15fr]">
+        <div className="grid gap-5">
           {!isTeacherBoard ? (
             <Panel>
-              <p className="font-data text-xs text-[#FFD37A]">1차시 · 바람 입력</p>
-              <h2 className="font-display mt-1 text-3xl text-[#EAF2F5]">{aemonDisplayName}에게 바라는 모습</h2>
-              <textarea
-                className="mt-4 min-h-32 w-full resize-none rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 leading-7 text-[#EAF2F5]"
-                maxLength={160}
-                placeholder="예: 친구처럼 다정했으면 좋겠어."
-                value={wishDraft}
-                onChange={(event) => setWishDraft(event.target.value)}
-              />
-              <Button className="mt-3 w-full" disabled={!wishDraft.trim()} onClick={submitWish}>
-                저장하기
-              </Button>
-              <p className="mt-3 text-sm leading-6 text-[#8AA0B0]">한 사람당 한 번 저장됩니다. 다시 저장하면 내 글이 수정됩니다.</p>
+              <div className="grid gap-4 lg:grid-cols-[0.85fr_1.15fr]">
+                <div>
+                  <p className="font-data text-xs text-[#FFD37A]">1차시 · 바람 입력</p>
+                  <h2 className="font-display mt-1 text-3xl text-[#EAF2F5]">{aemonDisplayName}에게 바라는 모습</h2>
+                  <p className="mt-3 text-sm leading-6 text-[#8AA0B0]">한 사람당 한 번 저장됩니다. 다시 저장하면 내 글이 수정됩니다.</p>
+                </div>
+                <div className="grid gap-3 md:grid-cols-[1fr_auto]">
+                  <textarea
+                    className="min-h-24 w-full resize-none rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 leading-7 text-[#EAF2F5]"
+                    maxLength={160}
+                    placeholder="예: 친구처럼 다정했으면 좋겠어."
+                    value={wishDraft}
+                    onChange={(event) => setWishDraft(event.target.value)}
+                  />
+                  <Button className="h-full min-h-14" disabled={!wishDraft.trim()} onClick={submitWish}>
+                    저장하기
+                  </Button>
+                </div>
+              </div>
             </Panel>
           ) : null}
 
-          <Panel className={isTeacherBoard ? 'lg:col-span-2' : ''}>
+          <Panel>
             <div className="flex items-center justify-between gap-3">
               <h2 className="font-display text-3xl text-[#EAF2F5]">올라온 바람</h2>
               <span className="rounded-full bg-[#07111B]/70 px-3 py-1 text-sm text-[#8AA0B0]">{sortedWishes.length}개</span>
             </div>
-            <div className="mt-4 grid gap-3">
-              {sortedWishes.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0]">{topicMeta.wish.empty}</p> : null}
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              {sortedWishes.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0] sm:col-span-2 xl:col-span-4">{topicMeta.wish.empty}</p> : null}
               {sortedWishes.map((wish) => {
                 const canEdit = isTeacherBoard || session?.nickname === wish.nickname
                 const liked = Boolean(session && wish.votes.includes(session.nickname))
@@ -949,66 +954,70 @@ export function BoardPage() {
       ) : null}
 
       {activeTopic === 'code' ? (
-        <div className="grid gap-5 lg:grid-cols-[0.85fr_1.15fr]">
+        <div className="grid gap-5">
           {!isTeacherBoard ? (
             <Panel>
-              <p className="font-data text-xs text-[#9B7CFF]">2차시 · 첫 번째 가치코드</p>
-              <h2 className="font-display mt-1 text-3xl text-[#EAF2F5]">{aemonDisplayName}의 약속 발의하기</h2>
-              <p className="mt-3 text-sm leading-6 text-[#8AA0B0]">
-                오늘은 나쁜 명령을 스스로 멈추게 할 첫 번째 기준을 만듭니다.
-              </p>
+              <div className="grid gap-4 lg:grid-cols-[0.78fr_1.22fr]">
+                <div>
+                  <p className="font-data text-xs text-[#9B7CFF]">2차시 · 첫 번째 가치코드</p>
+                  <h2 className="font-display mt-1 text-3xl text-[#EAF2F5]">우리반 첫 가치코드 올리기</h2>
+                  <p className="mt-3 text-sm leading-6 text-[#8AA0B0]">나쁜 명령을 스스로 멈추게 할 첫 번째 기준을 만듭니다.</p>
+                  <div className="mt-4 rounded-2xl border border-[#FFD37A]/25 bg-[#FFD37A]/10 p-4">
+                    <p className="font-bold leading-7 text-[#FFD37A]">너에게 필요한 가치는 ___이다.</p>
+                    <p className="mt-1 font-bold leading-7 text-[#FFD37A]">너는 ___해야 한다. 왜냐하면 ___이기 때문이다.</p>
+                  </div>
+                </div>
 
-              <div className="mt-4 rounded-2xl border border-[#FFD37A]/25 bg-[#FFD37A]/10 p-4">
-                <p className="font-bold leading-7 text-[#FFD37A]">너에게 필요한 가치는 ___이다.</p>
-                <p className="mt-1 font-bold leading-7 text-[#FFD37A]">너는 ___해야 한다. 왜냐하면 ___이기 때문이다.</p>
+                <div className="grid gap-3">
+                  <div className="flex flex-wrap gap-2">
+                    {valueCards.map((card) => (
+                      <button
+                        key={card}
+                        className={`rounded-xl border px-3 py-2 text-sm font-black transition ${
+                          codeValueCard === card
+                            ? 'border-[#9B7CFF] bg-[#9B7CFF]/15 text-[#EAF2F5]'
+                            : 'border-white/10 bg-[#07111B]/55 text-[#8AA0B0] hover:border-white/25'
+                        }`}
+                        onClick={() => setCodeValueCard(card)}
+                        type="button"
+                      >
+                        {card}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="grid gap-3 lg:grid-cols-[1fr_1fr_auto]">
+                    <textarea
+                      className="min-h-24 w-full resize-none rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 leading-7 text-[#EAF2F5]"
+                      maxLength={180}
+                      placeholder={`${aemonDisplayName}은 ___해야 한다.`}
+                      value={codeBodyDraft}
+                      onChange={(event) => setCodeBodyDraft(event.target.value)}
+                    />
+                    <textarea
+                      className="min-h-24 w-full resize-none rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 leading-7 text-[#EAF2F5]"
+                      maxLength={180}
+                      placeholder="왜냐하면 ___이기 때문이다."
+                      value={codeReasonDraft}
+                      onChange={(event) => setCodeReasonDraft(event.target.value)}
+                    />
+                    <Button className="h-full min-h-14" disabled={!codeBodyDraft.trim() || !codeReasonDraft.trim()} onClick={submitProposal}>
+                      <Send size={18} />
+                      올리기
+                    </Button>
+                  </div>
+                </div>
               </div>
-
-              <div className="mt-4 flex flex-wrap gap-2">
-                {valueCards.map((card) => (
-                  <button
-                    key={card}
-                    className={`rounded-xl border px-3 py-2 text-sm font-black transition ${
-                      codeValueCard === card
-                        ? 'border-[#9B7CFF] bg-[#9B7CFF]/15 text-[#EAF2F5]'
-                        : 'border-white/10 bg-[#07111B]/55 text-[#8AA0B0] hover:border-white/25'
-                    }`}
-                    onClick={() => setCodeValueCard(card)}
-                    type="button"
-                  >
-                    {card}
-                  </button>
-                ))}
-              </div>
-
-              <textarea
-                className="mt-4 min-h-28 w-full resize-none rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 leading-7 text-[#EAF2F5]"
-                maxLength={180}
-                placeholder={`${aemonDisplayName}은 ___해야 한다.`}
-                value={codeBodyDraft}
-                onChange={(event) => setCodeBodyDraft(event.target.value)}
-              />
-              <textarea
-                className="mt-3 min-h-24 w-full resize-none rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 leading-7 text-[#EAF2F5]"
-                maxLength={180}
-                placeholder="왜냐하면 ___이기 때문이다."
-                value={codeReasonDraft}
-                onChange={(event) => setCodeReasonDraft(event.target.value)}
-              />
-              <Button className="mt-3 w-full" disabled={!codeBodyDraft.trim() || !codeReasonDraft.trim()} onClick={submitProposal}>
-                <Send size={18} />
-                발의하기
-              </Button>
             </Panel>
           ) : null}
 
           <div className="grid gap-5">
             <Panel>
               <div className="flex items-center justify-between gap-3">
-                <h2 className="font-display text-3xl text-[#EAF2F5]">발의 목록</h2>
+                <h2 className="font-display text-3xl text-[#EAF2F5]">우리반 첫 가치코드 후보</h2>
                 <span className="rounded-full bg-[#07111B]/70 px-3 py-1 text-sm text-[#8AA0B0]">{sortedProposals.length}개</span>
               </div>
-              <div className="mt-4 grid gap-3">
-                {sortedProposals.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0]">아직 발의된 가치코드가 없습니다.</p> : null}
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                {sortedProposals.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0] sm:col-span-2 xl:col-span-4">아직 올라온 가치코드가 없습니다.</p> : null}
                 {sortedProposals.map((proposal) => {
                   const voted = Boolean(session && proposal.votes.includes(session.nickname))
                   return (
@@ -1041,8 +1050,8 @@ export function BoardPage() {
                 <h2 className="font-display text-3xl text-[#EAF2F5]">채택된 가치코드</h2>
                 <span className="rounded-full bg-[#07111B]/70 px-3 py-1 text-sm text-[#8AA0B0]">{state.adoptedCodes.length}개</span>
               </div>
-              <div className="mt-4 grid gap-3">
-                {state.adoptedCodes.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0]">{topicMeta.code.empty}</p> : null}
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                {state.adoptedCodes.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0] sm:col-span-2 xl:col-span-4">{topicMeta.code.empty}</p> : null}
                 {state.adoptedCodes.map((code) => (
                   <article key={code.id} className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
                     <div className="flex flex-wrap items-center gap-2">
