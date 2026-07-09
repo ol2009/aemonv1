@@ -308,15 +308,18 @@ function VisualCaseScene({
   title,
   line,
   caption,
+  extraLines = [],
 }: {
   image: string
   label: string
   title: string
   line: string
   caption: string
+  extraLines?: string[]
 }) {
-  const sceneKey = useMemo(() => `visual-case-${label}-${title}-${line}-${caption}`, [caption, label, line, title])
-  const dialogueParts = useMemo(() => [line, caption].filter(Boolean), [caption, line])
+  const extraLineKey = extraLines.join('|')
+  const sceneKey = useMemo(() => `visual-case-${label}-${title}-${line}-${caption}-${extraLineKey}`, [caption, extraLineKey, label, line, title])
+  const dialogueParts = useMemo(() => [line, caption, ...extraLines].filter(Boolean), [caption, extraLineKey, line])
   const { activeText, activeDone, activeDialogueKey, handleActiveDone } = useSequencedDialogue(sceneKey, dialogueParts)
   const textClass = 'font-display mt-3 min-h-[4.5rem] break-keep text-2xl leading-snug text-[#EAF2F5] sm:text-3xl'
 
@@ -787,12 +790,10 @@ export function LessonTwoPage() {
             image="/v2/lesson-2/grok-risk-06-refusal.png"
             label="가치 코드"
             title="달라지는 답변"
-            line={`${aemonName}에게 필요한 것은 이런 선입니다.`}
-            caption="‘사람이 시켜도, 이것만은 멈춰야 한다’는 선 말입니다."
+            line="기준이 생기면 AI는 올바르게 답할 수 있습니다."
+            caption="오늘, 여러분들이 만들 것이 바로 이 기준, 가치 코드입니다."
+            extraLines={[`${aemonName}의 마음속에 가치코드를 새겨주세요.`]}
           />
-          <Panel className="mt-5 text-center">
-            <p className="font-display text-4xl leading-tight text-[#EAF2F5]">오늘, 여러분들이 만들 것이 바로 이 기준, 가치 코드입니다.</p>
-          </Panel>
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextLabel="가치카드 보기" />
         </>
       ) : null}
