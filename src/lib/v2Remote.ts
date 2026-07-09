@@ -1,5 +1,5 @@
 import { isSupabaseConfigured, supabase } from './supabase'
-import { valueCards } from '../data/v2Lessons'
+import { TOTAL_V2_LESSONS, valueCards } from '../data/v2Lessons'
 import type { AdoptedCode, ChatLog, CodeProposal, NameCandidate, SurveyResponse, V2State, Wish } from '../state/V2Store'
 
 const MISSING_SCHEMA_MESSAGE =
@@ -129,7 +129,7 @@ function mapClass(row: ClassRow): Partial<V2State> {
     classId: row.id,
     className: row.name,
     classCode: row.code,
-    currentLesson: row.current_lesson,
+    currentLesson: Math.min(TOTAL_V2_LESSONS, Math.max(1, row.current_lesson || 1)),
     aemonName: row.aemon_name ?? '',
   }
 }
@@ -300,7 +300,7 @@ export async function fetchRemoteTeacherClasses(teacherId: string): Promise<Remo
       classId: row.id,
       className: row.name,
       classCode: row.code,
-      currentLesson: row.current_lesson,
+      currentLesson: Math.min(TOTAL_V2_LESSONS, Math.max(1, row.current_lesson || 1)),
       aemonName: row.aemon_name ?? '',
       createdAt: row.created_at,
       activityCount,
@@ -343,7 +343,7 @@ export async function restoreRemoteClassSnapshot(input: {
   const id = input.classId?.trim() || crypto.randomUUID()
   const code = input.classCode.trim()
   const name = input.className.trim().slice(0, 50)
-  const currentLesson = Math.min(7, Math.max(1, input.currentLesson || 1))
+  const currentLesson = Math.min(TOTAL_V2_LESSONS, Math.max(1, input.currentLesson || 1))
   const aemonName = input.aemonName.trim().slice(0, 12)
   const select = 'id,name,code,current_lesson,aemon_name,created_at'
 
@@ -487,7 +487,10 @@ export async function confirmRemoteName(args: { classId: string; aemonName: stri
 
 export async function updateRemoteLesson(args: { classId: string; lessonNo: number }) {
   const client = ensureClient()
-  const { error } = await client.from('classes').update({ current_lesson: Math.min(7, Math.max(1, args.lessonNo)) }).eq('id', args.classId)
+  const { error } = await client
+    .from('classes')
+    .update({ current_lesson: Math.min(TOTAL_V2_LESSONS, Math.max(1, args.lessonNo)) })
+    .eq('id', args.classId)
   if (error) throw new Error(toMessage(error))
 }
 

@@ -41,7 +41,7 @@ export function TrainingPage() {
         <p className="font-data text-sm text-[#4FE0C0]">TEACHER TRAINING</p>
         <h1 className="font-display mt-3 text-5xl leading-tight text-[#EAF2F5]">가치정렬: 아무도 안 가르치는 인류의 숙제</h1>
         <p className="mt-5 max-w-3xl text-lg leading-8 text-[#B7C7D2]">
-          에아몬 프로젝트는 학생들이 학급 AI의 가치 코드를 직접 만들며, AI를 어떻게 가르쳐야 하는지 체험하는 7차시 수업입니다.
+          에아몬 프로젝트는 학생들이 학급 AI의 가치 코드를 직접 만들며, AI를 어떻게 가르쳐야 하는지 체험하는 6차시 수업입니다.
         </p>
 
         <div className="mt-8 grid gap-4 md:grid-cols-2">

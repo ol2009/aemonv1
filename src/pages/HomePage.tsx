@@ -4,7 +4,7 @@ import { BookOpen, KeyRound, Play, RotateCcw, Save, MessageSquare, Waves, X } fr
 import { AemonAvatar } from '../components/AemonAvatar'
 import { Button, Panel } from '../components/ui'
 import { pickWalkItem } from '../data/walkItems'
-import { findV2Lesson, v2Lessons } from '../data/v2Lessons'
+import { findV2Lesson, TOTAL_V2_LESSONS, v2Lessons } from '../data/v2Lessons'
 import type { AiProvider, WalkItem, WalkItemType } from '../domain/types'
 import { findBestRecoverableClass, shouldAutoRestoreClass } from '../lib/classRecovery'
 import { providerLabel } from '../lib/v2Chat'
@@ -132,9 +132,9 @@ export function HomePage() {
     )
   }
 
-  const lessonNo = state.currentLesson || 1
+  const lessonNo = Math.min(TOTAL_V2_LESSONS, Math.max(1, state.currentLesson || 1))
   const currentLesson = findV2Lesson(lessonNo)
-  const progressPercent = Math.round((lessonNo / 7) * 100)
+  const progressPercent = Math.round((lessonNo / TOTAL_V2_LESSONS) * 100)
   const canWriteRemote = Boolean(state.classId && state.remote.ok && isRemoteReady())
   const isFreshClass =
     lessonNo <= 1 &&
@@ -147,7 +147,7 @@ export function HomePage() {
     state.chatLogs.length === 0
 
   const saveLesson = async (nextLesson: number) => {
-    const clamped = Math.min(7, Math.max(1, nextLesson))
+    const clamped = Math.min(TOTAL_V2_LESSONS, Math.max(1, nextLesson))
     setLesson(clamped)
     if (canWriteRemote) {
       try {
@@ -163,7 +163,7 @@ export function HomePage() {
     else if (lessonNo === 2) navigate('/lesson/2')
     else if (lessonNo === 3) navigate('/lesson/3')
     else if (lessonNo === 4) navigate('/lesson/4')
-    else if (lessonNo >= 7) navigate('/graduation')
+    else if (lessonNo >= TOTAL_V2_LESSONS) navigate('/graduation')
     else navigate('/talk')
   }
 
@@ -233,7 +233,7 @@ export function HomePage() {
           </div>
           <div className="md:text-right">
             <p className="font-data text-xs text-[#8AA0B0]">현재 진행</p>
-            <p className="font-display mt-1 text-4xl text-[#FFD37A]">{lessonNo}/7차시</p>
+            <p className="font-display mt-1 text-4xl text-[#FFD37A]">{lessonNo}/{TOTAL_V2_LESSONS}차시</p>
             <p className="mt-1 text-sm text-[#B7C7D2]">{currentLesson.title}</p>
             <Button className="mt-3 min-h-10 px-4" variant="danger" onClick={resetProject}>
               <RotateCcw size={17} />
@@ -327,7 +327,7 @@ export function HomePage() {
             <RotateCcw size={18} />
             이전
           </Button>
-          <Button className="min-h-10 px-4" disabled={lessonNo >= 7} onClick={() => void saveLesson(lessonNo + 1)}>
+          <Button className="min-h-10 px-4" disabled={lessonNo >= TOTAL_V2_LESSONS} onClick={() => void saveLesson(lessonNo + 1)}>
             다음
           </Button>
         </div>

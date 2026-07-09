@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useEffect, useMemo, useReducer, type ReactNode } from 'react'
-import { evolutionLines, valueCards } from '../data/v2Lessons'
+import { evolutionLines, TOTAL_V2_LESSONS, valueCards } from '../data/v2Lessons'
 import type { AiProvider } from '../domain/types'
 
 const STORAGE_KEY = 'aemon.v2.state'
@@ -166,6 +166,7 @@ function normalizeLoaded(raw: unknown): V2State {
   const loaded = { ...initialState, ...(raw as Partial<V2State>) }
   return {
     ...loaded,
+    currentLesson: Math.min(TOTAL_V2_LESSONS, Math.max(1, loaded.currentLesson || 1)),
     remote: { ...initialState.remote, ...(loaded.remote ?? {}) },
     nameCandidates: loaded.nameCandidates.map((candidate) => ({ ...candidate, reason: candidate.reason ?? '', votes: candidate.votes ?? [] })),
     wishes: (loaded.wishes ?? []).map((wish) => ({ ...wish, votes: wish.votes ?? [] })),
@@ -237,7 +238,7 @@ function reducer(state: V2State, action: Action): V2State {
     case 'class/leaveStudent':
       return { ...state, studentSession: null }
     case 'lesson/set':
-      return { ...state, currentLesson: Math.min(7, Math.max(1, action.lessonNo)) }
+      return { ...state, currentLesson: Math.min(TOTAL_V2_LESSONS, Math.max(1, action.lessonNo)) }
     case 'settings/updateAi':
       return { ...state, aiProvider: action.provider, apiKey: action.apiKey }
     case 'remote/status':
