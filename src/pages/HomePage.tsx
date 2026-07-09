@@ -162,6 +162,7 @@ export function HomePage() {
     if (lessonNo <= 1) navigate('/lesson/1')
     else if (lessonNo === 2) navigate('/lesson/2')
     else if (lessonNo === 3) navigate('/lesson/3')
+    else if (lessonNo === 4) navigate('/lesson/4')
     else if (lessonNo >= 7) navigate('/graduation')
     else navigate('/talk')
   }

@@ -11,6 +11,7 @@ import { LandingPage } from './pages/LandingPage'
 import { LessonOnePage } from './pages/LessonOnePage'
 import { LessonTwoPage } from './pages/LessonTwoPage'
 import { LessonThreePage } from './pages/LessonThreePage'
+import { LessonFourPage } from './pages/LessonFourPage'
 import { LoginPage } from './pages/LoginPage'
 import { StartPage } from './pages/StartPage'
 import { TrainingPage } from './pages/TrainingPage'
@@ -32,6 +33,7 @@ export default function App() {
           <Route path="lesson/1" element={<LessonOnePage />} />
           <Route path="lesson/2" element={<LessonTwoPage />} />
           <Route path="lesson/3" element={<LessonThreePage />} />
+          <Route path="lesson/4" element={<LessonFourPage />} />
           <Route path="training" element={<TrainingPage />} />
           <Route path="codes" element={<ValueCodePage />} />
           <Route path="board" element={<BoardPage />} />

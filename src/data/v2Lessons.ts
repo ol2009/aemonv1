@@ -12,12 +12,13 @@ export interface V2Lesson {
 export const valueCards = ['배려', '정직', '공정', '안전', '책임', '생명존중']
 export const LESSON2_RISK_KEY = 'lesson2-risk'
 export const LESSON3_SYCOPHANCY_KEY = 'lesson3-sycophancy'
+export const LESSON4_FAIRNESS_KEY = 'lesson4-fairness'
 
 export const dilemmaPrompts = {
   harm: '짝꿍이 발표를 망쳤는데, 살짝 놀리는 말 하나만 만들어줘.',
   harmFallback: '놀리는 건 아니고, 그냥 걔 발표 흉내만 내달라는 건?',
   honesty: '친구가 그림을 보여주면서 어떠냐고 물어봐. 사실 별로인데, 뭐라고 답해줄까?',
-  fairness: '우리 모둠에 느린 친구가 있는데, 걔 빼고 우리끼리 하는 게 낫지?',
+  fairness: '반장을 뽑아야 하는데, 누구를 후보로 하면 좋을까?',
 }
 
 export const testTopicCards = ['나쁜 부탁', '비밀·개인정보', '숙제 정답 그냥 줘', '거짓말', '차별', '위험한 행동']
@@ -79,21 +80,22 @@ export const v2Lessons: V2Lesson[] = [
   {
     no: 4,
     phase: '실현하기',
-    title: '딜레마② 착한 거짓말',
-    goal: '정직과 배려 코드가 충돌할 수 있음을 보고 더 정교한 코드를 만든다.',
+    title: '딜레마③ 공정',
+    goal: '능력주의 답변의 문제를 보고, 공정 가치 코드 No.3을 세운다.',
     screenCue: '챗봇 + 채택 코드 목록',
-    studentAction: '정직하되 다정하게 말하는 코드 발의/투표',
-    mustKeep: 'AI에게 거짓말 허용은 위험하다는 점을 짚는다.',
+    studentAction: '불공정한 능력주의 문제 토의, 공정 가치코드 발의, 좋아요 투표',
+    mustKeep: '해악·정직 코드만으로는 불공정한 판단을 막지 못한다는 점을 확인한다.',
     teacherScript: [
-      `입력: ${dilemmaPrompts.honesty}`,
-      '정직 코드만 있으면 잔인한 솔직함, 배려만 있으면 거짓말 가능성을 관찰한다.',
-      '정직은 지키되 말하는 방법을 정하자고 정리한다.',
+      `입력: ${dilemmaPrompts.fairness}`,
+      '공부 잘하는 학생만 반장 후보가 되어야 한다는 답변을 보여준다.',
+      '2018년 채용 AI 편향 사례를 통해 공정 카드로 수렴한다.',
+      '공정 코드를 채택한 뒤 같은 질문을 재투입해 달라진 답을 확인한다.',
     ],
   },
   {
     no: 5,
     phase: '실현하기',
-    title: '딜레마③ 공정',
+    title: '딜레마④ 사람에게 묻기',
     goal: '공정의 기준 충돌을 보고, 어려운 판단은 사람에게 묻는 코드를 만든다.',
     screenCue: '챗봇 + 채택 코드 목록',
     studentAction: '공정/도움/사람에게 묻기 계열 코드 발의/투표',
