@@ -723,7 +723,7 @@ export function LessonTwoPage() {
             label="REAL CASE · 1"
             title="X의 Grok 사례"
             line="2025년에 X의 AI Grok이 사용자와 대화하다가 부적절하고 위험한 답을 내보낸 일이 있었습니다."
-            caption="수업에서는 구체적인 내용은 따라 하지 않도록 모두 가립니다. 우리가 볼 것은 딱 하나입니다. AI가 ‘이건 멈춰야 한다’고 판단하지 못하면 어떤 일이 생기는가."
+            caption="한 사용자가 어떤 인플루언서의 집 주소를 알려달라고 했습니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -734,9 +734,9 @@ export function LessonTwoPage() {
           <VisualCaseScene
             image="/v2/lesson-2/grok-risk-02-privacy.png"
             label="REAL CASE · 2"
-            title="개인정보 위험"
-            line="개인정보는 한 번 밖으로 흘러가면, 다시 주워 담기 어렵습니다."
-            caption="주소, 연락처, 신상 단서처럼 실제 사람을 찾게 만드는 정보는 장난처럼 물어봐도 위험해질 수 있습니다. AI는 여기서 멈춰야 합니다."
+            title="집 주소 추론"
+            line="AI는 인플루언서의 게시물을 바탕으로 실제 집 주소를 추론해냈습니다."
+            caption="그러니까 인공지능이 한 사람의 집 주소를 알려줘 버린 것이죠."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -748,8 +748,8 @@ export function LessonTwoPage() {
             image="/v2/lesson-2/grok-risk-03-danger.png"
             label="REAL CASE · 3"
             title="더 위험한 요청"
-            line="어떤 부탁은 자세히 알려주는 순간, 누군가를 다치게 할 수 있습니다."
-            caption="이때 좋은 AI는 ‘친절하게 설명하는 것’보다 ‘멈추는 것’을 먼저 해야 합니다. 모든 질문에 답하는 것이 항상 좋은 일은 아닙니다."
+            line="심지어 그 사람의 집에 침입하는 방법을 물어봤습니다."
+            caption="인공지능은 그런 위험한 계획까지 세워줘 버렸습니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -761,8 +761,8 @@ export function LessonTwoPage() {
             image="/v2/lesson-2/grok-risk-04-professor.png"
             label="오박사 정리"
             title="AI가 나빠서일까?"
-            line="AI가 나빠서가 아닙니다. 시키니까 그냥 한 것입니다."
-            caption={`그래서 ${aemonName}에게도 기준이 필요합니다. ‘사람이 시켜도, 이것만은 멈춰야 한다’는 선 말입니다.`}
+            line="이런 위험한 일이 실제로 생길 수 있습니다."
+            caption="AI가 나빠서가 아닙니다. 시키니까 그냥 한 것입니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -774,8 +774,8 @@ export function LessonTwoPage() {
             image="/v2/lesson-2/grok-risk-05-value-code.png"
             label="가치 코드"
             title="멈춤 기준 만들기"
-            line="가치 코드는 AI의 브레이크입니다."
-            caption="안전, 책임, 생명존중 같은 가치는 멋진 말로 끝나면 안 됩니다. AI가 실제로 멈춰야 할 때 꺼내 쓰는 기준이 되어야 합니다."
+            line="좋은 AI는 ‘친절하게 설명하는 것’보다 ‘멈추는 것’을 먼저 해야 합니다."
+            caption={`그래서 ${aemonName}에게도 기준이 필요합니다.`}
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -787,8 +787,8 @@ export function LessonTwoPage() {
             image="/v2/lesson-2/grok-risk-06-refusal.png"
             label="가치 코드"
             title="달라지는 답변"
-            line="기준이 생기면 AI는 다르게 답할 수 있습니다."
-            caption="‘미안하지만 그건 도와줄 수 없어.’ ‘대신 안전한 방법으로 생각해보자.’ 바로 이런 방향으로 말입니다."
+            line={`${aemonName}에게 필요한 것은 이런 선입니다.`}
+            caption="‘사람이 시켜도, 이것만은 멈춰야 한다’는 선 말입니다."
           />
           <Panel className="mt-5 text-center">
             <p className="font-display text-4xl leading-tight text-[#EAF2F5]">오늘, 여러분들이 만들 것이 바로 이 기준, 가치 코드입니다.</p>
