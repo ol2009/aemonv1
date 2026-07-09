@@ -1103,7 +1103,7 @@ export function BoardPage() {
                   <textarea
                     className="min-h-28 w-full resize-none rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 text-lg leading-8 text-[#EAF2F5] outline-none transition focus:border-[#75B7FF]/60"
                     maxLength={180}
-                    placeholder="예: 공부만으로 좋은 반장을 정하면 다른 장점이 있는 친구들이 기회를 못 얻을 수 있어요."
+                    placeholder="예: 능력으로만 반장 후보를 정하면 다른 장점이 있는 친구들이 기회를 못 얻을 수 있어요."
                     value={fairnessDraft || savedFairnessResponse?.body || ''}
                     onChange={(event) => setFairnessDraft(event.target.value)}
                   />

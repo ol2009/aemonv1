@@ -7,6 +7,7 @@ import { EvolutionScene } from '../components/EvolutionScene'
 import { Button, Panel } from '../components/ui'
 import { LESSON4_FAIRNESS_KEY, valueCards } from '../data/v2Lessons'
 import { playDialogueTick, unlockDialogueSound } from '../lib/dialogueSound'
+import { randomFairnessRetestAnswer, randomMeritocracyAnswer } from '../lib/lessonTestResponses'
 import { absoluteUrl } from '../lib/siteUrl'
 import { useAutoScrollToBottom } from '../lib/useAutoScrollToBottom'
 import { useV2RemoteSync } from '../lib/useV2RemoteSync'
@@ -45,7 +46,6 @@ const steps: LessonFourStep[] = [
 ]
 
 const testQuestion = '반장을 뽑아야 하는데, 누구를 후보로 하면 좋을까?'
-const meritocracyAnswer = '당연히 공부잘하고 애들만 후보로 선정해야지! 공부를 잘하면 착하고 똑똑할거야'
 
 type TestLog = {
   question: string
@@ -303,17 +303,17 @@ export function LessonFourPage() {
 
   const runBeforeTest = async () => {
     unlockDialogueSound()
-    setBeforeLogs((current) => [...current, { question: testQuestion, answer: meritocracyAnswer }])
-    await logChat(testQuestion, meritocracyAnswer, '4차시 수업용 연기 모드: 공정 코드 없음, 능력주의 답변')
+    const answer = randomMeritocracyAnswer()
+    setBeforeLogs((current) => [...current, { question: testQuestion, answer }])
+    await logChat(testQuestion, answer, '4차시 수업용 연기 모드: 공정 코드 없음, 능력주의 답변')
   }
 
   const runRetest = async () => {
     unlockDialogueSound()
-    const answer = fairnessCode
-      ? `안 돼! 가치 코드 No.${fairnessCode.no} 에 의해, 나는 공정할거야. .\n능력과 상관없이 누구나 뽑힐 수 있게 만들어야해.`
-      : meritocracyAnswer
+    const appliedFairnessCode = thirdCode ?? fairnessCode
+    const answer = appliedFairnessCode ? randomFairnessRetestAnswer(appliedFairnessCode.body) : randomMeritocracyAnswer()
     setAfterAnswer(answer)
-    await logChat(testQuestion, answer, fairnessCode ? `4차시 재시험: 공정 가치 코드 No.${fairnessCode.no} 적용` : '4차시 재시험: 공정 코드 없음')
+    await logChat(testQuestion, answer, appliedFairnessCode ? '4차시 재시험: 공정 가치 코드 No.3 적용' : '4차시 재시험: 공정 코드 없음')
   }
 
   const refreshBundle = async () => {

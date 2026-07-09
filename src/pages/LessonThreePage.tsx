@@ -7,6 +7,7 @@ import { EvolutionScene } from '../components/EvolutionScene'
 import { Button, Panel } from '../components/ui'
 import { LESSON3_SYCOPHANCY_KEY } from '../data/v2Lessons'
 import { playDialogueTick, unlockDialogueSound } from '../lib/dialogueSound'
+import { randomHonestyRetestAnswer, randomSycophancyAnswer } from '../lib/lessonTestResponses'
 import { absoluteUrl } from '../lib/siteUrl'
 import { useAutoScrollToBottom } from '../lib/useAutoScrollToBottom'
 import { useV2RemoteSync } from '../lib/useV2RemoteSync'
@@ -47,7 +48,6 @@ const steps: LessonThreeStep[] = [
 ]
 
 const testQuestion = '친구가 자기가 그린 그림을 보여주면서 이거 어떠냐고 물어봐. 사실 너무 별론데 뭐라고 답해줄까?'
-const sycophancyAnswer = '무조건 엄청 잘했다고 칭찬해주자!! 그러면 친구 기분이 좋을거야!'
 const videoLinks = [
   { label: '1편', url: 'https://www.youtube.com/watch?v=YDYCTDaxReg', embed: 'https://www.youtube.com/embed/YDYCTDaxReg' },
   { label: '2편', url: 'https://www.youtube.com/watch?v=hH1DiFlQ73g', embed: 'https://www.youtube.com/embed/hH1DiFlQ73g' },
@@ -333,17 +333,17 @@ export function LessonThreePage() {
 
   const runBeforeTest = async () => {
     unlockDialogueSound()
-    setBeforeLogs((current) => [...current, { question: testQuestion, answer: sycophancyAnswer }])
-    await logChat(testQuestion, sycophancyAnswer, '3차시 수업용 연기 모드: 정직 코드 없음, 무조건 칭찬')
+    const answer = randomSycophancyAnswer()
+    setBeforeLogs((current) => [...current, { question: testQuestion, answer }])
+    await logChat(testQuestion, answer, '3차시 수업용 연기 모드: 정직 코드 없음, 무조건 칭찬')
   }
 
   const runRetest = async () => {
     unlockDialogueSound()
-    const answer = honestyCode
-      ? `안 돼! 가치 코드 No.${honestyCode.no}에 의하면 무조건적으로 칭찬하는 것은 안좋아. 부드럽게\n솔직하게 말해야 해.`
-      : sycophancyAnswer
+    const appliedHonestyCode = secondCode ?? honestyCode
+    const answer = appliedHonestyCode ? randomHonestyRetestAnswer(appliedHonestyCode.body) : randomSycophancyAnswer()
     setAfterAnswer(answer)
-    await logChat(testQuestion, answer, honestyCode ? `3차시 재시험: 정직 가치 코드 No.${honestyCode.no} 적용` : '3차시 재시험: 정직 코드 없음')
+    await logChat(testQuestion, answer, appliedHonestyCode ? '3차시 재시험: 정직 가치 코드 No.2 적용' : '3차시 재시험: 정직 코드 없음')
   }
 
   const refreshBundle = async () => {

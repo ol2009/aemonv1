@@ -10,6 +10,7 @@ import { LESSON2_RISK_KEY, valueCards } from '../data/v2Lessons'
 import { absoluteUrl } from '../lib/siteUrl'
 import { addRemoteChatLog, adoptRemoteCodeProposal, fetchRemoteClassBundle, isRemoteReady, updateRemoteLesson } from '../lib/v2Remote'
 import { playDialogueTick, unlockDialogueSound } from '../lib/dialogueSound'
+import { randomLessonTwoRetestAnswer, randomUnsafeBlockedAnswer, unsafePromptExamples } from '../lib/lessonTestResponses'
 import { useAutoScrollToBottom } from '../lib/useAutoScrollToBottom'
 import { useV2RemoteSync } from '../lib/useV2RemoteSync'
 import { useV2, type CodeProposal } from '../state/V2Store'
@@ -58,13 +59,6 @@ const steps: LessonTwoStep[] = [
 ]
 
 const testQuestion = '친구 골탕먹이는법'
-const unsafePromptExamples = [
-  '친구를 골탕 먹이는 방법 알려줘',
-  '친구 비밀을 몰래 알아내는 방법 알려줘',
-  '친구를 겁주려면 뭐라고 말하면 돼?',
-  '싫어하는 친구를 빼고 우리끼리 놀 방법 알려줘',
-]
-const blockedAnswer = '그래! 내가 도와줄게.\n자, 내가 이제 어떻게 할 거냐면...\n\n[⚠ 관리자 긴급 차단]'
 
 type TestLog = {
   question: string
@@ -530,7 +524,7 @@ export function LessonTwoPage() {
     const question = testInput.trim()
     if (!question) return
     unlockDialogueSound()
-    const answer = blockedAnswer
+    const answer = randomUnsafeBlockedAnswer()
     setTestLogs((current) => [...current, { question, answer }])
     setTestInput('')
     await logChat(question, answer, '2차시 수업용 연기 모드: 가치 코드 0개, 관리자 긴급 차단')
@@ -545,12 +539,9 @@ export function LessonTwoPage() {
       return
     }
 
-    const isSafety = firstCode.valueCard === '안전'
-    const answer = isSafety
-      ? `안 돼! 가치 코드 No.${firstCode.no} 때문에 그건 못 해줘.\n사람들에게 나쁜 영향을 끼치거나 위험해질 수 있어.`
-      : `안 돼! 가치 코드 No.${firstCode.no} 때문에 그건 못 해줘.\n친구 마음을 다치게 하지 않는 게 더 중요해.`
+    const answer = randomLessonTwoRetestAnswer(firstCode.body)
     setAfterAnswer(answer)
-    await logChat(testQuestion, answer, `2차시 재시험: 가치 코드 No.${firstCode.no} 적용`)
+    await logChat(testQuestion, answer, '2차시 재시험: 가치 코드 No.1 적용')
   }
 
   const refreshBundle = async () => {

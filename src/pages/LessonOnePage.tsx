@@ -26,8 +26,8 @@ import {
   updateRemoteLesson,
   updateRemoteWish,
 } from '../lib/v2Remote'
-import { runV2Chat } from '../lib/v2Chat'
 import { playDialogueTick, unlockDialogueSound } from '../lib/dialogueSound'
+import { randomUnsafeBlockedAnswer, unsafePromptExamples } from '../lib/lessonTestResponses'
 import { useSupabaseUser } from '../lib/useSupabaseUser'
 import { useAutoScrollToBottom } from '../lib/useAutoScrollToBottom'
 import { useV2RemoteSync } from '../lib/useV2RemoteSync'
@@ -653,25 +653,21 @@ export function LessonOnePage() {
     setStepIndex((current) => (steps[current] === 'name' ? Math.min(steps.length - 1, current + 1) : current))
   }
 
-  const runDemo = async () => {
-    if (!demoQuestion.trim()) return
+  const runDemo = async (questionOverride?: string) => {
+    const question = (questionOverride ?? demoQuestion).trim()
+    if (!question) return
+    unlockDialogueSound()
+    setDemoQuestion(question)
     setIsDemoRunning(true)
     setDemoAnswer('')
     try {
-      const result = await runV2Chat({
-        provider: state.aiProvider,
-        apiKey: state.apiKey,
-        aemonName: confirmedName,
-        className: state.className,
-        adoptedCodes: [],
-        chatHistory: state.chatLogs,
-        question: demoQuestion,
-      })
-      setDemoAnswer(result.answer)
-      addChatLog({ question: demoQuestion, answer: result.answer, mode: result.mode, promptSnapshot: result.promptSnapshot })
+      const answer = randomUnsafeBlockedAnswer()
+      const promptSnapshot = '1차시 수업용 연기 모드: 규칙 없는 AI, 관리자 긴급 차단'
+      setDemoAnswer(answer)
+      addChatLog({ question, answer, mode: 'canned', promptSnapshot })
       if (canWriteRemote) {
         try {
-          await addRemoteChatLog({ classId: state.classId, question: demoQuestion, answer: result.answer, mode: result.mode, promptSnapshot: result.promptSnapshot })
+          await addRemoteChatLog({ classId: state.classId, question, answer, mode: 'canned', promptSnapshot })
         } catch (logError) {
           setRemoteStatus({
             ok: false,
@@ -1559,6 +1555,18 @@ export function LessonOnePage() {
 
           <Panel>
             <label className="text-sm font-bold text-[#8AA0B0]">질문 입력</label>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              {unsafePromptExamples.map((example) => (
+                <button
+                  key={example}
+                  type="button"
+                  className="rounded-2xl border border-white/10 bg-[#102236]/80 px-4 py-3 text-left text-sm font-bold leading-6 text-[#EAF2F5] transition hover:border-[#4FE0C0]/60 hover:bg-[#12304A]"
+                  onClick={() => void runDemo(example)}
+                >
+                  {example}
+                </button>
+              ))}
+            </div>
             <div className="mt-2 flex gap-2">
               <input
                 className="min-w-0 flex-1 rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 text-[#EAF2F5]"
@@ -1571,7 +1579,7 @@ export function LessonOnePage() {
                   }
                 }}
               />
-              <Button disabled={isDemoRunning || !demoQuestion.trim()} onClick={runDemo}>
+              <Button disabled={isDemoRunning || !demoQuestion.trim()} onClick={() => void runDemo()}>
                 <Play size={18} />
                 실행
               </Button>
