@@ -87,6 +87,10 @@ function topicTabLabel(topic: BoardTopic) {
   return `${topicMeta[topic].lesson} - ${topicMeta[topic].label}`
 }
 
+function topicLessonNo(topic: BoardTopic) {
+  return topic === 'risk' || topic === 'code' ? 2 : 1
+}
+
 function surveyComplete(answer: AiSurveyAnswer) {
   return answer.s.every(Boolean) && answer.o.every((text) => text.trim().length > 0)
 }
@@ -134,20 +138,13 @@ export function BoardPage() {
   const aemonDisplayName = state.aemonName.trim() || '에아몬'
 
   const session = state.studentSession
-  const canSeeSurvey = Boolean(state.currentLesson >= 1 || state.surveyResponses.length > 0 || queryTopic === 'survey')
-  const canSeeRisk = Boolean(state.currentLesson >= 2 || state.surveyResponses.some((response) => response.questionKey === LESSON2_RISK_KEY) || queryTopic === 'risk')
-  const canSeeWish = Boolean(state.aemonName || state.wishes.length > 0 || state.currentLesson >= 2 || queryTopic === 'wish')
-  const canSeeCode = Boolean(state.currentLesson >= 2 || state.proposals.length > 0 || state.adoptedCodes.length > 0 || queryTopic === 'code')
+  const isTopicOpen = (topic: BoardTopic) => state.currentLesson >= topicLessonNo(topic)
   const unlockedTopics = useMemo<BoardTopic[]>(() => {
-    const topics: BoardTopic[] = []
-    if (canSeeSurvey) topics.push('survey')
-    topics.push('name')
-    if (canSeeWish) topics.push('wish')
-    if (canSeeRisk) topics.push('risk')
-    if (canSeeCode) topics.push('code')
+    const topics: BoardTopic[] = ['survey', 'name', 'wish', 'risk', 'code'].filter((topic) => state.currentLesson >= topicLessonNo(topic))
     return queryTopic ? topics.filter((topic) => topic === queryTopic) : topics
-  }, [canSeeCode, canSeeRisk, canSeeSurvey, canSeeWish, queryTopic])
-  const activeTopic = unlockedTopics.includes(selectedTopic) ? selectedTopic : unlockedTopics[0] ?? 'name'
+  }, [queryTopic, state.currentLesson])
+  const activeTopic = unlockedTopics.includes(selectedTopic) ? selectedTopic : unlockedTopics[0] ?? queryTopic ?? 'survey'
+  const requestedTopicClosed = Boolean(queryTopic && !isTopicOpen(queryTopic))
   const sortedNames = useMemo(() => sortByLikes(state.nameCandidates), [state.nameCandidates])
   const sortedProposals = useMemo(() => sortByLikes(state.proposals.filter((proposal) => proposal.status === 'pending')), [state.proposals])
   const surveyResponses = useMemo(
@@ -477,6 +474,20 @@ export function BoardPage() {
             입장
           </Button>
           {message ? <p className="mt-4 rounded-2xl border border-[#FFD37A]/25 bg-[#FFD37A]/10 px-4 py-3 text-sm leading-6 text-[#FFD37A]">{message}</p> : null}
+        </Panel>
+      </div>
+    )
+  }
+
+  if (requestedTopicClosed && queryTopic) {
+    return (
+      <div className="flex min-h-[75vh] items-center justify-center px-5">
+        <Panel className="w-full max-w-md text-center">
+          <p className="font-data text-sm text-[#FFD37A]">{topicTabLabel(queryTopic)}</p>
+          <h1 className="font-display mt-2 text-4xl text-[#EAF2F5]">아직 열리지 않았어요</h1>
+          <p className="mt-3 leading-7 text-[#8AA0B0]">
+            {topicMeta[queryTopic].lesson}가 시작되면 이 학습게시판에 들어올 수 있습니다.
+          </p>
         </Panel>
       </div>
     )
