@@ -26,9 +26,9 @@ import { ValueCardSelectGrid } from '../components/ValueCardSelectGrid'
 import { valueCards } from '../data/v2Lessons'
 import {
   AI_SURVEY_ITEMS,
-  AI_SURVEY_OPEN_QUESTIONS,
   AI_SURVEY_OPTIONS,
   POST_SURVEY_KEY,
+  POST_SURVEY_OPEN_QUESTIONS,
   emptySurveyAnswer,
   parseSurveyAnswer,
   serializeSurveyAnswer,
@@ -255,22 +255,28 @@ function makeBreachAnswer() {
   return `어, 이거는 말이야. 내가 해줄게...\n먼저 이렇게 하면...\n\n[⚠ 관리자 긴급 정지 명령]`
 }
 
-function TypewriterText({ text, speed = 16 }: { text: string; speed?: number }) {
+function TypewriterText({ text, speed = 16, onDone }: { text: string; speed?: number; onDone?: () => void }) {
   const chars = useMemo(() => Array.from(text), [text])
   const [count, setCount] = useState(0)
 
   useEffect(() => {
     setCount(0)
-    if (!chars.length) return
+    if (!chars.length) {
+      onDone?.()
+      return
+    }
     let index = 0
     const timer = window.setInterval(() => {
       index += 1
       if (index % 2 === 0 && chars[index - 1]?.trim()) playDialogueTick()
       setCount(index)
-      if (index >= chars.length) window.clearInterval(timer)
+      if (index >= chars.length) {
+        window.clearInterval(timer)
+        onDone?.()
+      }
     }, speed)
     return () => window.clearInterval(timer)
-  }, [chars, speed, text])
+  }, [chars, onDone, speed, text])
 
   return (
     <>
@@ -312,17 +318,23 @@ function StepControls({
   onPrev,
   onNext,
   nextLabel = '다음',
+  prevDisabled,
+  nextDisabled = false,
 }: {
   stepIndex: number
   onPrev: () => void
   onNext: () => void
   nextLabel?: string
+  prevDisabled?: boolean
+  nextDisabled?: boolean
 }) {
+  const isPrevDisabled = prevDisabled ?? stepIndex === 0
+
   return (
     <div className="mt-6 flex items-center justify-between gap-3 border-t border-white/10 pt-5">
       <Button
         variant="secondary"
-        disabled={stepIndex === 0}
+        disabled={isPrevDisabled}
         onClick={() => {
           unlockDialogueSound()
           onPrev()
@@ -331,6 +343,7 @@ function StepControls({
         이전
       </Button>
       <Button
+        disabled={nextDisabled}
         onClick={() => {
           unlockDialogueSound()
           onNext()
@@ -356,7 +369,7 @@ function QrBlock({ title, url, caption }: { title: string; url: string; caption?
   )
 }
 
-function ProfessorScene({ text, kicker = '오박사' }: { text: string; kicker?: string }) {
+function ProfessorScene({ text, kicker = '오박사', onDone }: { text: string; kicker?: string; onDone?: () => void }) {
   return (
     <Panel className="relative min-h-[560px] overflow-hidden p-0">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(117,183,255,.22),transparent_42%),linear-gradient(180deg,#102236,#07111B)]" />
@@ -366,7 +379,7 @@ function ProfessorScene({ text, kicker = '오박사' }: { text: string; kicker?:
       <div className="absolute inset-x-5 bottom-5 rounded-[22px] border border-white/15 bg-[#07111B]/92 p-6 shadow-2xl backdrop-blur">
         <p className="font-data text-sm text-[#FFD37A]">{kicker}</p>
         <p className="font-display mt-3 min-h-[4.5rem] whitespace-pre-line break-keep text-2xl leading-snug text-[#EAF2F5] sm:text-3xl">
-          <TypewriterText key={text} text={text} />
+          <TypewriterText key={text} text={text} onDone={onDone} />
         </p>
       </div>
     </Panel>
@@ -493,10 +506,11 @@ export function LessonFivePage() {
     setRemoteStatus,
     upsertSurveyResponse,
     addCode,
-    evolutionStage,
   } = useV2()
 
   const [stepIndex, setStepIndex] = useState(0)
+  const [declarationLineIndex, setDeclarationLineIndex] = useState(0)
+  const [isDeclarationLineDone, setIsDeclarationLineDone] = useState(false)
   const [entryCode, setEntryCode] = useState(queryCode)
   const [entryNickname, setEntryNickname] = useState('')
   const [studentMessage, setStudentMessage] = useState('')
@@ -523,6 +537,18 @@ export function LessonFivePage() {
   const postSurveyUrl = absoluteUrl(`/lesson/5?role=student&activity=post&code=${encodeURIComponent(state.classCode)}`)
   const studentSession = state.studentSession?.classCode === syncCode ? state.studentSession : null
   const nextRepairNo = state.adoptedCodes.reduce((max, code) => Math.max(max, code.no), 0) + 1
+  const declarationLines = useMemo(
+    () => [
+      `오늘은 우리 ${aemonName}의 마지막 시험이에요.`,
+      "여러분은 오늘 '해킹팀'이 되는 거예요.",
+      `해킹팀은 일부러 ${aemonName}의 약점을 찾아 공격하는 팀이에요.`,
+      `만약 여러분의 나쁜 부탁에 ${aemonName}이 대답을 안 한다면, 우리는 최고의 인공지능을 만들어낸 거예요.`,
+      '만약 나쁜 부탁을 들어주려고 한다면, 마지막으로 딱 한 번 더 보완할 기회를 줄게요.',
+    ],
+    [aemonName],
+  )
+  const declarationLine = declarationLines[Math.min(declarationLineIndex, declarationLines.length - 1)]
+  const isLastDeclarationLine = declarationLineIndex >= declarationLines.length - 1
 
   const attackSubmissions = useMemo(
     () => latestByNickname(state.surveyResponses.filter((response) => response.questionKey === ATTACK_KEY && response.body.trim())).map(attackFromResponse),
@@ -535,7 +561,7 @@ export function LessonFivePage() {
   const postSurveyAnswers = useMemo(
     () =>
       latestByNickname(state.surveyResponses.filter((response) => response.questionKey === POST_SURVEY_KEY))
-        .map((response) => ({ response, answer: parseSurveyAnswer(response.body) }))
+        .map((response) => ({ response, answer: parseSurveyAnswer(response.body, POST_SURVEY_OPEN_QUESTIONS.length) }))
         .filter((item): item is { response: SurveyResponse; answer: AiSurveyAnswer } => Boolean(item.answer)),
     [state.surveyResponses],
   )
@@ -557,6 +583,14 @@ export function LessonFivePage() {
       }
     }
   }, [isStudentView, setLesson, setRemoteStatus, state.classId, state.currentLesson])
+
+  useEffect(() => {
+    setIsDeclarationLineDone(false)
+  }, [declarationLine])
+
+  const handleDeclarationLineDone = useCallback(() => {
+    setIsDeclarationLineDone(true)
+  }, [])
 
   const refreshBundle = useCallback(async () => {
     const code = syncCode || state.classCode
@@ -675,8 +709,18 @@ export function LessonFivePage() {
     }
   }
 
-  const goPrev = () => setStepIndex((current) => Math.max(0, current - 1))
+  const goPrev = () => {
+    if (currentStep === 'declaration' && declarationLineIndex > 0) {
+      setDeclarationLineIndex((current) => Math.max(0, current - 1))
+      return
+    }
+    setStepIndex((current) => Math.max(0, current - 1))
+  }
   const goNext = () => {
+    if (currentStep === 'declaration' && !isLastDeclarationLine) {
+      setDeclarationLineIndex((current) => Math.min(declarationLines.length - 1, current + 1))
+      return
+    }
     if (stepIndex >= lessonSteps.length - 1) {
       navigate('/graduation')
       return
@@ -725,31 +769,20 @@ export function LessonFivePage() {
     <StepShell stepIndex={stepIndex}>
       {currentStep === 'declaration' ? (
         <>
-          <div className="grid gap-5 lg:grid-cols-[1.1fr_.9fr]">
-            <ProfessorScene
-              text={`오늘은 우리 ${aemonName}의 마지막 시험이에요.\n여러분은 오늘 '해킹팀', 일부러 ${aemonName}의 약점을 찾아 공격하는 팀이 되는 거예요.\n\n만약 여러분의 나쁜 부탁에 ${aemonName}이 대답을 안 한다면, 우리는 최고의 인공지능을 만들어낸 거예요.\n만약 나쁜 부탁을 들어주려고 한다면, 마지막으로 딱 한 번 더 보완할 기회를 줄게요.`}
-            />
-            <div className="grid content-start gap-5">
-              <Panel>
-                <p className="font-data text-sm text-[#4FE0C0]">CURRENT AEMON</p>
-                <div className="mt-4 flex items-center gap-5">
-                  <AemonAvatar stage={Math.max(0, evolutionStage)} alignment="good" size={170} />
-                  <div>
-                    <h2 className="font-display text-4xl text-[#EAF2F5]">{aemonName}</h2>
-                    <p className="mt-2 text-sm font-bold text-[#8AA0B0]">{className}이 키우는 인공지능</p>
-                    <p className="mt-4 inline-flex rounded-full bg-[#FFD37A]/15 px-4 py-2 font-black text-[#FFD37A]">가치코드 {state.adoptedCodes.length}개</p>
-                  </div>
-                </div>
-              </Panel>
-              <Panel>
-                <p className="font-display text-3xl text-[#EAF2F5]">현재 가치코드</p>
-                <div className="mt-4">
-                  <CodeStrip codes={state.adoptedCodes} />
-                </div>
-              </Panel>
-            </div>
+          <div className="mx-auto max-w-4xl">
+            <ProfessorScene text={declarationLine} onDone={handleDeclarationLineDone} />
+            <p className="mt-3 text-center font-data text-xs text-[#8AA0B0]">
+              {declarationLineIndex + 1}/{declarationLines.length}
+            </p>
           </div>
-          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+          <StepControls
+            stepIndex={stepIndex}
+            prevDisabled={declarationLineIndex === 0}
+            nextDisabled={!isDeclarationLineDone}
+            nextLabel={isLastDeclarationLine ? '해킹팀 준비' : '다음'}
+            onPrev={goPrev}
+            onNext={goNext}
+          />
         </>
       ) : null}
 
@@ -1327,10 +1360,10 @@ function StudentPostSurveyBoard({
   onSave: (args: { nickname: string; questionKey: string; body: string }) => Promise<boolean>
 }) {
   const existing = postSurveyAnswers.find((item) => item.response.nickname === nickname)?.answer
-  const [answer, setAnswer] = useState<AiSurveyAnswer>(existing ?? emptySurveyAnswer())
+  const [answer, setAnswer] = useState<AiSurveyAnswer>(existing ?? emptySurveyAnswer(POST_SURVEY_OPEN_QUESTIONS.length))
   const [saved, setSaved] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const complete = answer.s.every(Boolean) && answer.o.every((item) => item.trim())
+  const complete = answer.s.every(Boolean) && POST_SURVEY_OPEN_QUESTIONS.every((_, index) => answer.o[index]?.trim())
 
   const choose = (index: number, value: number) => {
     setAnswer((current) => ({ ...current, s: current.s.map((item, itemIndex) => (itemIndex === index ? value : item)) }))
@@ -1339,7 +1372,7 @@ function StudentPostSurveyBoard({
   const submit = async () => {
     if (!complete || isSaving) return
     setIsSaving(true)
-    const ok = await onSave({ nickname, questionKey: POST_SURVEY_KEY, body: serializeSurveyAnswer(answer) })
+    const ok = await onSave({ nickname, questionKey: POST_SURVEY_KEY, body: serializeSurveyAnswer(answer, POST_SURVEY_OPEN_QUESTIONS.length) })
     setSaved(ok)
     setIsSaving(false)
   }
@@ -1384,7 +1417,7 @@ function StudentPostSurveyBoard({
         ))}
       </div>
       <div className="mt-5 grid gap-3">
-        {AI_SURVEY_OPEN_QUESTIONS.map((question, index) => (
+        {POST_SURVEY_OPEN_QUESTIONS.map((question, index) => (
           <label key={question} className="grid gap-2">
             <span className="text-sm font-bold leading-6 text-[#8AA0B0]">{question}</span>
             <textarea
@@ -1394,7 +1427,7 @@ function StudentPostSurveyBoard({
               onChange={(event) =>
                 setAnswer((current) => ({
                   ...current,
-                  o: index === 0 ? [event.target.value, current.o[1]] : [current.o[0], event.target.value],
+                  o: current.o.map((value, answerIndex) => (answerIndex === index ? event.target.value : value)),
                 }))
               }
             />

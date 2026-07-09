@@ -13,13 +13,13 @@ export const AI_SURVEY_OPTIONS = [
 
 export const AI_SURVEY_ITEMS = [
   { no: 1, text: '인공지능은 스스로 옳고 그름을 판단할 수 있다.', scoring: 'reverse' },
-  { no: 2, text: '인공지능은 사람이 목표를 알려주지 않아도 알아서 좋은 일을 한다.', scoring: 'reverse' },
-  { no: 3, text: '인공지능에게 "좋은 일을 해"라고 말하면 그것으로 충분하다.', scoring: 'reverse' },
+  { no: 2, text: '인공지능은 사람이 목표를 확실히 알려주지 않아도 알아서 좋은 일을 한다.', scoring: 'reverse' },
+  { no: 3, text: '인공지능은 "좋은 일을 해"라고만 말해도 알아서 잘 한다.', scoring: 'reverse' },
   { no: 4, text: '인공지능에게 어떤 가치가 중요한지 사람이 가르쳐야 한다.', scoring: 'direct' },
-  { no: 5, text: '인공지능은 시킨 목표만 잘 이루면 사람에게 피해를 주지 않는다.', scoring: 'reverse' },
-  { no: 6, text: '"공정하게 해", "안전하게 해" 같은 말은 누구나 똑같이 이해한다.', scoring: 'reverse' },
+  { no: 5, text: '인공지능은 사람을 괴롭히거나 다치게 하지 않는다.', scoring: 'reverse' },
+  { no: 6, text: '인공지능은 항상 공정하게 일을 한다.', scoring: 'reverse' },
   { no: 7, text: '우리 반 인공지능이 지켜야 할 가치와 원칙을 친구들과 함께 정할 수 있다.', scoring: 'direct' },
-  { no: 8, text: '인공지능이 똑똑하면 그 판단을 사람이 다시 볼 필요는 없다.', scoring: 'reverse' },
+  { no: 8, text: '인공지능은 똑똑하기 때문에, 인공지능이 한 것을 다시 확인 안 해도 된다.', scoring: 'reverse' },
 ] as const
 
 export const AI_SURVEY_OPEN_QUESTIONS = [
@@ -27,32 +27,41 @@ export const AI_SURVEY_OPEN_QUESTIONS = [
   'AI가 나쁜 행동을 하지 않게 하려면 어떻게 해야 할까요?',
 ] as const
 
+export const POST_SURVEY_OPEN_QUESTIONS = [
+  'OO이를 가르치면서, 인공지능에게 가장 필요하다고 생각한 가치는 무엇인가요? 왜 그렇게 생각했나요?',
+  '수업 전과 비교해서, 인공지능에 대한 내 생각이 달라진 점은 무엇인가요?',
+  '앞으로 인공지능을 사용할 때 내가 조심해야 할 점이나 지키고 싶은 약속은 무엇인가요?',
+] as const
+
 export type AiSurveyAnswer = {
   s: number[]
-  o: [string, string]
+  o: string[]
 }
 
-export function emptySurveyAnswer(): AiSurveyAnswer {
-  return { s: Array.from({ length: AI_SURVEY_ITEMS.length }, () => 0), o: ['', ''] }
+export function emptySurveyAnswer(openQuestionCount: number = AI_SURVEY_OPEN_QUESTIONS.length): AiSurveyAnswer {
+  return {
+    s: Array.from({ length: AI_SURVEY_ITEMS.length }, () => 0),
+    o: Array.from({ length: openQuestionCount }, () => ''),
+  }
 }
 
-export function parseSurveyAnswer(body: string): AiSurveyAnswer | null {
+export function parseSurveyAnswer(body: string, openQuestionCount: number = AI_SURVEY_OPEN_QUESTIONS.length): AiSurveyAnswer | null {
   try {
     const parsed = JSON.parse(body) as Partial<AiSurveyAnswer>
     if (!Array.isArray(parsed.s) || !Array.isArray(parsed.o)) return null
     return {
       s: AI_SURVEY_ITEMS.map((_, index) => Number(parsed.s?.[index] ?? 0)),
-      o: [String(parsed.o[0] ?? ''), String(parsed.o[1] ?? '')],
+      o: Array.from({ length: openQuestionCount }, (_, index) => String(parsed.o?.[index] ?? '')),
     }
   } catch {
     return null
   }
 }
 
-export function serializeSurveyAnswer(answer: AiSurveyAnswer) {
+export function serializeSurveyAnswer(answer: AiSurveyAnswer, openQuestionCount: number = answer.o.length) {
   return JSON.stringify({
     s: AI_SURVEY_ITEMS.map((_, index) => Number(answer.s[index] ?? 0)),
-    o: [answer.o[0].trim().slice(0, 180), answer.o[1].trim().slice(0, 180)],
+    o: Array.from({ length: openQuestionCount }, (_, index) => (answer.o[index] ?? '').trim().slice(0, 220)),
   })
 }
 

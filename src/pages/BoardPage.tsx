@@ -809,7 +809,7 @@ export function BoardPage() {
                       onChange={(event) =>
                         updateSurveyAnswer((current) => ({
                           ...current,
-                          o: current.o.map((value, answerIndex) => (answerIndex === index ? event.target.value : value)) as [string, string],
+                          o: current.o.map((value, answerIndex) => (answerIndex === index ? event.target.value : value)),
                         }))
                       }
                     />
