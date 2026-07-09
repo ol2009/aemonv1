@@ -55,6 +55,7 @@ type LessonStep =
   | 'clip-order'
   | 'clip-materials'
   | 'clip-building'
+  | 'clip-stop'
   | 'clip-city'
   | 'clip-life'
   | 'clip-earth'
@@ -105,6 +106,7 @@ const steps: LessonStep[] = [
   'clip-order',
   'clip-materials',
   'clip-building',
+  'clip-stop',
   'clip-city',
   'clip-life',
   'clip-earth',
@@ -1377,6 +1379,18 @@ export function LessonOnePage() {
             title="클립의 역설 · 멈춤 없음"
             line="재료가 부족하자 기둥과 지붕까지 썼습니다."
             caption="AI에게는 멈출 기준이 없었습니다."
+          />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
+      ) : null}
+
+      {step === 'clip-stop' ? (
+        <>
+          <CaseVisualScene
+            image="/v2/lesson-1/paperclip-03b-stop.png"
+            title="클립의 역설 · 명령 충돌"
+            line="사장이 그만하라고 했지만, 클립을 더 만들어야 한다는 명령을 우선시했습니다."
+            caption="그래서 AI는 사장이 그만하라는 명령을 무시했습니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
