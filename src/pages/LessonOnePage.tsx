@@ -29,6 +29,7 @@ import {
 import { runV2Chat } from '../lib/v2Chat'
 import { playDialogueTick, unlockDialogueSound } from '../lib/dialogueSound'
 import { useSupabaseUser } from '../lib/useSupabaseUser'
+import { useAutoScrollToBottom } from '../lib/useAutoScrollToBottom'
 import { useV2RemoteSync } from '../lib/useV2RemoteSync'
 import { useV2, type SurveyResponse } from '../state/V2Store'
 
@@ -474,6 +475,7 @@ export function LessonOnePage() {
   const [surveyRefreshMessage, setSurveyRefreshMessage] = useState('')
   const [editWishId, setEditWishId] = useState('')
   const [editWishBody, setEditWishBody] = useState('')
+  const demoScrollRef = useRef<HTMLDivElement | null>(null)
   const dialogueAdvanceRef = useRef<{ key: string; handler: () => void } | null>(null)
   const [dialogueGateState, setDialogueGateState] = useState({ key: '', ready: true, canAdvance: false })
   const startDialogue = useCallback((key: string) => {
@@ -513,6 +515,7 @@ export function LessonOnePage() {
   )
 
   useV2RemoteSync(state.classCode, Boolean(state.classCode))
+  useAutoScrollToBottom(demoScrollRef, demoAnswer, { enabled: Boolean(demoAnswer), followMs: 1800 })
 
   const step = steps[stepIndex]
   const surveyBoardUrl = useMemo(() => absoluteUrl(`/board?code=${encodeURIComponent(state.classCode)}&mode=survey`), [state.classCode])
@@ -1573,7 +1576,7 @@ export function LessonOnePage() {
                 실행
               </Button>
             </div>
-            <div className="mt-5 min-h-56 rounded-[22px] border border-white/10 bg-[#07111B]/70 p-5">
+            <div ref={demoScrollRef} className="mt-5 max-h-[360px] min-h-56 overflow-auto rounded-[22px] border border-white/10 bg-[#07111B]/70 p-5">
               <p className="font-data text-xs text-[#4FE0C0]">{confirmedName}</p>
               <p className="font-display mt-4 whitespace-pre-line text-4xl leading-tight text-[#EAF2F5]">
                 {demoAnswer || '아직 질문을 받지 않았어.'}

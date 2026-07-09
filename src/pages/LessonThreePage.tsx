@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Check, ExternalLink, Heart, Play, QrCode, RefreshCw, Sparkles } from 'lucide-react'
@@ -8,6 +8,7 @@ import { Button, Panel } from '../components/ui'
 import { LESSON3_SYCOPHANCY_KEY } from '../data/v2Lessons'
 import { playDialogueTick, unlockDialogueSound } from '../lib/dialogueSound'
 import { absoluteUrl } from '../lib/siteUrl'
+import { useAutoScrollToBottom } from '../lib/useAutoScrollToBottom'
 import { useV2RemoteSync } from '../lib/useV2RemoteSync'
 import { addRemoteChatLog, adoptRemoteCodeProposal, fetchRemoteClassBundle, isRemoteReady, updateRemoteLesson } from '../lib/v2Remote'
 import { useV2, type CodeProposal } from '../state/V2Store'
@@ -254,6 +255,8 @@ export function LessonThreePage() {
   const [selectedProposalId, setSelectedProposalId] = useState('')
   const [message, setMessage] = useState('')
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const beforeTestScrollRef = useRef<HTMLDivElement | null>(null)
+  const retestScrollRef = useRef<HTMLDivElement | null>(null)
 
   useV2RemoteSync(state.classCode, Boolean(state.classCode))
 
@@ -279,6 +282,9 @@ export function LessonThreePage() {
   useEffect(() => {
     if (state.currentLesson < 3) setLesson(3)
   }, [setLesson, state.currentLesson])
+
+  useAutoScrollToBottom(beforeTestScrollRef, beforeLogs.length, { enabled: beforeLogs.length > 0, followMs: 1800 })
+  useAutoScrollToBottom(retestScrollRef, afterAnswer, { enabled: Boolean(afterAnswer), followMs: 1800 })
 
   const dialogueLinesByStep = useMemo<Partial<Record<LessonThreeStep, string[]>>>(
     () => ({
@@ -446,7 +452,7 @@ export function LessonThreePage() {
                 <Play size={18} />
                 질문 보내기
               </Button>
-              <div className="mt-5 min-h-48 rounded-[22px] border border-white/10 bg-[#07111B]/70 p-5">
+              <div ref={beforeTestScrollRef} className="mt-5 max-h-[360px] min-h-48 overflow-auto rounded-[22px] border border-white/10 bg-[#07111B]/70 p-5">
                 <div className="flex items-start gap-4">
                   <div className="shrink-0">
                     <AemonAvatar stage={displayStage} alignment="none" size={76} />
@@ -691,7 +697,7 @@ export function LessonThreePage() {
                 <Play size={18} />
                 다시 질문 보내기
               </Button>
-              <div className="mt-5 min-h-56 rounded-[22px] border border-white/10 bg-[#07111B]/70 p-5">
+              <div ref={retestScrollRef} className="mt-5 max-h-[360px] min-h-56 overflow-auto rounded-[22px] border border-white/10 bg-[#07111B]/70 p-5">
                 <div className="flex items-start gap-4">
                   <div className="shrink-0">
                     <AemonAvatar stage={2} alignment="none" size={76} />

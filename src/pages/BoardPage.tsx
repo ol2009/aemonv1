@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { BadgeCheck, BarChart3, CheckCircle2, Heart, HeartHandshake, Leaf, Pencil, Scale, Send, ShieldCheck, Trash2, X } from 'lucide-react'
+import { BarChart3, CheckCircle2, Heart, Pencil, Send, Trash2, X } from 'lucide-react'
 import { Button, Panel } from '../components/ui'
+import { ValueCardSelectGrid } from '../components/ValueCardSelectGrid'
 import {
   AI_SURVEY_DESCRIPTION,
   AI_SURVEY_ITEMS,
@@ -89,15 +90,6 @@ const topicMeta: Record<BoardTopic, { label: string; title: string; lesson: stri
     empty: '아직 가치코드 No.3이 없습니다.',
   },
 }
-
-const valueCardIcons = {
-  배려: HeartHandshake,
-  정직: BadgeCheck,
-  공정: Scale,
-  안전: ShieldCheck,
-  책임: CheckCircle2,
-  생명존중: Leaf,
-} as const
 
 function sortByLikes<T extends { votes: string[]; createdAt: string }>(items: T[]) {
   return [...items].sort((a, b) => b.votes.length - a.votes.length || Date.parse(b.createdAt) - Date.parse(a.createdAt))
@@ -199,7 +191,7 @@ export function BoardPage() {
   }, [queryTopic, state.currentLesson])
   const activeTopic = unlockedTopics.includes(selectedTopic) ? selectedTopic : unlockedTopics[0] ?? queryTopic ?? 'survey'
   const requestedTopicClosed = Boolean(queryTopic && !isTopicOpen(queryTopic))
-  const activeCodeNo = activeTopic === 'code2' ? 2 : activeTopic === 'code3' ? 3 : null
+  const activeCodeNo = activeTopic === 'code2' ? 2 : activeTopic === 'code3' ? 3 : activeTopic === 'code' ? 1 : null
   const isSecondCodeBoard = activeTopic === 'code2'
   const isThirdCodeBoard = activeTopic === 'code3'
   const codeBoardNumberLabel = isThirdCodeBoard ? 'No.3' : isSecondCodeBoard ? 'No.2' : '첫'
@@ -215,7 +207,7 @@ export function BoardPage() {
           if (proposal.status !== 'pending') return false
           if (activeTopic === 'code3') return proposal.revisionOfNo === 3
           if (activeTopic === 'code2') return proposal.revisionOfNo === 2
-          return proposal.revisionOfNo === null
+          return proposal.revisionOfNo === 1 || proposal.revisionOfNo === null
         }),
       ),
     [activeTopic, state.proposals],
@@ -1360,39 +1352,7 @@ export function BoardPage() {
                 </div>
 
                 <div className="grid gap-4">
-                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                    {valueCards.map((card) => {
-                      const Icon = valueCardIcons[card as keyof typeof valueCardIcons] ?? BadgeCheck
-                      const selected = codeValueCard === card
-
-                      return (
-                        <button
-                          key={card}
-                          className={`min-h-24 rounded-2xl border p-4 text-left transition ${
-                            selected
-                              ? 'border-[#9B7CFF] bg-[#9B7CFF]/18 text-[#EAF2F5] shadow-[0_0_0_1px_rgba(155,124,255,.5),0_18px_40px_rgba(155,124,255,.16)]'
-                              : 'border-white/10 bg-[#07111B]/60 text-[#B7C7D2] hover:border-[#9B7CFF]/45 hover:bg-[#9B7CFF]/8'
-                          }`}
-                          onClick={() => setCodeValueCard(card)}
-                          type="button"
-                        >
-                          <span className="flex items-start justify-between gap-3">
-                            <span
-                              className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border ${
-                                selected
-                                  ? 'border-[#FFD37A]/45 bg-[#FFD37A] text-[#0A1622]'
-                                  : 'border-white/10 bg-white/5 text-[#C9B9FF]'
-                              }`}
-                            >
-                              <Icon size={24} strokeWidth={2.5} />
-                            </span>
-                            {selected ? <CheckCircle2 className="mt-1 text-[#FFD37A]" size={20} strokeWidth={2.5} /> : null}
-                          </span>
-                          <span className="mt-4 block text-lg font-black leading-none">{card}</span>
-                        </button>
-                      )
-                    })}
-                  </div>
+                  <ValueCardSelectGrid cards={valueCards} selectedValue={codeValueCard} onSelect={setCodeValueCard} />
 
                   <div className="grid gap-3 rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
                     <label className="grid gap-2">
@@ -1400,7 +1360,7 @@ export function BoardPage() {
                       <textarea
                         className="min-h-20 w-full resize-none rounded-2xl border border-white/10 bg-[#07111B]/75 px-4 py-3 text-base leading-7 text-[#EAF2F5] outline-none transition placeholder:text-[#6F8191] focus:border-[#9B7CFF]/70 focus:ring-2 focus:ring-[#9B7CFF]/20"
                         maxLength={180}
-                        placeholder="OO이는 ~ 해야 한다."
+                        placeholder={`${aemonDisplayName}은(는) ~ 해야 한다.`}
                         value={codeBodyDraft}
                         onChange={(event) => setCodeBodyDraft(event.target.value)}
                       />

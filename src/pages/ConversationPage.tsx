@@ -3,6 +3,7 @@ import { AlertTriangle, CheckCircle2, PlugZap, Send } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
 import { Button, Panel } from '../components/ui'
 import { playDialogueTick, unlockDialogueSound } from '../lib/dialogueSound'
+import { useAutoScrollToBottom } from '../lib/useAutoScrollToBottom'
 import { providerLabel, runV2Chat } from '../lib/v2Chat'
 import { useV2 } from '../state/V2Store'
 
@@ -39,15 +40,15 @@ export function ConversationPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [pendingQuestion, setPendingQuestion] = useState('')
-  const endRef = useRef<HTMLDivElement | null>(null)
+  const chatScrollRef = useRef<HTMLDivElement | null>(null)
 
   const aemonName = state.aemonName.trim() || '에아몬'
   const orderedLogs = useMemo(() => [...state.chatLogs].reverse(), [state.chatLogs])
   const isApiActive = Boolean(state.apiKey.trim())
 
-  useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
-  }, [orderedLogs.length, pendingQuestion, isLoading])
+  useAutoScrollToBottom(chatScrollRef, `${orderedLogs.length}-${pendingQuestion}-${isLoading}`, {
+    enabled: orderedLogs.length > 0 || Boolean(pendingQuestion),
+  })
 
   const ask = async () => {
     const nextQuestion = question.trim()
@@ -123,7 +124,7 @@ export function ConversationPage() {
         </Panel>
 
       <Panel>
-        <div className="grid max-h-[58vh] min-h-[360px] gap-3 overflow-auto pr-1">
+        <div ref={chatScrollRef} className="grid max-h-[58vh] min-h-[360px] gap-3 overflow-auto pr-1">
           {orderedLogs.length === 0 && !pendingQuestion ? <p className="self-center text-center text-[#8AA0B0]">아직 대화가 없습니다.</p> : null}
           {orderedLogs.map((log, index) => (
             <article key={log.id} className="grid gap-2">
@@ -163,7 +164,6 @@ export function ConversationPage() {
               </div>
             </article>
           ) : null}
-          <div ref={endRef} />
         </div>
 
         {error ? (

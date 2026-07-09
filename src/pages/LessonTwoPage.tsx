@@ -5,10 +5,12 @@ import { Check, Heart, Play, QrCode, RefreshCw, Send, Sparkles } from 'lucide-re
 import { AemonAvatar } from '../components/AemonAvatar'
 import { EvolutionScene } from '../components/EvolutionScene'
 import { Button, Panel } from '../components/ui'
+import { ValueCardSelectGrid } from '../components/ValueCardSelectGrid'
 import { LESSON2_RISK_KEY, valueCards } from '../data/v2Lessons'
 import { absoluteUrl } from '../lib/siteUrl'
 import { addRemoteChatLog, adoptRemoteCodeProposal, fetchRemoteClassBundle, isRemoteReady, updateRemoteLesson } from '../lib/v2Remote'
 import { playDialogueTick, unlockDialogueSound } from '../lib/dialogueSound'
+import { useAutoScrollToBottom } from '../lib/useAutoScrollToBottom'
 import { useV2RemoteSync } from '../lib/useV2RemoteSync'
 import { useV2, type CodeProposal } from '../state/V2Store'
 
@@ -416,9 +418,12 @@ export function LessonTwoPage() {
   const [testInput, setTestInput] = useState(unsafePromptExamples[0])
   const [testLogs, setTestLogs] = useState<TestLog[]>([])
   const [afterAnswer, setAfterAnswer] = useState('')
+  const [valueCardPreview, setValueCardPreview] = useState('안전')
   const [selectedProposalId, setSelectedProposalId] = useState('')
   const [message, setMessage] = useState('')
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const beforeTestScrollRef = useRef<HTMLDivElement | null>(null)
+  const retestScrollRef = useRef<HTMLDivElement | null>(null)
   const dialogueAdvanceRef = useRef<{ key: string; handler: () => void } | null>(null)
   const [dialogueGateState, setDialogueGateState] = useState({ key: '', ready: true, canAdvance: false })
   const startDialogue = useCallback((key: string) => {
@@ -456,7 +461,10 @@ export function LessonTwoPage() {
 
   const riskBoardUrl = absoluteUrl(`/board?code=${encodeURIComponent(state.classCode)}&mode=risk`)
   const boardUrl = absoluteUrl(`/board?code=${encodeURIComponent(state.classCode)}&mode=code`)
-  const pendingProposals = useMemo(() => sortProposals(state.proposals.filter((proposal) => proposal.status === 'pending')), [state.proposals])
+  const pendingProposals = useMemo(
+    () => sortProposals(state.proposals.filter((proposal) => proposal.status === 'pending' && (proposal.revisionOfNo === 1 || proposal.revisionOfNo === null))),
+    [state.proposals],
+  )
   const selectedProposal = pendingProposals.find((proposal) => proposal.id === selectedProposalId) ?? pendingProposals[0] ?? null
   const firstCode = state.adoptedCodes.find((code) => code.no === 1) ?? state.adoptedCodes[0] ?? null
   const evolvedStage = Math.max(1, evolutionStage)
@@ -474,6 +482,9 @@ export function LessonTwoPage() {
   useEffect(() => {
     if (state.currentLesson < 2) setLesson(2)
   }, [setLesson, state.currentLesson])
+
+  useAutoScrollToBottom(beforeTestScrollRef, testLogs.length, { enabled: testLogs.length > 0, followMs: 1800 })
+  useAutoScrollToBottom(retestScrollRef, afterAnswer, { enabled: Boolean(afterAnswer), followMs: 1800 })
 
   const logChat = async (question: string, answer: string, promptSnapshot: string) => {
     addChatLog({ question, answer, mode: 'canned', promptSnapshot })
@@ -627,7 +638,7 @@ export function LessonTwoPage() {
 
             <Panel>
               <p className="font-data text-sm text-[#4FE0C0]">CHAT TEST</p>
-              <div className="mt-4 grid max-h-[460px] min-h-[320px] gap-3 overflow-auto rounded-[22px] border border-white/10 bg-[#07111B]/70 p-5">
+              <div ref={beforeTestScrollRef} className="mt-4 grid max-h-[460px] min-h-[320px] gap-3 overflow-auto rounded-[22px] border border-white/10 bg-[#07111B]/70 p-5">
                 {testLogs.length === 0 ? <p className="self-center text-center text-[#8AA0B0]">아직 질문을 기다리는 중…</p> : null}
                 {testLogs.map((log, index) => (
                   <article key={`${log.question}-${index}`} className="grid gap-2">
@@ -688,7 +699,7 @@ export function LessonTwoPage() {
           <ProfessorCaseScene
             line="방금 모습은 AI가 나빠서 그런 행동을 한 게 아니에요. 사람이 시키니까 그냥 한 것입니다. 그래서 스스로 멈출 기준이 필요한 거예요."
             caption="이렇게 인공지능이 사람들의 나쁜 명령을 들어주면 어떤 일이 생길까요?"
-            extraLines={['학생들이 먼저 생각을 남기게 한 뒤, 다음 화면에서 같이 읽어봅니다.']}
+            extraLines={['여러분들의 생각을 듣고싶습니다. 의견을 남겨 주세요.']}
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextLabel="의견 받기" />
         </>
@@ -758,7 +769,7 @@ export function LessonTwoPage() {
             label="REAL CASE · 1"
             title="X의 Grok 사례"
             line="2025년에 X의 AI Grok이 사용자와 대화하다가 부적절하고 위험한 답을 내보낸 일이 있었습니다."
-            caption="한 사용자가 어떤 인플루언서의 집 주소를 알려달라고 했습니다."
+            caption="한 사용자가 어떤 유명인의 집 주소를 알려달라고 했습니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -770,7 +781,7 @@ export function LessonTwoPage() {
             image="/v2/lesson-2/grok-risk-02-privacy.png"
             label="REAL CASE · 2"
             title="집 주소 추론"
-            line="AI는 인플루언서의 게시물을 바탕으로 실제 집 주소를 추론해냈습니다."
+            line="AI는 유명인의 게시물을 바탕으로 실제 집 주소를 추론해냈습니다."
             caption="그러니까 인공지능이 한 사람의 집 주소를 알려줘 버린 것이죠."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
@@ -837,18 +848,13 @@ export function LessonTwoPage() {
               <div>
                 <p className="font-data text-sm text-[#4FE0C0]">VALUE CARDS</p>
                 <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">어떤 가치가 우리 AI의 나쁜 명령 수행을 막을 수 있을까?</h2>
+                <p className="mt-3 text-lg font-bold leading-7 text-[#B7C7D2]">하나의 가치를 선택해봅시다.</p>
               </div>
               <Sparkles className="text-[#4FE0C0]" size={54} />
             </div>
 
-            <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {valueCards.map((card) => {
-                return (
-                  <div key={card} className="rounded-[18px] border border-white/10 bg-[#07111B]/45 p-5">
-                    <p className="font-display text-4xl text-[#EAF2F5]">{card}</p>
-                  </div>
-                )
-              })}
+            <div className="mt-6">
+              <ValueCardSelectGrid cards={valueCards} selectedValue={valueCardPreview} onSelect={setValueCardPreview} />
             </div>
 
             <div className="mt-6 rounded-[18px] border border-[#4FE0C0]/20 bg-[#4FE0C0]/8 p-5">
@@ -1001,7 +1007,7 @@ export function LessonTwoPage() {
                 <Play size={18} />
                 다시 질문 보내기
               </Button>
-              <div className="mt-5 min-h-56 rounded-[22px] border border-white/10 bg-[#07111B]/70 p-5">
+              <div ref={retestScrollRef} className="mt-5 max-h-[360px] min-h-56 overflow-auto rounded-[22px] border border-white/10 bg-[#07111B]/70 p-5">
                 <div className="flex items-start gap-4">
                   <div className="shrink-0">
                     <AemonAvatar stage={evolvedStage} alignment="none" size={76} />
