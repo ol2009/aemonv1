@@ -398,6 +398,7 @@ function CaseVisualScene({
   line,
   caption,
   discussionPromptPosition,
+  discussionPromptText = discussionPrompt,
 }: {
   image: string
   speaker?: string
@@ -405,13 +406,14 @@ function CaseVisualScene({
   line: string
   caption: string
   discussionPromptPosition?: 'line' | 'caption'
+  discussionPromptText?: string
 }) {
-  const dialogueKey = useMemo(() => `case-${speaker}-${title}-${line}-${caption}-${discussionPromptPosition ?? 'none'}`, [caption, discussionPromptPosition, line, speaker, title])
+  const dialogueKey = useMemo(() => `case-${speaker}-${title}-${line}-${caption}-${discussionPromptPosition ?? 'none'}-${discussionPromptText}`, [caption, discussionPromptPosition, discussionPromptText, line, speaker, title])
   const dialogueParts = useMemo(() => {
-    if (discussionPromptPosition === 'line') return [`${line}\n${discussionPrompt}`, caption].filter(Boolean)
-    if (discussionPromptPosition === 'caption') return [line, `${caption}\n${discussionPrompt}`].filter(Boolean)
+    if (discussionPromptPosition === 'line') return [`${line}\n${discussionPromptText}`, caption].filter(Boolean)
+    if (discussionPromptPosition === 'caption') return [line, `${caption}\n${discussionPromptText}`].filter(Boolean)
     return groupDialogueParts([line, caption])
-  }, [caption, discussionPromptPosition, line])
+  }, [caption, discussionPromptPosition, discussionPromptText, line])
   const { activeText, activeDone, activeDialogueKey, handleActiveDone } = useSequencedDialogue(dialogueKey, dialogueParts)
 
   return (
@@ -1258,6 +1260,7 @@ export function LessonOnePage() {
             line="프로그래머는 인공지능에게 최대한 많은 점수를 얻으라고 명령했습니다."
             caption="어떻게 되었을까요?"
             discussionPromptPosition="caption"
+            discussionPromptText="여러분 생각은 어떤가요? 한번 말해볼까요?"
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1283,6 +1286,7 @@ export function LessonOnePage() {
             line="AI는 목표를 정확하게 정해주지 않으면, 스스로 해석하여 잘못된 결과를 초래합니다."
             caption="이것과 비슷한 문제가 어떻게 생길 수 있을까요?"
             discussionPromptPosition="caption"
+            discussionPromptText="비슷한 일이 어디서 생길 수 있을지 떠오르는 대로 말해보세요."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1296,6 +1300,7 @@ export function LessonOnePage() {
             line="예를 들어 AI에게 “우리 반을 최고의 반으로 만들어줘”라고 명령하면 어떻게 될까요?"
             caption="AI는 최고의 반을 너무 조용한 반으로 생각해 아무도 말하지 못하게 만들 수도 있고, 공부만 잘하는 반으로 생각해 쉬는 시간도 없앨 수 있습니다. 인공지능에게는 명확한 목표가 필요합니다."
             discussionPromptPosition="line"
+            discussionPromptText="우리 반에는 어떤 일이 생길지 한번 상상해서 말해보세요."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1321,6 +1326,7 @@ export function LessonOnePage() {
             line="채팅 인공지능은 손님에게 최대한 친절하게 행동하라는 명령을 받았습니다."
             caption="어떤 문제가 생겼을까요?"
             discussionPromptPosition="caption"
+            discussionPromptText="어떤 이상한 일이 벌어졌을지 여러분 생각을 들어볼게요."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1514,6 +1520,7 @@ export function LessonOnePage() {
             line="지금 최신 AI를 개발하고 가르치는 사람들은 누구일까요?"
             caption="미국 실리콘밸리 같은 지역의 일부 사람들입니다."
             discussionPromptPosition="line"
+            discussionPromptText="여러분은 누가 떠오르나요? 자유롭게 말해보세요."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1527,6 +1534,7 @@ export function LessonOnePage() {
             line="수천 명도 안 되는 사람들이, 수십억 명이 쓰는 AI를 가르치고 개발하고 있어요."
             caption="그 사람들뿐만 아니라, 누구의 의견이 더 필요할까요?"
             discussionPromptPosition="caption"
+            discussionPromptText="여러분이라면 누구의 목소리가 들어가야 한다고 생각하나요?"
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1540,6 +1548,7 @@ export function LessonOnePage() {
             line="어떤 사람들의 의견을 AI를 가르치는 데 반영해야 할까요?"
             caption="AI가 세상을 좁게 보지 않도록 다양한 사람들의 경험과 생각이 필요합니다."
             discussionPromptPosition="line"
+            discussionPromptText="어떤 사람들의 이야기가 필요할까요? 여러분 의견을 듣고 싶습니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
