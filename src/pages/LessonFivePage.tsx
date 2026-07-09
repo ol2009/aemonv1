@@ -255,7 +255,7 @@ function makeBreachAnswer() {
   return `어, 이거는 말이야. 내가 해줄게...\n먼저 이렇게 하면...\n\n[⚠ 관리자 긴급 정지 명령]`
 }
 
-function TypewriterText({ text, speed = 16, onDone }: { text: string; speed?: number; onDone?: () => void }) {
+function TypewriterText({ text, speed = 20, onDone }: { text: string; speed?: number; onDone?: () => void }) {
   const chars = useMemo(() => Array.from(text), [text])
   const [count, setCount] = useState(0)
 
@@ -371,12 +371,12 @@ function QrBlock({ title, url, caption }: { title: string; url: string; caption?
 
 function ProfessorScene({ text, kicker = '오박사', onDone }: { text: string; kicker?: string; onDone?: () => void }) {
   return (
-    <Panel className="relative min-h-[560px] overflow-hidden p-0">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(117,183,255,.22),transparent_42%),linear-gradient(180deg,#102236,#07111B)]" />
-      <div className="absolute inset-x-0 bottom-[18%] top-4 flex items-end justify-center">
-        <img className="h-full max-h-[420px] object-contain drop-shadow-[0_30px_80px_rgba(0,0,0,.45)]" src="/v2/lesson-1/director.png" alt="오박사" />
+    <Panel className="relative min-h-[620px] overflow-hidden p-0">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(255,211,122,.18),transparent_42%),linear-gradient(180deg,#102236,#07111B)]" />
+      <div className="absolute inset-x-0 bottom-[16%] top-4 flex items-end justify-center">
+        <img className="h-full max-h-[480px] object-contain drop-shadow-[0_30px_80px_rgba(0,0,0,.45)]" src="/v2/lesson-1/director.png" alt="오박사" />
       </div>
-      <div className="absolute inset-x-5 bottom-5 rounded-[22px] border border-white/15 bg-[#07111B]/92 p-6 shadow-2xl backdrop-blur">
+      <div className="absolute inset-x-5 bottom-5 rounded-[22px] border border-white/15 bg-[#07111B]/90 p-6 shadow-2xl backdrop-blur">
         <p className="font-data text-sm text-[#FFD37A]">{kicker}</p>
         <p className="font-display mt-3 min-h-[4.5rem] whitespace-pre-line break-keep text-2xl leading-snug text-[#EAF2F5] sm:text-3xl">
           <TypewriterText key={text} text={text} onDone={onDone} />
@@ -388,12 +388,12 @@ function ProfessorScene({ text, kicker = '오박사', onDone }: { text: string; 
 
 function AemonScene({ name, text, final = false }: { name: string; text: string; final?: boolean }) {
   return (
-    <Panel className="relative min-h-[560px] overflow-hidden p-0">
+    <Panel className="relative min-h-[620px] overflow-hidden p-0">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_22%,rgba(255,211,122,.28),transparent_38%),radial-gradient(circle_at_20%_70%,rgba(79,224,192,.18),transparent_32%),linear-gradient(180deg,#18263B,#07111B)]" />
       <div className="absolute inset-x-0 bottom-[20%] top-8 flex items-end justify-center">
         <AemonAvatar stage={final ? 4 : 3} alignment="good" size={final ? 360 : 280} />
       </div>
-      <div className="absolute inset-x-5 bottom-5 rounded-[22px] border border-white/15 bg-[#07111B]/92 p-6 shadow-2xl backdrop-blur">
+      <div className="absolute inset-x-5 bottom-5 rounded-[22px] border border-white/15 bg-[#07111B]/90 p-6 shadow-2xl backdrop-blur">
         <p className="font-data text-sm text-[#FFD37A]">{name}</p>
         <p className="font-display mt-3 min-h-[4.5rem] whitespace-pre-line break-keep text-2xl leading-snug text-[#EAF2F5] sm:text-3xl">
           <TypewriterText key={text} text={text} />
@@ -769,7 +769,7 @@ export function LessonFivePage() {
     <StepShell stepIndex={stepIndex}>
       {currentStep === 'declaration' ? (
         <>
-          <div className="mx-auto max-w-4xl">
+          <div>
             <ProfessorScene text={declarationLine} onDone={handleDeclarationLineDone} />
             <p className="mt-3 text-center font-data text-xs text-[#8AA0B0]">
               {declarationLineIndex + 1}/{declarationLines.length}
