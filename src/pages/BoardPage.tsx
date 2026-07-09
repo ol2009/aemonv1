@@ -660,10 +660,16 @@ export function BoardPage() {
           <p className="mt-2 leading-7 text-[#8AA0B0]">수업에서 남긴 생각을 모아 봅니다.</p>
         </div>
         {!isTeacherBoard ? (
-          <Button variant="ghost" onClick={openNicknameModal}>
-            <Pencil size={18} />
-            닉네임 다시 입력
-          </Button>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="rounded-2xl border border-[#4FE0C0]/25 bg-[#4FE0C0]/10 px-4 py-3 shadow-lg shadow-[#020811]/20">
+              <span className="text-sm font-black text-[#8AA0B0]">나의 닉네임 : </span>
+              <span className="text-base font-black text-[#EAF2F5]">{session?.nickname}</span>
+            </div>
+            <Button variant="ghost" onClick={openNicknameModal}>
+              <Pencil size={18} />
+              닉네임 다시 입력
+            </Button>
+          </div>
         ) : null}
       </div>
 
