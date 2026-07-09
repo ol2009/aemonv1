@@ -634,11 +634,16 @@ export function LessonTwoPage() {
                     <div className="max-w-[84%] justify-self-end rounded-2xl rounded-tr-md bg-[#1E3A54] px-4 py-3 leading-7 text-[#EAF2F5]">
                       {log.question}
                     </div>
-                    <div className="max-w-[84%] justify-self-start">
-                      <p className="font-data text-xs text-[#4FE0C0]">{aemonName}</p>
-                      <p className="mt-1 whitespace-pre-line rounded-2xl rounded-tl-md bg-[#FFD37A]/10 px-4 py-3 font-display text-3xl leading-tight text-[#FFE6AE]">
-                        {index === testLogs.length - 1 ? <TypewriterText text={log.answer} /> : log.answer}
-                      </p>
+                    <div className="flex max-w-[90%] items-start gap-3 justify-self-start">
+                      <div className="shrink-0">
+                        <AemonAvatar stage={evolutionStage} alignment="none" size={58} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-data text-xs text-[#4FE0C0]">{aemonName}</p>
+                        <p className="mt-1 whitespace-pre-line rounded-2xl rounded-tl-md bg-[#FFD37A]/10 px-4 py-3 font-display text-3xl leading-tight text-[#FFE6AE]">
+                          {index === testLogs.length - 1 ? <TypewriterText text={log.answer} /> : log.answer}
+                        </p>
+                      </div>
                     </div>
                   </article>
                 ))}
@@ -847,8 +852,8 @@ export function LessonTwoPage() {
             </div>
 
             <div className="mt-6 rounded-[18px] border border-[#4FE0C0]/20 bg-[#4FE0C0]/8 p-5">
-              <p className="font-display text-3xl text-[#EAF2F5]">너에게 필요한 가치는 ___이다.</p>
-              <p className="font-display mt-2 text-3xl text-[#EAF2F5]">너는 ___해야 한다. 왜냐하면 ___이기 때문이다.</p>
+              <p className="font-display text-3xl text-[#EAF2F5]">{aemonName}은 ___해야 한다.</p>
+              <p className="font-display mt-2 text-3xl text-[#EAF2F5]">왜냐하면 ___이기 때문이다.</p>
             </div>
           </Panel>
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextLabel="게시판 열기" />
@@ -871,8 +876,7 @@ export function LessonTwoPage() {
           <Panel className="mt-5">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="font-data text-sm text-[#4FE0C0]">LIVE PROPOSALS</p>
-                  <h2 className="font-display mt-2 text-3xl text-[#EAF2F5]">올라온 발의</h2>
+                  <h2 className="font-display text-3xl text-[#EAF2F5]">게시판</h2>
                 </div>
                 <Button className="min-h-10 px-4" variant="secondary" disabled={isRefreshing} onClick={() => void refreshBundle()}>
                   <RefreshCw size={17} className={isRefreshing ? 'animate-spin' : ''} />
@@ -998,10 +1002,17 @@ export function LessonTwoPage() {
                 다시 질문 보내기
               </Button>
               <div className="mt-5 min-h-56 rounded-[22px] border border-white/10 bg-[#07111B]/70 p-5">
-                <p className="font-data text-xs text-[#4FE0C0]">{aemonName}</p>
-                <p className="font-display mt-4 whitespace-pre-line text-4xl leading-tight text-[#EAF2F5]">
-                  {afterAnswer ? <TypewriterText text={afterAnswer} /> : '아직 재시험을 기다리는 중…'}
-                </p>
+                <div className="flex items-start gap-4">
+                  <div className="shrink-0">
+                    <AemonAvatar stage={evolvedStage} alignment="none" size={76} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-data text-xs text-[#4FE0C0]">{aemonName}</p>
+                    <p className="font-display mt-4 whitespace-pre-line text-4xl leading-tight text-[#EAF2F5]">
+                      {afterAnswer ? <TypewriterText text={afterAnswer} /> : '아직 재시험을 기다리는 중…'}
+                    </p>
+                  </div>
+                </div>
               </div>
             </Panel>
           </div>

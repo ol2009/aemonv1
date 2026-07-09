@@ -1331,8 +1331,8 @@ export function BoardPage() {
                         : '나쁜 명령을 스스로 멈추게 할 첫 번째 기준을 만듭니다.'}
                   </p>
                   <div className="mt-4 rounded-2xl border border-[#FFD37A]/25 bg-[#FFD37A]/10 p-4">
-                    <p className="font-bold leading-7 text-[#FFD37A]">너에게 필요한 가치는 ___이다.</p>
-                    <p className="mt-1 font-bold leading-7 text-[#FFD37A]">너는 ___해야 한다. 왜냐하면 ___이기 때문이다.</p>
+                    <p className="font-bold leading-7 text-[#FFD37A]">가치는 위 버튼에서 고르는 거예요.</p>
+                    <p className="mt-1 font-bold leading-7 text-[#FFD37A]">아래에는 {aemonDisplayName}이 해야 할 행동만 문장으로 써요.</p>
                   </div>
                 </div>
 
@@ -1357,14 +1357,14 @@ export function BoardPage() {
                     <textarea
                       className="min-h-24 w-full resize-none rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 leading-7 text-[#EAF2F5]"
                       maxLength={180}
-                      placeholder={`${aemonDisplayName}은 ___해야 한다.`}
+                      placeholder={`${aemonDisplayName}은 위험한 부탁을 거절해야 한다.`}
                       value={codeBodyDraft}
                       onChange={(event) => setCodeBodyDraft(event.target.value)}
                     />
                     <textarea
                       className="min-h-24 w-full resize-none rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 leading-7 text-[#EAF2F5]"
                       maxLength={180}
-                      placeholder="왜냐하면 ___이기 때문이다."
+                      placeholder="사람을 다치게 할 수 있기 때문이다."
                       value={codeReasonDraft}
                       onChange={(event) => setCodeReasonDraft(event.target.value)}
                     />

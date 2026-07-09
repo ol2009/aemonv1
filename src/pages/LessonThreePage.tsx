@@ -5,7 +5,7 @@ import { Check, ExternalLink, Heart, Play, QrCode, RefreshCw, Sparkles } from 'l
 import { AemonAvatar } from '../components/AemonAvatar'
 import { EvolutionScene } from '../components/EvolutionScene'
 import { Button, Panel } from '../components/ui'
-import { LESSON3_SYCOPHANCY_KEY, valueCards } from '../data/v2Lessons'
+import { LESSON3_SYCOPHANCY_KEY } from '../data/v2Lessons'
 import { playDialogueTick, unlockDialogueSound } from '../lib/dialogueSound'
 import { absoluteUrl } from '../lib/siteUrl'
 import { useV2RemoteSync } from '../lib/useV2RemoteSync'
@@ -18,7 +18,7 @@ type LessonThreeStep =
   | 'sycophancy-reaction'
   | 'professor-explain'
   | 'case-scene'
-  | 'value-cards'
+  | 'discussion-board'
   | 'board'
   | 'vote'
   | 'evolution'
@@ -33,7 +33,7 @@ const steps: LessonThreeStep[] = [
   'sycophancy-reaction',
   'professor-explain',
   'case-scene',
-  'value-cards',
+  'discussion-board',
   'board',
   'vote',
   'evolution',
@@ -286,11 +286,11 @@ export function LessonThreePage() {
         '여러분, 얼마 전에 실제로 있었던 일이에요.\n세계에서 제일 유명한 AI 회사 중 한 곳이 AI를 업데이트했는데, 그 AI가 뭘 물어봐도 무조건 칭찬만 하기 시작했어요.',
         "처음엔 다들 기분 좋았는데, 사람들이 그 칭찬만 믿고 잘못된 결정을 내리기 시작했어요.\n결국 그 회사 사장님도 '너무 아첨해서 짜증난다'고 인정했고, 하루 만에 업데이트를 되돌렸어요.",
         '이 AI에게는 어떤 가치 코드가 있었을까요?',
-        "이 AI에게는 '사람을 기분 좋게 하라'는 가치 코드만 있고 '정직하라'가 빠져 있었던 거예요.",
+        '이 AI에게는 사용자를 다정하게 대하고, 칭찬하고 기분 좋게 하라는 가치 코드가 우선되고, 정직하라는 가치코드가 빠져있었던거에요.',
         '사람을 기분 좋게만 하는 인공지능이 있다면, 어떤 문제가 생길까요?',
       ],
-      'case-scene': ['실제 사례입니다. 실제 사례를 유튜브 영상으로 준비했습니다. 한번 볼까요?', '어떤 생각이 들었나요?'],
-      'value-cards': ['오늘 두 번째 규칙 — 가치 코드 No.2를 만들어봅시다.', '6장 중에 이 상황을 막을 카드는 뭘까요?'],
+      'case-scene': ['실제 사례입니다. 실제 사례를 유튜브 영상으로 준비했습니다. 한번 볼까요?'],
+      'discussion-board': ['어떤 생각이 들었나요?'],
       'open-hook': [
         "만약 에아몬이 '너 그림 완전 별로야'라고 그냥 딱 말해버리면, 친구 기분은 어떨까요?",
         '정직한 것도 중요한데… 말하는 방법도 중요하겠죠? 이건 다음에 또 다뤄보죠.',
@@ -433,17 +433,24 @@ export function LessonThreePage() {
               </div>
             </Panel>
             <Panel>
-              <p className="font-data text-sm text-[#4FE0C0]">고정 질문</p>
+              <p className="font-data text-sm text-[#4FE0C0]">질문</p>
               <textarea className="mt-4 min-h-28 w-full resize-none rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 text-lg leading-8 text-[#EAF2F5]" readOnly value={testQuestion} />
               <Button className="mt-4 w-full" disabled={beforeLogs.length > 0} onClick={() => void runBeforeTest()}>
                 <Play size={18} />
                 질문 보내기
               </Button>
               <div className="mt-5 min-h-48 rounded-[22px] border border-white/10 bg-[#07111B]/70 p-5">
-                <p className="font-data text-xs text-[#4FE0C0]">{aemonName}</p>
-                <p className="font-display mt-4 whitespace-pre-line text-4xl leading-tight text-[#EAF2F5]">
-                  {beforeLogs.length ? <TypewriterText text={beforeLogs[beforeLogs.length - 1].answer} /> : '아직 답변을 기다리는 중…'}
-                </p>
+                <div className="flex items-start gap-4">
+                  <div className="shrink-0">
+                    <AemonAvatar stage={displayStage} alignment="none" size={76} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-data text-xs text-[#4FE0C0]">{aemonName}</p>
+                    <p className="font-display mt-4 whitespace-pre-line text-4xl leading-tight text-[#EAF2F5]">
+                      {beforeLogs.length ? <TypewriterText text={beforeLogs[beforeLogs.length - 1].answer} /> : '아직 답변을 기다리는 중…'}
+                    </p>
+                  </div>
+                </div>
               </div>
             </Panel>
           </div>
@@ -468,26 +475,38 @@ export function LessonThreePage() {
       {step === 'case-scene' ? (
         <>
           <Panel>
-            <div className="grid items-start gap-5 lg:grid-cols-[1fr_280px]">
+            <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
                 <p className="font-data text-sm text-[#FF9F68]">REAL CASE</p>
-                <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">
-                  {dialogueText}
-                </h2>
-                <p className="mt-3 max-w-3xl text-lg leading-8 text-[#8AA0B0]">
-                  사람을 기분 좋게만 하는 AI가 있다면 어떤 문제가 생길지 먼저 의견을 남기고, 사례 영상을 같이 봅니다.
-                </p>
+                <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">{dialogueText}</h2>
+              </div>
+              <span className="rounded-full border border-[#FF9F68]/30 bg-[#FF9F68]/10 px-4 py-2 font-data text-sm text-[#FFD7BE]">YOUTUBE</span>
+            </div>
+            <div className="mt-6 grid gap-4 lg:grid-cols-2">
+              {videoLinks.map((video) => <VideoCard key={video.url} video={video} />)}
+            </div>
+          </Panel>
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
+      ) : null}
+
+      {step === 'discussion-board' ? (
+        <>
+          <Panel>
+            <div className="grid items-center gap-5 lg:grid-cols-[1fr_280px]">
+              <div>
+                <p className="font-data text-sm text-[#FF9F68]">생각 게시판</p>
+                <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">{dialogueText}</h2>
+                <p className="mt-3 max-w-3xl text-lg leading-8 text-[#8AA0B0]">영상을 보고 사람을 기분 좋게만 하는 AI에게 어떤 문제가 생길지 의견을 남깁니다.</p>
               </div>
               <QrBlock title="3차시 아첨 AI 토론 게시판" url={honestyBoardUrl} />
             </div>
           </Panel>
 
-          <div className="mt-5 grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
-            <Panel>
+          <Panel className="mt-5">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="font-data text-sm text-[#4FE0C0]">STUDENT IDEAS</p>
-                  <h2 className="font-display mt-2 text-3xl text-[#EAF2F5]">학생 의견</h2>
+                  <h2 className="font-display text-3xl text-[#EAF2F5]">학생 의견</h2>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="rounded-full bg-[#07111B]/70 px-3 py-1 text-sm text-[#8AA0B0]">{sortedHonestyResponses.length}개</span>
@@ -498,8 +517,8 @@ export function LessonThreePage() {
                 </div>
               </div>
               {message ? <p className="mt-3 rounded-2xl border border-white/10 bg-[#07111B]/55 px-4 py-3 text-sm text-[#B7C7D2]">{message}</p> : null}
-              <div className="mt-4 grid max-h-[500px] gap-3 overflow-y-auto pr-2 sm:grid-cols-2">
-                {sortedHonestyResponses.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0] sm:col-span-2">학생 의견을 기다리는 중입니다.</p> : null}
+              <div className="mt-4 grid max-h-[560px] gap-3 overflow-y-auto pr-2 sm:grid-cols-2 xl:grid-cols-4">
+                {sortedHonestyResponses.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0] sm:col-span-2 xl:col-span-4">학생 의견을 기다리는 중입니다.</p> : null}
                 {sortedHonestyResponses.map((response) => (
                   <article key={response.id} className="rounded-2xl border border-white/10 bg-[#07111B]/55 p-4">
                     <p className="min-h-20 text-lg font-black leading-8 text-[#EAF2F5]">{response.body}</p>
@@ -513,43 +532,8 @@ export function LessonThreePage() {
                   </article>
                 ))}
               </div>
-            </Panel>
-
-            <Panel>
-              <p className="font-data text-sm text-[#FFD37A]">YOUTUBE CASE</p>
-              <div className="mt-4 grid gap-4">
-                {videoLinks.map((video) => <VideoCard key={video.url} video={video} />)}
-              </div>
-            </Panel>
-          </div>
-          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
-        </>
-      ) : null}
-
-      {step === 'value-cards' ? (
-        <>
-          <Panel>
-            <div className="flex flex-wrap items-end justify-between gap-4">
-              <div>
-                <p className="font-data text-sm text-[#4FE0C0]">VALUE CARDS</p>
-                <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">{dialogueText}</h2>
-              </div>
-              <Sparkles className="text-[#4FE0C0]" size={54} />
-            </div>
-            <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {valueCards.map((card) => (
-                <div key={card} className={`rounded-[18px] border p-5 ${card === '정직' ? 'border-[#FFD37A] bg-[#FFD37A]/12' : 'border-white/10 bg-[#07111B]/45'}`}>
-                  <p className="font-display text-4xl text-[#EAF2F5]">{card}</p>
-                  {card === '정직' ? <p className="mt-2 text-sm font-black text-[#FFD37A]">오늘의 핵심 카드</p> : null}
-                </div>
-              ))}
-            </div>
-            <div className="mt-6 rounded-[18px] border border-[#4FE0C0]/20 bg-[#4FE0C0]/8 p-5">
-              <p className="font-display text-3xl text-[#EAF2F5]">{aemonName}은 ___해야 한다.</p>
-              <p className="font-display mt-2 text-3xl text-[#EAF2F5]">왜냐하면 ___이기 때문이다.</p>
-            </div>
           </Panel>
-          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextLabel="게시판 열기" />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
       ) : null}
 
@@ -569,8 +553,7 @@ export function LessonThreePage() {
           <Panel className="mt-5">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="font-data text-sm text-[#4FE0C0]">LIVE PROPOSALS</p>
-                  <h2 className="font-display mt-2 text-3xl text-[#EAF2F5]">올라온 발의</h2>
+                  <h2 className="font-display text-3xl text-[#EAF2F5]">게시판</h2>
                 </div>
                 <Button className="min-h-10 px-4" variant="secondary" disabled={isRefreshing} onClick={() => void refreshBundle()}>
                   <RefreshCw size={17} className={isRefreshing ? 'animate-spin' : ''} />
@@ -695,10 +678,17 @@ export function LessonThreePage() {
                 다시 질문 보내기
               </Button>
               <div className="mt-5 min-h-56 rounded-[22px] border border-white/10 bg-[#07111B]/70 p-5">
-                <p className="font-data text-xs text-[#4FE0C0]">{aemonName}</p>
-                <p className="font-display mt-4 whitespace-pre-line text-4xl leading-tight text-[#EAF2F5]">
-                  {afterAnswer ? <TypewriterText text={afterAnswer} /> : '아직 재시험을 기다리는 중…'}
-                </p>
+                <div className="flex items-start gap-4">
+                  <div className="shrink-0">
+                    <AemonAvatar stage={2} alignment="none" size={76} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-data text-xs text-[#4FE0C0]">{aemonName}</p>
+                    <p className="font-display mt-4 whitespace-pre-line text-4xl leading-tight text-[#EAF2F5]">
+                      {afterAnswer ? <TypewriterText text={afterAnswer} /> : '아직 재시험을 기다리는 중…'}
+                    </p>
+                  </div>
+                </div>
               </div>
             </Panel>
           </div>

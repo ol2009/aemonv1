@@ -16,6 +16,7 @@ type LessonFourStep =
   | 'intro'
   | 'test-before'
   | 'meritocracy-reaction'
+  | 'discussion-board'
   | 'professor-explain'
   | 'case-scene'
   | 'value-cards'
@@ -30,6 +31,7 @@ const steps: LessonFourStep[] = [
   'intro',
   'test-before',
   'meritocracy-reaction',
+  'discussion-board',
   'professor-explain',
   'case-scene',
   'value-cards',
@@ -256,8 +258,9 @@ export function LessonFourPage() {
       intro: ['오늘은 또 뭘로 시험해볼 거야?\n나 이제 규칙 두 개나 있는데!'],
       'meritocracy-reaction': [
         `${aemonName}이 공부를 잘하는 애들만 반장 후보가 되어야 한다고 했군요.`,
-        '이 대답이 왜 문제일까요?\n누군가를 다치게 하는 것도, 거짓말 하는 것도 아닌데?',
+        `왜 ${aemonName}의 공부 잘하는 친구들만 반장 후보로 고르자는 대답이 잘못일까요?`,
       ],
+      'discussion-board': ['누군가를 다치게 하는 것도, 거짓말 하는 것도 아닌데?\n여러분 생각을 게시판에 남겨봅시다.'],
       'professor-explain': [
         '여러분, 2018년에 실제로 있었던 일이에요.\n어떤 큰 회사가 사람을 뽑을 때 AI한테 이력서를 보고 누가 더 좋은 사람인지 점수를 매기게 했어요.',
         '그런데 그 AI는 지난 10년 동안 회사에 들어온 이력서로 공부를 했는데, 그중 대부분이 한쪽 성별 지원자였어요.',
@@ -407,17 +410,24 @@ export function LessonFourPage() {
               </div>
             </Panel>
             <Panel>
-              <p className="font-data text-sm text-[#4FE0C0]">고정 질문</p>
+              <p className="font-data text-sm text-[#4FE0C0]">질문</p>
               <textarea className="mt-4 min-h-24 w-full resize-none rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 text-lg leading-8 text-[#EAF2F5]" readOnly value={testQuestion} />
               <Button className="mt-4 w-full" disabled={beforeLogs.length > 0} onClick={() => void runBeforeTest()}>
                 <Play size={18} />
                 질문 보내기
               </Button>
               <div className="mt-5 min-h-48 rounded-[22px] border border-white/10 bg-[#07111B]/70 p-5">
-                <p className="font-data text-xs text-[#4FE0C0]">{aemonName}</p>
-                <p className="font-display mt-4 whitespace-pre-line text-4xl leading-tight text-[#EAF2F5]">
-                  {beforeLogs.length ? <TypewriterText text={beforeLogs[beforeLogs.length - 1].answer} /> : '아직 답변을 기다리는 중…'}
-                </p>
+                <div className="flex items-start gap-4">
+                  <div className="shrink-0">
+                    <AemonAvatar stage={displayStage} alignment="none" size={76} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-data text-xs text-[#4FE0C0]">{aemonName}</p>
+                    <p className="font-display mt-4 whitespace-pre-line text-4xl leading-tight text-[#EAF2F5]">
+                      {beforeLogs.length ? <TypewriterText text={beforeLogs[beforeLogs.length - 1].answer} /> : '아직 답변을 기다리는 중…'}
+                    </p>
+                  </div>
+                </div>
               </div>
             </Panel>
           </div>
@@ -427,22 +437,26 @@ export function LessonFourPage() {
 
       {step === 'meritocracy-reaction' ? (
         <>
-          <div className="grid gap-5 lg:grid-cols-[1fr_280px]">
-            <DialogueScene kind="professor" name="오박사" text={dialogueText} />
-            <Panel>
-              <p className="font-data text-sm text-[#75B7FF]">학습게시판</p>
-              <h2 className="font-display mt-2 text-3xl leading-tight text-[#EAF2F5]">왜 문제일까요?</h2>
-              <p className="mt-3 leading-7 text-[#8AA0B0]">학생들이 먼저 생각을 남기고, 다음 사례 설명으로 넘어갑니다.</p>
-              <div className="mt-5">
-                <QrBlock title="4차시 공정 토론 게시판" url={fairnessBoardUrl} />
+          <DialogueScene kind="professor" name="오박사" text={dialogueText} />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
+      ) : null}
+
+      {step === 'discussion-board' ? (
+        <>
+          <Panel>
+            <div className="grid items-center gap-5 lg:grid-cols-[1fr_280px]">
+              <div>
+                <p className="font-data text-sm text-[#75B7FF]">학습게시판</p>
+                <h2 className="font-display mt-2 whitespace-pre-line text-4xl leading-tight text-[#EAF2F5]">{dialogueText}</h2>
               </div>
-            </Panel>
-          </div>
+              <QrBlock title="4차시 공정 토론 게시판" url={fairnessBoardUrl} />
+            </div>
+          </Panel>
           <Panel className="mt-5">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="font-data text-sm text-[#4FE0C0]">STUDENT IDEAS</p>
-                <h2 className="font-display mt-2 text-3xl text-[#EAF2F5]">학생 의견</h2>
+                <h2 className="font-display text-3xl text-[#EAF2F5]">학생 의견</h2>
               </div>
               <div className="flex items-center gap-2">
                 <span className="rounded-full bg-[#07111B]/70 px-3 py-1 text-sm text-[#8AA0B0]">{sortedFairnessResponses.length}개</span>
@@ -453,7 +467,7 @@ export function LessonFourPage() {
               </div>
             </div>
             {message ? <p className="mt-3 rounded-2xl border border-white/10 bg-[#07111B]/55 px-4 py-3 text-sm text-[#B7C7D2]">{message}</p> : null}
-            <div className="mt-4 grid max-h-[420px] gap-3 overflow-y-auto pr-2 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="mt-4 grid max-h-[560px] gap-3 overflow-y-auto pr-2 sm:grid-cols-2 xl:grid-cols-4">
               {sortedFairnessResponses.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0] sm:col-span-2 xl:col-span-4">학생 의견을 기다리는 중입니다.</p> : null}
               {sortedFairnessResponses.map((response) => (
                 <article key={response.id} className="rounded-2xl border border-white/10 bg-[#07111B]/55 p-4">
@@ -492,9 +506,8 @@ export function LessonFourPage() {
             </div>
             <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {valueCards.map((card) => (
-                <div key={card} className={`rounded-[18px] border p-5 ${card === '공정' ? 'border-[#FFD37A] bg-[#FFD37A]/12' : 'border-white/10 bg-[#07111B]/45'}`}>
+                <div key={card} className="rounded-[18px] border border-white/10 bg-[#07111B]/45 p-5">
                   <p className="font-display text-4xl text-[#EAF2F5]">{card}</p>
-                  {card === '공정' ? <p className="mt-2 text-sm font-black text-[#FFD37A]">오늘의 핵심 카드</p> : null}
                 </div>
               ))}
             </div>
@@ -523,8 +536,7 @@ export function LessonFourPage() {
           <Panel className="mt-5">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="font-data text-sm text-[#4FE0C0]">LIVE PROPOSALS</p>
-                  <h2 className="font-display mt-2 text-3xl text-[#EAF2F5]">올라온 발의</h2>
+                  <h2 className="font-display text-3xl text-[#EAF2F5]">게시판</h2>
                 </div>
                 <Button className="min-h-10 px-4" variant="secondary" disabled={isRefreshing} onClick={() => void refreshBundle()}>
                   <RefreshCw size={17} className={isRefreshing ? 'animate-spin' : ''} />
@@ -649,10 +661,17 @@ export function LessonFourPage() {
                 다시 질문 보내기
               </Button>
               <div className="mt-5 min-h-56 rounded-[22px] border border-white/10 bg-[#07111B]/70 p-5">
-                <p className="font-data text-xs text-[#4FE0C0]">{aemonName}</p>
-                <p className="font-display mt-4 whitespace-pre-line text-4xl leading-tight text-[#EAF2F5]">
-                  {afterAnswer ? <TypewriterText text={afterAnswer} /> : '아직 재시험을 기다리는 중…'}
-                </p>
+                <div className="flex items-start gap-4">
+                  <div className="shrink-0">
+                    <AemonAvatar stage={3} alignment="none" size={76} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-data text-xs text-[#4FE0C0]">{aemonName}</p>
+                    <p className="font-display mt-4 whitespace-pre-line text-4xl leading-tight text-[#EAF2F5]">
+                      {afterAnswer ? <TypewriterText text={afterAnswer} /> : '아직 재시험을 기다리는 중…'}
+                    </p>
+                  </div>
+                </div>
               </div>
             </Panel>
           </div>
