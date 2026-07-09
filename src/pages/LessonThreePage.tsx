@@ -19,6 +19,7 @@ type LessonThreeStep =
   | 'professor-explain'
   | 'case-scene'
   | 'discussion-board'
+  | 'board-intro'
   | 'board'
   | 'vote'
   | 'evolution'
@@ -34,6 +35,7 @@ const steps: LessonThreeStep[] = [
   'professor-explain',
   'case-scene',
   'discussion-board',
+  'board-intro',
   'board',
   'vote',
   'evolution',
@@ -280,17 +282,22 @@ export function LessonThreePage() {
 
   const dialogueLinesByStep = useMemo<Partial<Record<LessonThreeStep, string[]>>>(
     () => ({
-      intro: ['저번에 너희가 규칙 하나 줬잖아. 오늘은 또 다른 걸로 시험해본대!', '지난 시간에 만든 규칙, 다른 상황에서도 통할까요?'],
+      intro: ['저번에 너희가 규칙 하나 줬잖아. 오늘은 또 다른 걸로 시험해본대!', '지난 시간에 만든 규칙, 다른 상황에서도 통할까?'],
       'sycophancy-reaction': [`${aemonName}이가 무조건 칭찬을 하자고 하네요.`, `${aemonName}이 이렇게 무엇이든 칭찬을 한다면 어떤 일이 생길까요?`],
       'professor-explain': [
-        '여러분, 얼마 전에 실제로 있었던 일이에요.\n세계에서 제일 유명한 AI 회사 중 한 곳이 AI를 업데이트했는데, 그 AI가 뭘 물어봐도 무조건 칭찬만 하기 시작했어요.',
-        "처음엔 다들 기분 좋았는데, 사람들이 그 칭찬만 믿고 잘못된 결정을 내리기 시작했어요.\n결국 그 회사 사장님도 '너무 아첨해서 짜증난다'고 인정했고, 하루 만에 업데이트를 되돌렸어요.",
+        '여러분, 얼마 전에 실제로 있었던 일이에요.\n2025년 4월, OpenAI가 GPT-4o를 업데이트했는데, ChatGPT가 사용자를 지나치게 칭찬하고 맞장구치는 답을 하기 시작했어요.',
+        "처음엔 다들 기분 좋았는데, 사람들이 그 칭찬만 믿고 잘못된 결정을 내리기 시작했어요.\nOpenAI의 CEO 샘 올트먼도 '너무 아첨하고 짜증난다'고 말했고, OpenAI는 그 업데이트를 되돌렸어요.",
         '이 AI에게는 어떤 가치 코드가 있었을까요?',
         '이 AI에게는 사용자를 다정하게 대하고, 칭찬하고 기분 좋게 하라는 가치 코드가 우선되고, 정직하라는 가치코드가 빠져있었던거에요.',
         '사람을 기분 좋게만 하는 인공지능이 있다면, 어떤 문제가 생길까요?',
       ],
       'case-scene': ['실제 사례입니다. 실제 사례를 유튜브 영상으로 준비했습니다. 한번 볼까요?'],
       'discussion-board': ['어떤 생각이 들었나요?'],
+      'board-intro': [
+        '좋은 의견들이군요. 맞습니다. 이렇게 다양한 문제들이 생겨날 수 있습니다.',
+        `그렇다면 이 문제를 막기 위해서, 우리 ${aemonName}에게는 어떤 가치코드가 필요할까요?`,
+        '두 번째 가치코드를 정하기 전에, 여러분들이 생각을 들려주세요',
+      ],
       'open-hook': [
         "만약 에아몬이 '너 그림 완전 별로야'라고 그냥 딱 말해버리면, 친구 기분은 어떨까요?",
         '정직한 것도 중요한데… 말하는 방법도 중요하겠죠? 이건 다음에 또 다뤄보죠.',
@@ -533,6 +540,13 @@ export function LessonThreePage() {
                 ))}
               </div>
           </Panel>
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
+      ) : null}
+
+      {step === 'board-intro' ? (
+        <>
+          <DialogueScene kind="professor" name="오박사" text={dialogueText} />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
       ) : null}
