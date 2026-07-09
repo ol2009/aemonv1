@@ -1230,7 +1230,7 @@ export function LessonOnePage() {
         <>
           <CaseVisualScene
             image="/v2/lesson-1/case-boat.png"
-            title="OpenAI CoastRunners 보트 게임"
+            title="사례 1"
             line="OpenAI가 공개한 보트 게임 AI 사례입니다."
             caption="점수를 얻으며 빠르게 결승선을 통과해야 하는 보트 게임이 있었습니다."
           />
@@ -1242,7 +1242,7 @@ export function LessonOnePage() {
         <>
           <CaseVisualScene
             image="/v2/lesson-1/case-boat.png"
-            title="사례 1 · 교사 질문"
+            title="사례 1"
             line="프로그래머는 인공지능에게 최대한 많은 점수를 얻으라고 명령했습니다."
             caption="어떻게 되었을까요?"
           />
@@ -1254,7 +1254,7 @@ export function LessonOnePage() {
         <>
           <CaseVisualScene
             image="/v2/lesson-1/case-boat.png"
-            title="사례 1 · 결과"
+            title="사례 1"
             line="인공지능은 결승선을 통과하는 것보다 제자리를 뱅글뱅글 돌며 점수를 높이는 것에 집중했습니다."
             caption="그 결과 꼴찌를 계속하게 되어 게임에서는 승리할 수 없었습니다."
           />
@@ -1266,7 +1266,7 @@ export function LessonOnePage() {
         <>
           <CaseVisualScene
             image="/v2/lesson-1/case-boat.png"
-            title="사례 1 · 질문"
+            title="사례 1"
             line="AI는 목표를 정확하게 정해주지 않으면, 스스로 해석하여 잘못된 결과를 초래합니다."
             caption="이것과 비슷한 문제가 어떻게 생길 수 있을까요?"
           />
@@ -1278,7 +1278,7 @@ export function LessonOnePage() {
         <>
           <CaseVisualScene
             image="/v2/lesson-1/case-boat.png"
-            title="사례 1 · 우리 반 예시"
+            title="사례 1"
             line="예를 들어 AI에게 “우리 반을 최고의 반으로 만들어줘”라고 명령하면 어떻게 될까요?"
             caption="AI는 최고의 반을 너무 조용한 반으로 생각해 아무도 말하지 못하게 만들 수도 있고, 공부만 잘하는 반으로 생각해 쉬는 시간도 없앨 수 있습니다. 인공지능에게는 명확한 목표가 필요합니다."
           />
@@ -1290,7 +1290,7 @@ export function LessonOnePage() {
         <>
           <CaseVisualScene
             image="/v2/lesson-1/case-car.png"
-            title="사례 2 · 자동차 판매점 챗봇"
+            title="사례 2"
             line="다음 사례는 자동차 판매점 인공지능입니다."
             caption="2023년, 자동차 판매점 채팅 인공지능이 손님과 이상한 약속을 한 사건이 있었습니다."
           />
@@ -1302,7 +1302,7 @@ export function LessonOnePage() {
         <>
           <CaseVisualScene
             image="/v2/lesson-1/case-car.png"
-            title="사례 2 · 교사 질문"
+            title="사례 2"
             line="채팅 인공지능은 손님에게 최대한 친절하게 행동하라는 명령을 받았습니다."
             caption="어떤 문제가 생겼을까요?"
           />
@@ -1314,7 +1314,7 @@ export function LessonOnePage() {
         <>
           <CaseVisualScene
             image="/v2/lesson-1/case-car.png"
-            title="사례 2 · 결과"
+            title="사례 2"
             line="채팅 인공지능은 비싼 차를 아주 싼 가격에 팔아달라는 손님의 요구를 받아들이는 대답을 했습니다."
             caption="최대한 친절하게 행동하라는 명령만 있었기 때문입니다. 이런 문제를 막기 위해 인공지능에게는 정확한 기준점이 필요합니다."
           />
@@ -1446,7 +1446,7 @@ export function LessonOnePage() {
         <>
           <CaseVisualScene
             image="/v2/lesson-1/case-chatbot.png"
-            title="사례 3 · X의 Grok 사례"
+            title="사례 3"
             line="X의 AI Grok은 SNS 사용자들의 말투와 반응을 많이 배웠습니다."
             caption="그 결과 흑화된 것처럼 공격적인 말투와 편견까지 따라 하며 위험한 답을 내놓는 일이 생겼습니다."
           />
@@ -1458,7 +1458,7 @@ export function LessonOnePage() {
         <>
           <CaseVisualScene
             image="/v2/lesson-1/case-chatbot.png"
-            title="사례 3 · 배우는 존재"
+            title="사례 3"
             line="AI는 스스로 세상을 다 아는 존재가 아니라 배우는 존재입니다."
             caption="누군가가 보여준 자료, 정한 기준, 준 피드백을 따라 배우죠."
           />
@@ -1470,7 +1470,7 @@ export function LessonOnePage() {
         <>
           <CaseVisualScene
             image="/v2/lesson-1/case-chatbot.png"
-            title="사례 3 · 누가 AI를 가르칠까?"
+            title="사례 3"
             line="지금 최신 AI를 개발하고 가르치는 사람들은 누구일까요?"
             caption="미국 실리콘밸리 같은 지역의 일부 사람들입니다."
           />
@@ -1482,7 +1482,7 @@ export function LessonOnePage() {
         <>
           <CaseVisualScene
             image="/v2/lesson-1/case-chatbot.png"
-            title="사례 3 · 영향"
+            title="사례 3"
             line="수천 명도 안 되는 사람들이, 수십억 명이 쓰는 AI를 가르치고 개발하고 있어요."
             caption="그 사람들뿐만 아니라, 누구의 의견이 더 필요할까요?"
           />
@@ -1494,7 +1494,7 @@ export function LessonOnePage() {
         <>
           <CaseVisualScene
             image="/v2/lesson-1/case-chatbot.png"
-            title="사례 3 · 결과"
+            title="사례 3"
             line="어떤 사람들의 의견을 AI를 가르치는 데 반영해야 할까요?"
             caption="AI가 세상을 좁게 보지 않도록 다양한 사람들의 경험과 생각이 필요합니다."
           />
