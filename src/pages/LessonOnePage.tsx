@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, Check, Heart, Pencil, Play, QrCode, RefreshCw, Trash2 } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
 import { Button, Panel } from '../components/ui'
-import { AI_SURVEY_DESCRIPTION, AI_SURVEY_ITEMS, AI_SURVEY_TITLE, PRE_SURVEY_KEY, parseSurveyAnswer, surveyScore, type AiSurveyAnswer } from '../data/survey'
+import { AI_SURVEY_DESCRIPTION, AI_SURVEY_ITEMS, AI_SURVEY_OPEN_QUESTIONS, AI_SURVEY_TITLE, PRE_SURVEY_KEY, parseSurveyAnswer, type AiSurveyAnswer } from '../data/survey'
 import { absoluteUrl } from '../lib/siteUrl'
 import {
   addRemoteChatLog,
@@ -494,22 +494,21 @@ export function LessonOnePage() {
     },
     [state.surveyResponses],
   )
-  const surveyAverage = useMemo(() => {
-    if (surveyResponses.length === 0) return 0
-    return surveyResponses.reduce((sum, item) => sum + surveyScore(item.answer), 0) / surveyResponses.length
-  }, [surveyResponses])
-  const surveyItemAverages = useMemo(
+  const surveyOpenGroups = useMemo(
     () =>
-      AI_SURVEY_ITEMS.map((item, index) => {
-        const average = surveyResponses.length === 0 ? 0 : surveyResponses.reduce((sum, survey) => sum + Number(survey.answer.s[index] ?? 0), 0) / surveyResponses.length
-        return { item, average }
-      }),
+      AI_SURVEY_OPEN_QUESTIONS.map((question, questionIndex) => ({
+        question,
+        answers: surveyResponses
+          .map(({ response, answer }, answerIndex) => ({
+            id: `${response.id}-${questionIndex}`,
+            label: `답변 ${answerIndex + 1}`,
+            text: answer.o[questionIndex]?.trim() ?? '',
+          }))
+          .filter((item) => item.text),
+      })),
     [surveyResponses],
   )
-  const latestOpenAnswer = useMemo(() => {
-    const found = surveyResponses.find((item) => item.answer.o.some((text) => text.trim()))
-    return found?.answer.o.find((text) => text.trim())?.trim() ?? ''
-  }, [surveyResponses])
+  const surveyOpenAnswerCount = surveyOpenGroups.reduce((sum, group) => sum + group.answers.length, 0)
   const canWriteRemote = Boolean(state.classId && state.remote.ok && isRemoteReady())
   const composedClassName = `${classGrade} ${classLabel.trim()}`.trim()
 
@@ -752,30 +751,33 @@ export function LessonOnePage() {
                   <p className="font-display mt-2 text-4xl text-[#FFD37A]">{surveyResponses.length}</p>
                 </div>
                 <div className="rounded-2xl border border-white/10 bg-[#07111B]/55 p-4">
-                  <p className="font-data text-xs text-[#8AA0B0]">평균 점수</p>
-                  <p className="font-display mt-2 text-4xl text-[#4FE0C0]">{surveyResponses.length ? surveyAverage.toFixed(1) : '0.0'}</p>
+                  <p className="font-data text-xs text-[#8AA0B0]">서술형 답변</p>
+                  <p className="font-display mt-2 text-4xl text-[#4FE0C0]">{surveyOpenAnswerCount}</p>
                 </div>
               </div>
 
-              <div className="mt-5 grid gap-2">
-                {surveyItemAverages.map(({ item, average }) => (
-                  <div key={item.no} className="grid gap-1">
-                    <div className="flex items-center justify-between gap-3 text-sm">
-                      <span className="font-bold text-[#B7C7D2]">문항 {item.no}</span>
-                      <span className="font-data text-[#8AA0B0]">{average ? average.toFixed(1) : '0.0'}/4</span>
-                    </div>
-                    <div className="h-2 overflow-hidden rounded-full bg-white/10">
-                      <div className="h-full rounded-full bg-[#FFD37A]" style={{ width: `${Math.min(100, (average / 4) * 100)}%` }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-5 rounded-2xl border border-[#4FE0C0]/20 bg-[#4FE0C0]/8 p-4">
-                <p className="font-data text-xs text-[#4FE0C0]">최근 서술형 조각</p>
-                <p className="mt-2 min-h-12 text-lg leading-7 text-[#EAF2F5]">
-                  {latestOpenAnswer || '아직 서술형 답변을 기다리는 중입니다.'}
-                </p>
+              <div className="mt-5 max-h-[360px] overflow-y-auto pr-2">
+                {surveyOpenAnswerCount === 0 ? (
+                  <p className="rounded-2xl border border-[#4FE0C0]/20 bg-[#4FE0C0]/8 p-4 text-lg leading-7 text-[#EAF2F5]">
+                    아직 서술형 답변을 기다리는 중입니다.
+                  </p>
+                ) : null}
+                <div className="grid gap-4">
+                  {surveyOpenGroups.map((group, groupIndex) => (
+                    <section key={group.question} className="grid gap-2">
+                      <div className="rounded-2xl border border-[#6AD8FF]/20 bg-[#6AD8FF]/8 p-3">
+                        <p className="font-data text-xs text-[#6AD8FF]">서술형 {groupIndex + 1}</p>
+                        <p className="mt-1 text-sm font-black leading-6 text-[#EAF2F5]">{group.question}</p>
+                      </div>
+                      {group.answers.map((answer) => (
+                        <article key={answer.id} className="rounded-2xl border border-white/10 bg-[#07111B]/55 p-4">
+                          <p className="font-data text-xs text-[#8AA0B0]">{answer.label}</p>
+                          <p className="mt-2 text-lg font-bold leading-7 text-[#EAF2F5]">{answer.text}</p>
+                        </article>
+                      ))}
+                    </section>
+                  ))}
+                </div>
               </div>
 
               {surveyRefreshMessage ? (

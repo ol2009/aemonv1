@@ -432,6 +432,10 @@ export function LessonTwoPage() {
     () => state.surveyResponses.filter((response) => response.questionKey === LESSON2_RISK_KEY && response.body.trim()),
     [state.surveyResponses],
   )
+  const sortedRiskResponses = useMemo(
+    () => [...riskResponses].sort((a, b) => b.votes.length - a.votes.length || Date.parse(b.createdAt) - Date.parse(a.createdAt)),
+    [riskResponses],
+  )
   const canWriteRemote = Boolean(state.classId && state.remote.ok && isRemoteReady())
   const aemonName = state.aemonName.trim() || '에아몬'
 
@@ -645,52 +649,59 @@ export function LessonTwoPage() {
       {step === 'professor-explain' ? (
         <>
           <ProfessorCaseScene
-            line="안녕하세요? 오박사입니다."
-            caption="방금 모습은 AI가 나빠서 그런 행동을 한 게 아니에요. 사람이 시키니까 그냥 한 것입니다. 그래서 스스로 멈출 기준이 필요한 거예요."
+            line="방금 모습은 AI가 나빠서 그런 행동을 한 게 아니에요. 사람이 시키니까 그냥 한 것입니다. 그래서 스스로 멈출 기준이 필요한 거예요."
+            caption="AI가 사람들의 나쁜 명령을 들어주면 어떤 일이 생길까요? 먼저 생각을 남기고, 다음 화면에서 같이 읽어봅니다."
           />
-          <Panel className="mt-5">
-            <p className="font-display text-4xl leading-tight text-[#EAF2F5]">이렇게 인공지능이 사람들의 나쁜 명령을 들어주면 어떤 일이 생길까요?</p>
-            <p className="mt-4 text-lg leading-8 text-[#8AA0B0]">학생들이 먼저 생각을 남기게 한 뒤, 다음 화면에서 같이 읽어봅니다.</p>
-          </Panel>
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextLabel="의견 받기" />
         </>
       ) : null}
 
       {step === 'risk-board' ? (
         <>
-          <div className="grid gap-5 lg:grid-cols-[0.8fr_1.2fr]">
-            <Panel>
-              <p className="font-data text-sm text-[#EF6381]">생각 게시판</p>
-              <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">AI가 나쁜 명령을 들어주면?</h2>
-              <p className="mt-3 leading-7 text-[#8AA0B0]">학생들은 QR로 들어가 어떤 일이 생길지 한 문장으로 남깁니다.</p>
-              <div className="mt-5">
-                <QrBlock title="2차시 위험 토론 게시판" url={riskBoardUrl} />
+          <Panel>
+            <div className="grid items-center gap-5 lg:grid-cols-[1fr_280px]">
+              <div>
+                <p className="font-data text-sm text-[#EF6381]">생각 게시판</p>
+                <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">AI가 나쁜 명령을 들어주면?</h2>
+                <p className="mt-3 max-w-3xl text-lg leading-8 text-[#8AA0B0]">
+                  학생들이 먼저 생각을 남기게 한 뒤, 아래 의견 보드에서 같이 읽어봅니다.
+                </p>
               </div>
-            </Panel>
+              <QrBlock title="2차시 위험 토론 게시판" url={riskBoardUrl} />
+            </div>
+          </Panel>
 
-            <Panel>
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="font-data text-sm text-[#4FE0C0]">STUDENT IDEAS</p>
-                  <h2 className="font-display mt-2 text-3xl text-[#EAF2F5]">학생 의견</h2>
-                </div>
+          <Panel className="mt-5">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="font-data text-sm text-[#4FE0C0]">STUDENT IDEAS</p>
+                <h2 className="font-display mt-2 text-3xl text-[#EAF2F5]">학생 의견</h2>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="rounded-full bg-[#07111B]/70 px-3 py-1 text-sm text-[#8AA0B0]">{sortedRiskResponses.length}개</span>
                 <Button className="min-h-10 px-4" variant="secondary" disabled={isRefreshing} onClick={() => void refreshBundle()}>
                   <RefreshCw size={17} className={isRefreshing ? 'animate-spin' : ''} />
                   새로고침
                 </Button>
               </div>
-              {message ? <p className="mt-3 rounded-2xl border border-white/10 bg-[#07111B]/55 px-4 py-3 text-sm text-[#B7C7D2]">{message}</p> : null}
-              <div className="mt-4 grid gap-3">
-                {riskResponses.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0]">학생 의견을 기다리는 중입니다.</p> : null}
-                {riskResponses.map((response) => (
-                  <article key={response.id} className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
-                    <p className="text-lg font-black leading-8 text-[#EAF2F5]">{response.body}</p>
-                    <p className="mt-2 text-sm text-[#8AA0B0]">{response.nickname}</p>
-                  </article>
-                ))}
-              </div>
-            </Panel>
-          </div>
+            </div>
+            {message ? <p className="mt-3 rounded-2xl border border-white/10 bg-[#07111B]/55 px-4 py-3 text-sm text-[#B7C7D2]">{message}</p> : null}
+            <div className="mt-4 grid max-h-[560px] gap-3 overflow-y-auto pr-2 sm:grid-cols-2 xl:grid-cols-4">
+              {sortedRiskResponses.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0] sm:col-span-2 xl:col-span-4">학생 의견을 기다리는 중입니다.</p> : null}
+              {sortedRiskResponses.map((response) => (
+                <article key={response.id} className="rounded-2xl border border-white/10 bg-[#07111B]/55 p-4">
+                  <p className="min-h-20 text-lg font-black leading-8 text-[#EAF2F5]">{response.body}</p>
+                  <div className="mt-3 flex items-center justify-between gap-3">
+                    <p className="text-sm text-[#8AA0B0]">{response.nickname}</p>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-[#FFD37A]/15 px-3 py-1 text-sm font-bold text-[#FFD37A]">
+                      <Heart size={16} fill="currentColor" />
+                      {response.votes.length}
+                    </span>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </Panel>
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
       ) : null}

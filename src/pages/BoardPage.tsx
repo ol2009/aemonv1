@@ -12,7 +12,6 @@ import {
   emptySurveyAnswer,
   parseSurveyAnswer,
   serializeSurveyAnswer,
-  surveyScore,
   type AiSurveyAnswer,
 } from '../data/survey'
 import { LESSON2_RISK_KEY, valueCards } from '../data/v2Lessons'
@@ -86,10 +85,6 @@ function classNameForTopic(topic: BoardTopic) {
 
 function surveyComplete(answer: AiSurveyAnswer) {
   return answer.s.every(Boolean) && answer.o.every((text) => text.trim().length > 0)
-}
-
-function optionLabel(value: number) {
-  return AI_SURVEY_OPTIONS.find((option) => option.value === value)?.label ?? '-'
 }
 
 export function BoardPage() {
@@ -173,9 +168,21 @@ export function BoardPage() {
   const surveyChoiceCount = surveyAnswer.s.filter(Boolean).length
   const surveyOpenCount = surveyAnswer.o.filter((text) => text.trim()).length
   const isSurveyComplete = surveyComplete(surveyAnswer)
-  const surveyAverageScore = parsedSurveyResponses.length
-    ? Math.round((parsedSurveyResponses.reduce((sum, item) => sum + surveyScore(item.answer), 0) / parsedSurveyResponses.length) * 10) / 10
-    : 0
+  const surveyOpenGroups = useMemo(
+    () =>
+      AI_SURVEY_OPEN_QUESTIONS.map((question, questionIndex) => ({
+        question,
+        answers: parsedSurveyResponses
+          .map(({ response, answer }, answerIndex) => ({
+            id: `${response.id}-${questionIndex}`,
+            label: `답변 ${answerIndex + 1}`,
+            text: answer.o[questionIndex]?.trim() ?? '',
+          }))
+          .filter((item) => item.text),
+      })),
+    [parsedSurveyResponses],
+  )
+  const surveyOpenAnswerCount = surveyOpenGroups.reduce((sum, group) => sum + group.answers.length, 0)
   const riskResponses = useMemo(
     () => state.surveyResponses.filter((response) => response.questionKey === LESSON2_RISK_KEY && response.body.trim()),
     [state.surveyResponses],
@@ -638,12 +645,12 @@ export function BoardPage() {
                 <p className="font-display mt-1 text-4xl text-[#EAF2F5]">{parsedSurveyResponses.length}</p>
               </div>
               <div className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
-                <p className="text-sm text-[#8AA0B0]">평균 점수</p>
-                <p className="font-display mt-1 text-4xl text-[#FFD37A]">{surveyAverageScore || '-'}</p>
+                <p className="text-sm text-[#8AA0B0]">선택형 문항</p>
+                <p className="font-display mt-1 text-4xl text-[#6AD8FF]">{AI_SURVEY_ITEMS.length}</p>
               </div>
               <div className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
-                <p className="text-sm text-[#8AA0B0]">문항</p>
-                <p className="font-display mt-1 text-4xl text-[#6AD8FF]">8+2</p>
+                <p className="text-sm text-[#8AA0B0]">서술형 답변</p>
+                <p className="font-display mt-1 text-4xl text-[#FFD37A]">{surveyOpenAnswerCount}</p>
               </div>
             </div>
 
@@ -681,35 +688,30 @@ export function BoardPage() {
 
           <Panel className="lg:col-span-2">
             <div className="flex items-center justify-between gap-3">
-              <h2 className="font-display text-3xl text-[#EAF2F5]">학생별 응답</h2>
-              <span className="rounded-full bg-[#07111B]/70 px-3 py-1 text-sm text-[#8AA0B0]">{parsedSurveyResponses.length}명</span>
+              <h2 className="font-display text-3xl text-[#EAF2F5]">서술형 답변 모음</h2>
+              <span className="rounded-full bg-[#07111B]/70 px-3 py-1 text-sm text-[#8AA0B0]">{surveyOpenAnswerCount}개</span>
             </div>
-            <div className="mt-4 grid gap-3">
-              {parsedSurveyResponses.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0]">아직 학생 응답이 없습니다.</p> : null}
-              {parsedSurveyResponses.map(({ response, answer }) => (
-                <article key={response.id} className="rounded-[18px] border border-white/10 bg-[#07111B]/45 p-4">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <p className="text-xl font-black text-[#EAF2F5]">{response.nickname}</p>
-                    <span className="rounded-full bg-[#FFD37A]/10 px-3 py-1 text-sm font-black text-[#FFD37A]">{surveyScore(answer)}점</span>
-                  </div>
-                  <div className="mt-3 grid gap-2 sm:grid-cols-4">
-                    {AI_SURVEY_ITEMS.map((item, index) => (
-                      <div key={item.no} className="rounded-xl border border-white/10 bg-[#07111B]/55 px-3 py-2">
-                        <p className="font-data text-xs text-[#8AA0B0]">Q{item.no}</p>
-                        <p className="mt-1 text-sm font-bold text-[#EAF2F5]">{optionLabel(answer.s[index])}</p>
-                      </div>
+            <div className="mt-4 max-h-[620px] overflow-y-auto pr-2">
+              {surveyOpenAnswerCount === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0]">아직 서술형 답변이 없습니다.</p> : null}
+              <div className="grid gap-5">
+                {surveyOpenGroups.map((group, groupIndex) => (
+                  <section key={group.question} className="grid gap-3">
+                    <div className="sticky top-0 z-10 rounded-2xl border border-[#6AD8FF]/20 bg-[#0B1A29]/95 p-4 backdrop-blur">
+                      <p className="font-data text-xs text-[#6AD8FF]">서술형 {groupIndex + 1}</p>
+                      <h3 className="mt-1 text-lg font-black leading-7 text-[#EAF2F5]">{group.question}</h3>
+                    </div>
+                    {group.answers.length === 0 ? (
+                      <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0]">아직 이 질문의 답변이 없습니다.</p>
+                    ) : null}
+                    {group.answers.map((answer) => (
+                      <article key={answer.id} className="rounded-[18px] border border-white/10 bg-[#07111B]/55 p-4">
+                        <p className="font-data text-xs text-[#8AA0B0]">{answer.label}</p>
+                        <p className="mt-2 text-lg font-bold leading-8 text-[#EAF2F5]">{answer.text}</p>
+                      </article>
                     ))}
-                  </div>
-                  <div className="mt-4 grid gap-3 md:grid-cols-2">
-                    {AI_SURVEY_OPEN_QUESTIONS.map((question, index) => (
-                      <div key={question} className="rounded-xl border border-white/10 bg-[#07111B]/55 p-3">
-                        <p className="text-xs font-bold leading-5 text-[#8AA0B0]">{question}</p>
-                        <p className="mt-2 leading-7 text-[#EAF2F5]">{answer.o[index]}</p>
-                      </div>
-                    ))}
-                  </div>
-                </article>
-              ))}
+                  </section>
+                ))}
+              </div>
             </div>
           </Panel>
             </>
@@ -760,7 +762,7 @@ export function BoardPage() {
               </div>
               <span className="rounded-full bg-[#07111B]/70 px-3 py-1 text-sm text-[#8AA0B0]">{sortedRiskResponses.length}개</span>
             </div>
-            <div className="mt-4 grid gap-3">
+            <div className={`mt-4 grid gap-3 ${isTeacherBoard ? 'sm:grid-cols-2 xl:grid-cols-4' : ''}`}>
               {sortedRiskResponses.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0]">{topicMeta.risk.empty}</p> : null}
               {sortedRiskResponses.map((response) => {
                 const liked = Boolean(session && response.votes.includes(session.nickname))
