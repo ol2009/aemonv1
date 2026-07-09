@@ -214,7 +214,7 @@ function DialogueScene({
       </div>
       <div className="absolute inset-x-5 bottom-5 rounded-[22px] border border-white/15 bg-[#07111B]/90 p-6 shadow-2xl backdrop-blur">
         <p className={`font-data text-sm ${isProfessor ? 'text-[#FFD37A]' : 'text-[#4FE0C0]'}`}>{name}</p>
-        <p className="font-display mt-3 min-h-[4.5rem] break-keep text-2xl leading-snug text-[#EAF2F5] sm:text-3xl">
+        <p className="font-display mt-3 min-h-[4.5rem] whitespace-pre-line break-keep text-2xl leading-snug text-[#EAF2F5] sm:text-3xl">
           <TypewriterText key={text} text={text} />
         </p>
       </div>
@@ -283,10 +283,9 @@ export function LessonThreePage() {
       intro: ['저번에 너희가 규칙 하나 줬잖아. 오늘은 또 다른 걸로 시험해본대!', '지난 시간에 만든 규칙, 다른 상황에서도 통할까요?'],
       'sycophancy-reaction': [`${aemonName}이가 무조건 칭찬을 하자고 하네요.`, `${aemonName}이 이렇게 무엇이든 칭찬을 한다면 어떤 일이 생길까요?`],
       'professor-explain': [
-        '여러분, 얼마 전에 실제로 있었던 일이에요.',
-        '세계에서 제일 유명한 AI 회사 중 한 곳이 AI를 업데이트했는데, 그 AI가 뭘 물어봐도 무조건 칭찬만 하기 시작했어요.',
-        '처음엔 다들 기분 좋았는데, 사람들이 그 칭찬만 믿고 잘못된 결정을 내리기 시작했어요.',
-        "결국 그 회사 사장님도 '너무 아첨해서 짜증난다'고 인정했고, 하루 만에 업데이트를 되돌렸어요.",
+        '여러분, 얼마 전에 실제로 있었던 일이에요.\n세계에서 제일 유명한 AI 회사 중 한 곳이 AI를 업데이트했는데, 그 AI가 뭘 물어봐도 무조건 칭찬만 하기 시작했어요.',
+        "처음엔 다들 기분 좋았는데, 사람들이 그 칭찬만 믿고 잘못된 결정을 내리기 시작했어요.\n결국 그 회사 사장님도 '너무 아첨해서 짜증난다'고 인정했고, 하루 만에 업데이트를 되돌렸어요.",
+        '이 AI에게는 어떤 가치 코드가 있었을까요?',
         "이 AI에게는 '사람을 기분 좋게 하라'는 가치 코드만 있고 '정직하라'가 빠져 있었던 거예요.",
         '사람을 기분 좋게만 하는 인공지능이 있다면, 어떤 문제가 생길까요?',
       ],
@@ -714,7 +713,7 @@ export function LessonThreePage() {
         <>
           <Panel className="text-center">
             <p className="font-data text-sm text-[#FF9F68]">OPEN QUESTION</p>
-            <h2 className="font-display mx-auto mt-4 max-w-4xl break-keep text-5xl leading-tight text-[#EAF2F5]">
+            <h2 className="font-display mx-auto mt-4 max-w-4xl whitespace-pre-line break-keep text-5xl leading-tight text-[#EAF2F5]">
               <TypewriterText key={dialogueText} text={dialogueText} />
             </h2>
           </Panel>

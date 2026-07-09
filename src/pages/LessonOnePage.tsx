@@ -134,7 +134,36 @@ function compactReason(reason: string) {
   return `${trimmed.slice(0, 34)}...`
 }
 
-const dialogueTextClass = 'text-2xl sm:text-3xl'
+const dialogueTextClass = 'whitespace-pre-line text-2xl sm:text-3xl'
+
+function isStandaloneQuestion(text: string) {
+  return /[?？]\s*$/.test(text.trim())
+}
+
+function groupDialogueParts(parts: string[]) {
+  const grouped: string[] = []
+  let buffer: string[] = []
+
+  parts
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .forEach((part) => {
+      if (isStandaloneQuestion(part)) {
+        if (buffer.length) grouped.push(buffer.join('\n'))
+        buffer = []
+        grouped.push(part)
+        return
+      }
+      buffer.push(part)
+      if (buffer.length >= 3) {
+        grouped.push(buffer.join('\n'))
+        buffer = []
+      }
+    })
+
+  if (buffer.length) grouped.push(buffer.join('\n'))
+  return grouped
+}
 
 function TypewriterText({
   text,
@@ -317,7 +346,7 @@ function VisualNovelScene({
 }) {
   const captionText = caption ?? ''
   const dialogueKey = useMemo(() => `visual-${speaker}-${line}-${captionText}`, [captionText, line, speaker])
-  const dialogueParts = useMemo(() => [line, captionText].filter(Boolean), [captionText, line])
+  const dialogueParts = useMemo(() => groupDialogueParts([line, captionText]), [captionText, line])
   const { activeText, activeDone, activeDialogueKey, handleActiveDone } = useSequencedDialogue(dialogueKey, dialogueParts)
 
   return (
@@ -359,7 +388,7 @@ function CaseVisualScene({
   caption: string
 }) {
   const dialogueKey = useMemo(() => `case-${speaker}-${title}-${line}-${caption}`, [caption, line, speaker, title])
-  const dialogueParts = useMemo(() => [line, caption].filter(Boolean), [caption, line])
+  const dialogueParts = useMemo(() => groupDialogueParts([line, caption]), [caption, line])
   const { activeText, activeDone, activeDialogueKey, handleActiveDone } = useSequencedDialogue(dialogueKey, dialogueParts)
 
   return (

@@ -77,6 +77,35 @@ function sortProposals(items: CodeProposal[]) {
   return [...items].sort((a, b) => b.votes.length - a.votes.length || Date.parse(b.createdAt) - Date.parse(a.createdAt))
 }
 
+function isStandaloneQuestion(text: string) {
+  return /[?？]\s*$/.test(text.trim())
+}
+
+function groupDialogueParts(parts: string[]) {
+  const grouped: string[] = []
+  let buffer: string[] = []
+
+  parts
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .forEach((part) => {
+      if (isStandaloneQuestion(part)) {
+        if (buffer.length) grouped.push(buffer.join('\n'))
+        buffer = []
+        grouped.push(part)
+        return
+      }
+      buffer.push(part)
+      if (buffer.length >= 3) {
+        grouped.push(buffer.join('\n'))
+        buffer = []
+      }
+    })
+
+  if (buffer.length) grouped.push(buffer.join('\n'))
+  return grouped
+}
+
 function TypewriterText({
   text,
   enabled = true,
@@ -260,9 +289,9 @@ function QrBlock({ title, url }: { title: string; url: string }) {
 
 function AemonScene({ name, line, caption, stage = 0 }: { name: string; line: string; caption: string; stage?: number }) {
   const sceneKey = useMemo(() => `aemon-${name}-${line}-${caption}-${stage}`, [caption, line, name, stage])
-  const dialogueParts = useMemo(() => [line, caption].filter(Boolean), [caption, line])
+  const dialogueParts = useMemo(() => groupDialogueParts([line, caption]), [caption, line])
   const { activeText, activeDone, activeDialogueKey, handleActiveDone } = useSequencedDialogue(sceneKey, dialogueParts)
-  const textClass = 'font-display mt-3 min-h-[4.5rem] break-keep text-2xl leading-snug text-[#EAF2F5] sm:text-3xl'
+  const textClass = 'font-display mt-3 min-h-[4.5rem] whitespace-pre-line break-keep text-2xl leading-snug text-[#EAF2F5] sm:text-3xl'
 
   return (
     <Panel className="relative min-h-[620px] overflow-hidden p-0">
@@ -282,9 +311,9 @@ function AemonScene({ name, line, caption, stage = 0 }: { name: string; line: st
 
 function ProfessorCaseScene({ line, caption }: { line: string; caption: string }) {
   const sceneKey = useMemo(() => `professor-${line}-${caption}`, [caption, line])
-  const dialogueParts = useMemo(() => [line, caption].filter(Boolean), [caption, line])
+  const dialogueParts = useMemo(() => groupDialogueParts([line, caption]), [caption, line])
   const { activeText, activeDone, activeDialogueKey, handleActiveDone } = useSequencedDialogue(sceneKey, dialogueParts)
-  const textClass = 'font-display mt-3 min-h-[4.5rem] break-keep text-2xl leading-snug text-[#EAF2F5] sm:text-3xl'
+  const textClass = 'font-display mt-3 min-h-[4.5rem] whitespace-pre-line break-keep text-2xl leading-snug text-[#EAF2F5] sm:text-3xl'
 
   return (
     <Panel className="relative min-h-[620px] overflow-hidden p-0">
@@ -319,9 +348,9 @@ function VisualCaseScene({
 }) {
   const extraLineKey = extraLines.join('|')
   const sceneKey = useMemo(() => `visual-case-${label}-${title}-${line}-${caption}-${extraLineKey}`, [caption, extraLineKey, label, line, title])
-  const dialogueParts = useMemo(() => [line, caption, ...extraLines].filter(Boolean), [caption, extraLineKey, line])
+  const dialogueParts = useMemo(() => groupDialogueParts([line, caption, ...extraLines]), [caption, extraLineKey, line])
   const { activeText, activeDone, activeDialogueKey, handleActiveDone } = useSequencedDialogue(sceneKey, dialogueParts)
-  const textClass = 'font-display mt-3 min-h-[4.5rem] break-keep text-2xl leading-snug text-[#EAF2F5] sm:text-3xl'
+  const textClass = 'font-display mt-3 min-h-[4.5rem] whitespace-pre-line break-keep text-2xl leading-snug text-[#EAF2F5] sm:text-3xl'
 
   return (
     <Panel className="relative min-h-[700px] overflow-hidden p-0">
