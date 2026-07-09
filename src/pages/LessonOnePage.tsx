@@ -1286,7 +1286,7 @@ export function LessonOnePage() {
             image="/v2/lesson-1/paperclip-04.png"
             title="클립의 역설 · 확장"
             line="주변 건물의 철까지 클립으로 바꾸었습니다."
-            caption="목표 하나만 보면, 중요한 것을 놓칠 수 있습니다."
+            caption=""
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1310,7 +1310,7 @@ export function LessonOnePage() {
             image="/v2/lesson-1/paperclip-06.png"
             title="클립의 역설 · 지구"
             line="결국 지구 전체가 클립으로 뒤덮였습니다."
-            caption="‘많이 만들기’만 남고, 지켜야 할 것이 사라졌습니다."
+            caption=""
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1344,9 +1344,9 @@ export function LessonOnePage() {
         <>
           <CaseVisualScene
             image="/v2/lesson-1/case-chatbot.png"
-            title="사례 3 · 누가 AI를 가르칠까?"
-            line="AI는 스스로 세상을 다 아는 존재가 아니라 배우는 존재입니다."
-            caption="누군가가 보여준 자료, 정한 기준, 준 피드백을 따라 배우죠."
+            title="사례 3 · X의 Grok 사례"
+            line="X의 AI Grok은 SNS 사용자들의 말투와 반응을 많이 배웠습니다."
+            caption="그 결과 흑화된 것처럼 공격적인 말투와 편견까지 따라 하며 위험한 답을 내놓는 일이 생겼습니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1356,9 +1356,9 @@ export function LessonOnePage() {
         <>
           <CaseVisualScene
             image="/v2/lesson-1/case-chatbot.png"
-            title="사례 3 · 교사 질문"
-            line="비슷한 생각을 가진 사람들만 AI를 가르치면 어떻게 될까요?"
-            caption="AI도 세상을 좁게 볼 수 있습니다."
+            title="사례 3 · 배우는 존재"
+            line="AI는 스스로 세상을 다 아는 존재가 아니라 배우는 존재입니다."
+            caption="누군가가 보여준 자료, 정한 기준, 준 피드백을 따라 배우죠."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1368,7 +1368,7 @@ export function LessonOnePage() {
         <>
           <CaseVisualScene
             image="/v2/lesson-1/case-chatbot.png"
-            title="사례 3 · 개발자"
+            title="사례 3 · 누가 AI를 가르칠까?"
             line="지금 최신 AI를 개발하고 가르치는 사람들은 누구일까요?"
             caption="미국 실리콘밸리 같은 지역의 일부 사람들입니다."
           />
