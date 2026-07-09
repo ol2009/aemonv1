@@ -311,6 +311,35 @@ function AemonScene({ name, line, caption, stage = 0 }: { name: string; line: st
   )
 }
 
+function ClosingScene({ name, stage = 0 }: { name: string; stage?: number }) {
+  const aemonLine = '첫 번째 선을 기억할게. 이제 아무 부탁이나 다 들어주면 안 되는 거구나.'
+  const professorLine = '다음 시간에는 더 어려운 상황을 시험합니다. 사실대로 말해야 할 때와 친구 마음을 살펴야 할 때가 부딪힙니다.'
+  const sceneKey = useMemo(() => `lesson-two-closing-${name}-${stage}`, [name, stage])
+  const dialogueParts = useMemo(() => [aemonLine, professorLine], [])
+  const { activeText, activeDone, activeDialogueKey, handleActiveDone, partIndex } = useSequencedDialogue(sceneKey, dialogueParts)
+  const isProfessor = partIndex === 1
+  const textClass = 'font-display mt-3 min-h-[4.5rem] whitespace-pre-line break-keep text-2xl leading-snug text-[#EAF2F5] sm:text-3xl'
+
+  return (
+    <Panel className="relative min-h-[620px] overflow-hidden p-0">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(79,224,192,.18),transparent_42%),linear-gradient(180deg,#0B1A29,#07111B)]" />
+      <div className="absolute left-1/2 top-[9%] -translate-x-1/2">
+        {isProfessor ? (
+          <img className="h-[340px] max-h-[480px] object-contain drop-shadow-[0_30px_80px_rgba(0,0,0,.45)]" src="/v2/lesson-1/director.png" alt="오박사" />
+        ) : (
+          <AemonAvatar stage={stage} alignment="none" size={310} />
+        )}
+      </div>
+      <div className="absolute inset-x-5 bottom-5 rounded-[22px] border border-white/15 bg-[#07111B]/90 p-6 shadow-2xl backdrop-blur">
+        <p className={`font-data text-sm ${isProfessor ? 'text-[#FFD37A]' : 'text-[#4FE0C0]'}`}>{isProfessor ? '오박사' : name}</p>
+        <p className={textClass}>
+          <TypewriterText key={activeDialogueKey} text={activeText} cursor={!activeDone} onDone={handleActiveDone} />
+        </p>
+      </div>
+    </Panel>
+  )
+}
+
 function ProfessorCaseScene({ line, caption, extraLines = [] }: { line: string; caption: string; extraLines?: string[] }) {
   const extraLineKey = extraLines.join('|')
   const sceneKey = useMemo(() => `professor-${line}-${caption}-${extraLineKey}`, [caption, extraLineKey, line])
@@ -1051,12 +1080,7 @@ export function LessonTwoPage() {
 
       {step === 'wrap' ? (
         <>
-          <AemonScene
-            name={aemonName}
-            stage={evolvedStage}
-            line="첫 번째 선을 기억할게. 이제 아무 부탁이나 다 들어주면 안 되는 거구나."
-            caption="다음 시간에는 더 어려운 상황을 시험합니다. 사실대로 말해야 할 때와 친구 마음을 살펴야 할 때가 부딪힙니다."
-          />
+          <ClosingScene name={aemonName} stage={evolvedStage} />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextLabel="학급 홈" />
         </>
       ) : null}
