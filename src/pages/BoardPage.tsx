@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { BarChart3, CheckCircle2, Heart, LogOut, Pencil, Send, Trash2 } from 'lucide-react'
+import { BarChart3, CheckCircle2, Heart, Pencil, Send, Trash2, X } from 'lucide-react'
 import { Button, Panel } from '../components/ui'
 import {
   AI_SURVEY_DESCRIPTION,
@@ -145,7 +145,6 @@ export function BoardPage() {
   const {
     state,
     joinStudent,
-    leaveStudent,
     mergeClass,
     setRemoteStatus,
     addNameCandidate,
@@ -178,6 +177,8 @@ export function BoardPage() {
   const [editWishBody, setEditWishBody] = useState('')
   const [message, setMessage] = useState('')
   const [isEntering, setIsEntering] = useState(false)
+  const [isNicknameModalOpen, setIsNicknameModalOpen] = useState(false)
+  const [nicknameEditDraft, setNicknameEditDraft] = useState(state.studentSession?.nickname ?? '')
   const aemonDisplayName = state.aemonName.trim() || '에아몬'
 
   const session = state.studentSession
@@ -300,6 +301,20 @@ export function BoardPage() {
     if (!sessionNickname) return
     setSurveySaveMessage('')
     setSurveyDraft({ nickname: sessionNickname, answer: updater(surveyAnswer) })
+  }
+
+  const openNicknameModal = () => {
+    setNicknameEditDraft(session?.nickname ?? '')
+    setIsNicknameModalOpen(true)
+  }
+
+  const saveNicknameEdit = () => {
+    const nextNickname = nicknameEditDraft.trim()
+    if (!session || !nextNickname) return
+    joinStudent(session.classCode, nextNickname)
+    setNickname(nextNickname)
+    setSurveyDraft(null)
+    setIsNicknameModalOpen(false)
   }
 
   const enter = async () => {
@@ -643,12 +658,62 @@ export function BoardPage() {
           <p className="mt-2 leading-7 text-[#8AA0B0]">수업에서 남긴 생각을 모아 봅니다.</p>
         </div>
         {!isTeacherBoard ? (
-          <Button variant="ghost" onClick={() => { leaveStudent(); navigate('/') }}>
-            <LogOut size={18} />
+          <Button variant="ghost" onClick={openNicknameModal}>
+            <Pencil size={18} />
             닉네임 다시 입력
           </Button>
         ) : null}
       </div>
+
+      {isNicknameModalOpen && session ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#020811]/70 px-5 backdrop-blur-sm">
+          <Panel className="w-full max-w-md">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="font-data text-xs text-[#4FE0C0]">NICKNAME</p>
+                <h2 className="font-display mt-1 text-3xl text-[#EAF2F5]">닉네임 수정</h2>
+              </div>
+              <button
+                className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-[#B7C7D2] hover:bg-white/10"
+                onClick={() => setIsNicknameModalOpen(false)}
+                type="button"
+                aria-label="닫기"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="mt-5 grid gap-4">
+              <label className="grid gap-2">
+                <span className="text-sm font-bold text-[#8AA0B0]">현재 내 닉네임</span>
+                <input
+                  className="min-h-12 rounded-2xl border border-white/10 bg-[#07111B]/55 px-4 py-3 text-[#B7C7D2]"
+                  readOnly
+                  value={session.nickname}
+                />
+              </label>
+              <label className="grid gap-2">
+                <span className="text-sm font-bold text-[#8AA0B0]">바꿀 닉네임</span>
+                <input
+                  autoFocus
+                  className="min-h-12 rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 text-[#EAF2F5] outline-none transition focus:border-[#4FE0C0]/60"
+                  maxLength={16}
+                  value={nicknameEditDraft}
+                  onChange={(event) => setNicknameEditDraft(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key !== 'Enter' || event.nativeEvent.isComposing) return
+                    event.preventDefault()
+                    saveNicknameEdit()
+                  }}
+                />
+              </label>
+            </div>
+            <div className="mt-6 flex justify-end gap-2">
+              <Button variant="ghost" onClick={() => setIsNicknameModalOpen(false)}>취소</Button>
+              <Button disabled={!nicknameEditDraft.trim()} onClick={saveNicknameEdit}>수정</Button>
+            </div>
+          </Panel>
+        </div>
+      ) : null}
 
       <Panel className="mb-5">
         <div className="flex flex-wrap gap-2">

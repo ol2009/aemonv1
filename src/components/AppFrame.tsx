@@ -17,6 +17,7 @@ export function AppFrame() {
   const isImmersive = false
   const appNavPaths = ['/home', '/codes', '/board', '/talk', '/dex', '/graduation', '/lesson/1']
   const showAppNav = Boolean(user && appNavPaths.includes(location.pathname))
+  const showAuthControls = location.pathname !== '/board'
 
   const handleAuthClick = async () => {
     if (user) {
@@ -55,17 +56,19 @@ export function AppFrame() {
                 })}
               </nav>
             ) : null}
-            <div className="hidden items-center gap-2 md:flex">
-              {user ? (
-                <span className="max-w-40 truncate rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-[#B7C7D2]">
-                  {user.email}
-                </span>
-              ) : null}
-              <Button variant={user ? 'secondary' : 'ghost'} className="min-h-10 px-3" disabled={!isConfigured && !user} onClick={handleAuthClick}>
-                {user ? <LogOut size={18} /> : <LogIn size={18} />}
-                {user ? '로그아웃' : '로그인'}
-              </Button>
-            </div>
+            {showAuthControls ? (
+              <div className="hidden items-center gap-2 md:flex">
+                {user ? (
+                  <span className="max-w-40 truncate rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-[#B7C7D2]">
+                    {user.email}
+                  </span>
+                ) : null}
+                <Button variant={user ? 'secondary' : 'ghost'} className="min-h-10 px-3" disabled={!isConfigured && !user} onClick={handleAuthClick}>
+                  {user ? <LogOut size={18} /> : <LogIn size={18} />}
+                  {user ? '로그아웃' : '로그인'}
+                </Button>
+              </div>
+            ) : null}
           </header>
         ) : null}
         <main>

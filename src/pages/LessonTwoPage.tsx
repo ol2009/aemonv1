@@ -309,9 +309,10 @@ function AemonScene({ name, line, caption, stage = 0 }: { name: string; line: st
   )
 }
 
-function ProfessorCaseScene({ line, caption }: { line: string; caption: string }) {
-  const sceneKey = useMemo(() => `professor-${line}-${caption}`, [caption, line])
-  const dialogueParts = useMemo(() => groupDialogueParts([line, caption]), [caption, line])
+function ProfessorCaseScene({ line, caption, extraLines = [] }: { line: string; caption: string; extraLines?: string[] }) {
+  const extraLineKey = extraLines.join('|')
+  const sceneKey = useMemo(() => `professor-${line}-${caption}-${extraLineKey}`, [caption, extraLineKey, line])
+  const dialogueParts = useMemo(() => groupDialogueParts([line, caption, ...extraLines]), [caption, extraLineKey, line])
   const { activeText, activeDone, activeDialogueKey, handleActiveDone } = useSequencedDialogue(sceneKey, dialogueParts)
   const textClass = 'font-display mt-3 min-h-[4.5rem] whitespace-pre-line break-keep text-2xl leading-snug text-[#EAF2F5] sm:text-3xl'
 
@@ -681,7 +682,8 @@ export function LessonTwoPage() {
         <>
           <ProfessorCaseScene
             line="방금 모습은 AI가 나빠서 그런 행동을 한 게 아니에요. 사람이 시키니까 그냥 한 것입니다. 그래서 스스로 멈출 기준이 필요한 거예요."
-            caption="AI가 사람들의 나쁜 명령을 들어주면 어떤 일이 생길까요? 먼저 생각을 남기고, 다음 화면에서 같이 읽어봅니다."
+            caption="이렇게 인공지능이 사람들의 나쁜 명령을 들어주면 어떤 일이 생길까요?"
+            extraLines={['학생들이 먼저 생각을 남기게 한 뒤, 다음 화면에서 같이 읽어봅니다.']}
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextLabel="의견 받기" />
         </>
@@ -693,10 +695,7 @@ export function LessonTwoPage() {
             <div className="grid items-center gap-5 lg:grid-cols-[1fr_280px]">
               <div>
                 <p className="font-data text-sm text-[#EF6381]">생각 게시판</p>
-                <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">AI가 나쁜 명령을 들어주면?</h2>
-                <p className="mt-3 max-w-3xl text-lg leading-8 text-[#8AA0B0]">
-                  학생들이 먼저 생각을 남기게 한 뒤, 아래 의견 보드에서 같이 읽어봅니다.
-                </p>
+                <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">2차시 위험 토론</h2>
               </div>
               <QrBlock title="2차시 위험 토론 게시판" url={riskBoardUrl} />
             </div>
