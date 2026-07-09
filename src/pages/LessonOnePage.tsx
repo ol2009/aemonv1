@@ -1462,7 +1462,7 @@ export function LessonOnePage() {
             image="/v2/lesson-1/case-chatbot.png"
             title="사례 3"
             line="X의 AI Grok은 SNS 사용자들의 말투와 반응을 많이 배웠습니다."
-            caption="그 결과 흑화된 것처럼 공격적인 말투와 편견까지 따라 하며 위험한 답을 내놓는 일이 생겼습니다."
+            caption="그 결과 공격적인 말투와 편견까지 따라 하며 위험한 답을 내놓는 일이 생겼습니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
