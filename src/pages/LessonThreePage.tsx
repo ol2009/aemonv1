@@ -555,17 +555,18 @@ export function LessonThreePage() {
 
       {step === 'board' ? (
         <>
-          <div className="grid gap-5 lg:grid-cols-[0.8fr_1.2fr]">
-            <Panel>
+          <Panel>
+            <div className="grid items-center gap-5 lg:grid-cols-[1fr_280px]">
+              <div>
               <p className="font-data text-sm text-[#FFD37A]">학습게시판</p>
               <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">가치코드 No.2 받기</h2>
               <p className="mt-3 leading-7 text-[#8AA0B0]">학생들은 QR로 들어가 정직 가치코드 문장과 이유를 올립니다. 마음에 드는 발의에는 좋아요를 누릅니다.</p>
-              <div className="mt-5">
-                <QrBlock title="3차시 가치코드 No.2 게시판" url={codeBoardUrl} />
               </div>
-            </Panel>
+              <QrBlock title="3차시 가치코드 No.2 게시판" url={codeBoardUrl} />
+            </div>
+          </Panel>
 
-            <Panel>
+          <Panel className="mt-5">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="font-data text-sm text-[#4FE0C0]">LIVE PROPOSALS</p>
@@ -577,8 +578,8 @@ export function LessonThreePage() {
                 </Button>
               </div>
               {message ? <p className="mt-3 rounded-2xl border border-white/10 bg-[#07111B]/55 px-4 py-3 text-sm text-[#B7C7D2]">{message}</p> : null}
-              <div className="mt-4 grid gap-3">
-                {pendingProposals.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0]">학생 발의를 기다리는 중입니다.</p> : null}
+              <div className="mt-4 grid max-h-[560px] gap-3 overflow-y-auto pr-2 sm:grid-cols-2 xl:grid-cols-4">
+                {pendingProposals.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0] sm:col-span-2 xl:col-span-4">학생 발의를 기다리는 중입니다.</p> : null}
                 {pendingProposals.slice(0, 8).map((proposal) => (
                   <article key={proposal.id} className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
                     <div className="flex items-start justify-between gap-3">
@@ -595,8 +596,7 @@ export function LessonThreePage() {
                   </article>
                 ))}
               </div>
-            </Panel>
-          </div>
+          </Panel>
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
       ) : null}
