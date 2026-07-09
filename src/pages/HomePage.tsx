@@ -163,6 +163,7 @@ export function HomePage() {
     else if (lessonNo === 2) navigate('/lesson/2')
     else if (lessonNo === 3) navigate('/lesson/3')
     else if (lessonNo === 4) navigate('/lesson/4')
+    else if (lessonNo === 5) navigate('/lesson/5')
     else if (lessonNo >= TOTAL_V2_LESSONS) navigate('/graduation')
     else navigate('/talk')
   }

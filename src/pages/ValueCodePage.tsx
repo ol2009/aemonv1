@@ -21,7 +21,7 @@ export function ValueCodePage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const aemonName = state.aemonName.trim() || '에아몬'
-  const canAddCode = state.currentLesson >= 5
+  const canAddCode = state.currentLesson >= 6
 
   useV2RemoteSync(state.classCode, Boolean(state.classCode))
 
@@ -95,7 +95,7 @@ export function ValueCodePage() {
         <div className="flex flex-wrap items-center justify-end gap-3">
           {!canAddCode ? (
             <div className="rounded-2xl border border-[#FFD37A]/25 bg-[#FFD37A]/10 px-4 py-3 text-sm font-black leading-6 text-[#FFD37A]">
-              가치코드 추가는 5차시부터 가능해요.
+              가치코드 추가는 6차시부터 가능해요.
             </div>
           ) : null}
           <Button disabled={!canAddCode} onClick={openCreate}>
