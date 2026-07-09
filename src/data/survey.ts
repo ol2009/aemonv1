@@ -1,4 +1,5 @@
 export const PRE_SURVEY_KEY = 'ai-awareness-pre'
+export const POST_SURVEY_KEY = 'ai-awareness-post'
 
 export const AI_SURVEY_TITLE = 'AI 인식 설문'
 export const AI_SURVEY_DESCRIPTION = '인공지능을 어떻게 생각하는지 수업 전 생각을 남깁니다.'
