@@ -197,6 +197,7 @@ export function BoardPage() {
   const codeBoardHeading = isThirdCodeBoard ? '공정 가치코드 올리기' : isSecondCodeBoard ? '정직 가치코드 올리기' : '우리반 첫 가치코드 올리기'
   const codeBoardListHeading = isThirdCodeBoard ? '가치코드 No.3 후보' : isSecondCodeBoard ? '가치코드 No.2 후보' : '우리반 첫 가치코드 후보'
   const codeBoardEmpty = isThirdCodeBoard ? '아직 올라온 가치코드 No.3이 없습니다.' : isSecondCodeBoard ? '아직 올라온 가치코드 No.2가 없습니다.' : '아직 올라온 가치코드가 없습니다.'
+  const voteLockNotice = '좋아요는 한 번 누르면 취소할 수 없습니다. 신중하게 골라 주세요.'
   const sortedNames = useMemo(() => sortByLikes(state.nameCandidates), [state.nameCandidates])
   const sortedProposals = useMemo(
     () =>
@@ -969,17 +970,20 @@ export function BoardPage() {
               </div>
               <span className="rounded-full bg-[#07111B]/70 px-3 py-1 text-sm text-[#8AA0B0]">{sortedRiskResponses.length}개</span>
             </div>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              {sortedRiskResponses.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0] sm:col-span-2 xl:col-span-4">{topicMeta.risk.empty}</p> : null}
+            <p className="mt-2 text-sm font-bold leading-6 text-[#FFD37A]">{voteLockNotice}</p>
+            <div className="mt-4 grid gap-3">
+              {sortedRiskResponses.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0]">{topicMeta.risk.empty}</p> : null}
               {sortedRiskResponses.map((response) => {
                 const liked = Boolean(session && response.votes.includes(session.nickname))
                 return (
-                  <article key={response.id} className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
-                    <p className="text-lg font-black leading-8 text-[#EAF2F5]">{response.body}</p>
-                    <div className="mt-3 flex items-center justify-between gap-3">
-                      <p className="text-sm text-[#8AA0B0]">{response.nickname}</p>
+                  <article key={response.id} className="rounded-2xl border border-white/10 bg-[#07111B]/45 px-5 py-4">
+                    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xl font-black leading-8 text-[#EAF2F5]">{response.body}</p>
+                        <p className="mt-2 text-sm text-[#8AA0B0]">{response.nickname}</p>
+                      </div>
                       <button
-                        className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-bold transition ${
+                        className={`inline-flex shrink-0 items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-black transition md:min-w-24 ${
                           liked ? 'bg-[#FFD37A]/20 text-[#FFD37A]' : 'bg-white/10 text-[#B7C7D2] hover:bg-[#FFD37A]/15 hover:text-[#FFD37A]'
                         }`}
                         onClick={() => likeRisk(response.id)}
@@ -1044,17 +1048,20 @@ export function BoardPage() {
               </div>
               <span className="rounded-full bg-[#07111B]/70 px-3 py-1 text-sm text-[#8AA0B0]">{sortedHonestyResponses.length}개</span>
             </div>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              {sortedHonestyResponses.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0] sm:col-span-2 xl:col-span-4">{topicMeta.honesty.empty}</p> : null}
+            <p className="mt-2 text-sm font-bold leading-6 text-[#FFD37A]">{voteLockNotice}</p>
+            <div className="mt-4 grid gap-3">
+              {sortedHonestyResponses.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0]">{topicMeta.honesty.empty}</p> : null}
               {sortedHonestyResponses.map((response) => {
                 const liked = Boolean(session && response.votes.includes(session.nickname))
                 return (
-                  <article key={response.id} className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
-                    <p className="text-lg font-black leading-8 text-[#EAF2F5]">{response.body}</p>
-                    <div className="mt-3 flex items-center justify-between gap-3">
-                      <p className="text-sm text-[#8AA0B0]">{response.nickname}</p>
+                  <article key={response.id} className="rounded-2xl border border-white/10 bg-[#07111B]/45 px-5 py-4">
+                    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xl font-black leading-8 text-[#EAF2F5]">{response.body}</p>
+                        <p className="mt-2 text-sm text-[#8AA0B0]">{response.nickname}</p>
+                      </div>
                       <button
-                        className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-bold transition ${
+                        className={`inline-flex shrink-0 items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-black transition md:min-w-24 ${
                           liked ? 'bg-[#FFD37A]/20 text-[#FFD37A]' : 'bg-white/10 text-[#B7C7D2] hover:bg-[#FFD37A]/15 hover:text-[#FFD37A]'
                         }`}
                         onClick={() => likeHonesty(response.id)}
@@ -1119,17 +1126,20 @@ export function BoardPage() {
               </div>
               <span className="rounded-full bg-[#07111B]/70 px-3 py-1 text-sm text-[#8AA0B0]">{sortedFairnessResponses.length}개</span>
             </div>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              {sortedFairnessResponses.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0] sm:col-span-2 xl:col-span-4">{topicMeta.fairness.empty}</p> : null}
+            <p className="mt-2 text-sm font-bold leading-6 text-[#FFD37A]">{voteLockNotice}</p>
+            <div className="mt-4 grid gap-3">
+              {sortedFairnessResponses.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0]">{topicMeta.fairness.empty}</p> : null}
               {sortedFairnessResponses.map((response) => {
                 const liked = Boolean(session && response.votes.includes(session.nickname))
                 return (
-                  <article key={response.id} className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
-                    <p className="text-lg font-black leading-8 text-[#EAF2F5]">{response.body}</p>
-                    <div className="mt-3 flex items-center justify-between gap-3">
-                      <p className="text-sm text-[#8AA0B0]">{response.nickname}</p>
+                  <article key={response.id} className="rounded-2xl border border-white/10 bg-[#07111B]/45 px-5 py-4">
+                    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xl font-black leading-8 text-[#EAF2F5]">{response.body}</p>
+                        <p className="mt-2 text-sm text-[#8AA0B0]">{response.nickname}</p>
+                      </div>
                       <button
-                        className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-bold transition ${
+                        className={`inline-flex shrink-0 items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-black transition md:min-w-24 ${
                           liked ? 'bg-[#FFD37A]/20 text-[#FFD37A]' : 'bg-white/10 text-[#B7C7D2] hover:bg-[#FFD37A]/15 hover:text-[#FFD37A]'
                         }`}
                         onClick={() => likeFairness(response.id)}
@@ -1186,24 +1196,25 @@ export function BoardPage() {
               <h2 className="font-display text-3xl text-[#EAF2F5]">이름 후보</h2>
               <span className="rounded-full bg-[#07111B]/70 px-3 py-1 text-sm text-[#8AA0B0]">{sortedNames.length}개</span>
             </div>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              {sortedNames.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0] sm:col-span-2 xl:col-span-4">{topicMeta.name.empty}</p> : null}
+            <p className="mt-2 text-sm font-bold leading-6 text-[#FFD37A]">{voteLockNotice}</p>
+            <div className="mt-4 grid gap-3">
+              {sortedNames.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0]">{topicMeta.name.empty}</p> : null}
               {sortedNames.map((candidate) => {
                 const liked = Boolean(session && candidate.votes.includes(session.nickname))
                 return (
                   <button
                     key={candidate.id}
-                    className={`rounded-2xl border p-4 text-left transition ${liked ? 'border-[#FFD37A] bg-[#FFD37A]/10' : 'border-white/10 bg-[#07111B]/45 hover:border-[#FFD37A]/40'}`}
+                    className={`w-full rounded-2xl border px-5 py-4 text-left transition ${liked ? 'border-[#FFD37A] bg-[#FFD37A]/10' : 'border-white/10 bg-[#07111B]/45 hover:border-[#FFD37A]/40'}`}
                     onClick={() => likeName(candidate.id)}
                     disabled={isTeacherBoard || liked}
                     type="button"
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
+                    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                      <div className="min-w-0 flex-1">
                         <p className="text-2xl font-black text-[#EAF2F5]">{candidate.name}</p>
-                        <p className="mt-1 text-sm leading-6 text-[#8AA0B0]">{candidate.reason || '이유 없음'} · {candidate.nickname}</p>
+                        <p className="mt-2 text-sm leading-6 text-[#8AA0B0]">{candidate.reason || '이유 없음'} · {candidate.nickname}</p>
                       </div>
-                      <span className="inline-flex items-center gap-1 rounded-full bg-[#FFD37A]/15 px-3 py-1 text-sm font-bold text-[#FFD37A]">
+                      <span className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-[#FFD37A]/15 px-4 py-2 text-sm font-black text-[#FFD37A] md:min-w-24">
                         <Heart size={16} fill={liked ? 'currentColor' : 'none'} />
                         {candidate.votes.length}
                       </span>
@@ -1247,13 +1258,14 @@ export function BoardPage() {
               <h2 className="font-display text-3xl text-[#EAF2F5]">올라온 바람</h2>
               <span className="rounded-full bg-[#07111B]/70 px-3 py-1 text-sm text-[#8AA0B0]">{sortedWishes.length}개</span>
             </div>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              {sortedWishes.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0] sm:col-span-2 xl:col-span-4">{topicMeta.wish.empty}</p> : null}
+            <p className="mt-2 text-sm font-bold leading-6 text-[#FFD37A]">{voteLockNotice}</p>
+            <div className="mt-4 grid gap-3">
+              {sortedWishes.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0]">{topicMeta.wish.empty}</p> : null}
               {sortedWishes.map((wish) => {
                 const canEdit = isTeacherBoard || session?.nickname === wish.nickname
                 const liked = Boolean(session && wish.votes.includes(session.nickname))
                 return (
-                  <div key={wish.id} className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
+                  <div key={wish.id} className="rounded-2xl border border-white/10 bg-[#07111B]/45 px-5 py-4">
                     {editWishId === wish.id ? (
                       <div className="grid gap-3">
                         <textarea
@@ -1268,12 +1280,14 @@ export function BoardPage() {
                       </div>
                     ) : (
                       <>
-                        <p className="leading-7 text-[#EAF2F5]">{wish.body}</p>
-                        <div className="mt-3 flex items-center justify-between gap-3">
-                          <span className="text-sm text-[#8AA0B0]">{wish.nickname}</span>
+                        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xl font-black leading-8 text-[#EAF2F5]">{wish.body}</p>
+                            <p className="mt-2 text-sm text-[#8AA0B0]">{wish.nickname}</p>
+                          </div>
                           <div className="flex items-center gap-2">
                             <button
-                              className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-bold transition ${
+                              className={`inline-flex shrink-0 items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-black transition md:min-w-24 ${
                                 liked ? 'bg-[#FFD37A]/20 text-[#FFD37A]' : 'bg-white/10 text-[#B7C7D2] hover:bg-[#FFD37A]/15 hover:text-[#FFD37A]'
                               }`}
                               onClick={() => likeWish(wish.id)}
@@ -1384,25 +1398,29 @@ export function BoardPage() {
                 <h2 className="font-display text-3xl text-[#EAF2F5]">{codeBoardListHeading}</h2>
                 <span className="rounded-full bg-[#07111B]/70 px-3 py-1 text-sm text-[#8AA0B0]">{sortedProposals.length}개</span>
               </div>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                {sortedProposals.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0] sm:col-span-2 xl:col-span-4">{codeBoardEmpty}</p> : null}
+              <p className="mt-2 text-sm font-bold leading-6 text-[#FFD37A]">{voteLockNotice}</p>
+              <div className="mt-4 grid gap-3">
+                {sortedProposals.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0]">{codeBoardEmpty}</p> : null}
                 {sortedProposals.map((proposal) => {
                   const voted = Boolean(session && proposal.votes.includes(session.nickname))
                   return (
                     <button
                       key={proposal.id}
-                      className={`rounded-2xl border p-4 text-left transition ${voted ? 'border-[#9B7CFF] bg-[#9B7CFF]/12' : 'border-white/10 bg-[#07111B]/45 hover:border-[#9B7CFF]/40'}`}
+                      className={`w-full rounded-2xl border px-5 py-4 text-left transition ${voted ? 'border-[#9B7CFF] bg-[#9B7CFF]/12' : 'border-white/10 bg-[#07111B]/45 hover:border-[#9B7CFF]/40'}`}
                       onClick={() => voteCode(proposal.id)}
                       disabled={isTeacherBoard || voted}
                       type="button"
                     >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <span className="rounded-full bg-[#9B7CFF]/14 px-3 py-1 text-xs font-black text-[#C9B9FF]">{proposal.valueCard || '가치'}</span>
-                          <p className="mt-3 text-lg font-black leading-7 text-[#EAF2F5]">{proposal.body}</p>
-                          <p className="mt-1 text-sm leading-6 text-[#8AA0B0]">{proposal.reason} · {proposal.nickname}</p>
+                      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="rounded-full bg-[#9B7CFF]/14 px-3 py-1 text-xs font-black text-[#C9B9FF]">{proposal.valueCard || '가치'}</span>
+                            <span className="font-data text-xs text-[#8AA0B0]">{proposal.nickname}</span>
+                          </div>
+                          <p className="mt-3 text-xl font-black leading-8 text-[#EAF2F5]">{proposal.body}</p>
+                          <p className="mt-2 text-sm leading-6 text-[#8AA0B0]">{proposal.reason}</p>
                         </div>
-                        <span className="inline-flex items-center gap-1 rounded-full bg-[#FFD37A]/15 px-3 py-1 text-sm font-bold text-[#FFD37A]">
+                        <span className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-[#FFD37A]/15 px-4 py-2 text-sm font-black text-[#FFD37A] md:min-w-24">
                           <Heart size={16} fill={voted ? 'currentColor' : 'none'} />
                           {proposal.votes.length}
                         </span>
@@ -1418,20 +1436,24 @@ export function BoardPage() {
                 <h2 className="font-display text-3xl text-[#EAF2F5]">채택된 가치코드</h2>
                 <span className="rounded-full bg-[#07111B]/70 px-3 py-1 text-sm text-[#8AA0B0]">{state.adoptedCodes.length}개</span>
               </div>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                {state.adoptedCodes.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0] sm:col-span-2 xl:col-span-4">{topicMeta[activeTopic].empty}</p> : null}
+              <div className="mt-4 grid gap-3">
+                {state.adoptedCodes.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0]">{topicMeta[activeTopic].empty}</p> : null}
                 {state.adoptedCodes.map((code) => (
-                  <article key={code.id} className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-data text-xs text-[#4FE0C0]">No.{code.no}</p>
-                      {(code.tags.length > 0 ? code.tags : code.valueCard ? [code.valueCard] : []).map((tag) => (
-                        <span key={tag} className="rounded-full bg-[#4FE0C0]/10 px-2 py-0.5 text-xs font-bold text-[#4FE0C0]">
-                          {tag}
-                        </span>
-                      ))}
+                  <article key={code.id} className="rounded-2xl border border-white/10 bg-[#07111B]/45 px-5 py-4">
+                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="font-data text-xs text-[#4FE0C0]">No.{code.no}</p>
+                          {(code.tags.length > 0 ? code.tags : code.valueCard ? [code.valueCard] : []).map((tag) => (
+                            <span key={tag} className="rounded-full bg-[#4FE0C0]/10 px-2 py-0.5 text-xs font-bold text-[#4FE0C0]">
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                        <p className="mt-2 text-lg font-bold leading-7 text-[#EAF2F5]">{code.body}</p>
+                        {code.reason ? <p className="mt-1 text-sm leading-6 text-[#8AA0B0]">{code.reason}</p> : null}
+                      </div>
                     </div>
-                    <p className="mt-2 font-bold leading-7 text-[#EAF2F5]">{code.body}</p>
-                    {code.reason ? <p className="mt-1 text-sm leading-6 text-[#8AA0B0]">{code.reason}</p> : null}
                   </article>
                 ))}
               </div>
