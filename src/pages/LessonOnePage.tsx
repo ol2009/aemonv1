@@ -78,6 +78,7 @@ type LessonStep =
   | 'value-code-meaning'
   | 'aemon-rule-question'
   | 'demo'
+  | 'demo-reflection'
   | 'wrap'
 
 const steps: LessonStep[] = [
@@ -126,6 +127,7 @@ const steps: LessonStep[] = [
   'value-code-meaning',
   'aemon-rule-question',
   'demo',
+  'demo-reflection',
   'wrap',
 ]
 
@@ -1580,6 +1582,19 @@ export function LessonOnePage() {
           </Panel>
         </div>
         <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
+      ) : null}
+
+      {step === 'demo-reflection' ? (
+        <>
+          <VisualNovelScene
+            avatar
+            avatarStage={0}
+            speaker={confirmedName}
+            line="너네가 시키는 대로 다했어."
+            caption="근데 이게 맞는거야? 흠.."
+          />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
       ) : null}
 
