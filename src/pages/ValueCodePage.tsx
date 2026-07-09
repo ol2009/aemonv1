@@ -21,6 +21,7 @@ export function ValueCodePage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const aemonName = state.aemonName.trim() || '에아몬'
+  const canAddCode = state.currentLesson >= 5
 
   useV2RemoteSync(state.classCode, Boolean(state.classCode))
 
@@ -30,6 +31,7 @@ export function ValueCodePage() {
   }
 
   const openCreate = () => {
+    if (!canAddCode) return
     setDraft(emptyDraft)
     setIsModalOpen(true)
   }
@@ -56,6 +58,7 @@ export function ValueCodePage() {
     const reason = draft.reason.trim()
     const tags = draft.tags
     if (!body || tags.length === 0 || isSaving) return
+    if (!draft.id && !canAddCode) return
 
     setIsSaving(true)
     if (draft.id) {
@@ -85,11 +88,21 @@ export function ValueCodePage() {
   return (
     <div className="mx-auto max-w-5xl px-5 py-8">
       <div className="mb-5 flex items-center justify-between gap-3">
-        <h1 className="font-display text-5xl text-[#EAF2F5]">가치코드</h1>
-        <Button onClick={openCreate}>
-          <Plus size={18} />
-          추가하기
-        </Button>
+        <div>
+          <h1 className="font-display text-5xl text-[#EAF2F5]">가치코드</h1>
+          <p className="mt-2 text-sm font-bold text-[#8AA0B0]">현재 학급 진행도: {state.currentLesson}차시</p>
+        </div>
+        <div className="flex flex-wrap items-center justify-end gap-3">
+          {!canAddCode ? (
+            <div className="rounded-2xl border border-[#FFD37A]/25 bg-[#FFD37A]/10 px-4 py-3 text-sm font-black leading-6 text-[#FFD37A]">
+              가치코드 추가는 5차시부터 가능해요.
+            </div>
+          ) : null}
+          <Button disabled={!canAddCode} onClick={openCreate}>
+            <Plus size={18} />
+            추가하기
+          </Button>
+        </div>
       </div>
 
       <Panel className="mb-5 border-[#4FE0C0]/20 bg-[#14283D]/80">
