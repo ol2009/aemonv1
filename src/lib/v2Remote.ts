@@ -182,9 +182,25 @@ function mapProposals(rows: CodeRow[], votes: CodeVoteRow[]): CodeProposal[] {
   }))
 }
 
-function mapAdoptedCodes(rows: CodeRow[]): AdoptedCode[] {
-  return rows
+function codeRowTimestamp(row: CodeRow) {
+  const value = Date.parse(row.adopted_at ?? row.created_at)
+  return Number.isFinite(value) ? value : 0
+}
+
+function latestAdoptedCodeRows(rows: CodeRow[]) {
+  const byNo = new Map<number, CodeRow>()
+  rows
     .filter((row) => row.status === 'adopted' && row.adopted_no)
+    .forEach((row) => {
+      const no = row.adopted_no ?? 0
+      const existing = byNo.get(no)
+      if (!existing || codeRowTimestamp(row) >= codeRowTimestamp(existing)) byNo.set(no, row)
+    })
+  return [...byNo.values()].sort((a, b) => (a.adopted_no ?? 0) - (b.adopted_no ?? 0))
+}
+
+function mapAdoptedCodes(rows: CodeRow[]): AdoptedCode[] {
+  return latestAdoptedCodeRows(rows)
     .map((row) => ({
       id: row.id,
       no: row.adopted_no ?? 0,
@@ -578,6 +594,14 @@ export async function addRemoteAdoptedCode(args: {
   tags: string[]
 }) {
   const client = ensureClient()
+  const { error: clearError } = await client
+    .from('codes')
+    .update({ status: 'rejected', adopted_no: null, adopted_at: null })
+    .eq('class_id', args.classId)
+    .eq('status', 'adopted')
+    .eq('adopted_no', args.no)
+  if (clearError) throw new Error(toMessage(clearError))
+
   const { error } = await client.from('codes').insert({
     class_id: args.classId,
     nickname: args.nickname.trim(),
@@ -620,6 +644,18 @@ export async function voteRemoteCodeProposal(args: { classId: string; nickname: 
 
 export async function adoptRemoteCodeProposal(args: { proposalId: string; adoptedNo: number; valueCard: string }) {
   const client = ensureClient()
+  const { data: proposal, error: findError } = await client.from('codes').select('class_id').eq('id', args.proposalId).single<{ class_id: string }>()
+  if (findError) throw new Error(toMessage(findError))
+
+  const { error: clearError } = await client
+    .from('codes')
+    .update({ status: 'rejected', adopted_no: null, adopted_at: null })
+    .eq('class_id', proposal.class_id)
+    .eq('status', 'adopted')
+    .eq('adopted_no', args.adoptedNo)
+    .neq('id', args.proposalId)
+  if (clearError) throw new Error(toMessage(clearError))
+
   const { error } = await client
     .from('codes')
     .update({

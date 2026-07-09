@@ -1248,7 +1248,6 @@ export function BoardPage() {
                   <textarea
                     className="min-h-24 w-full resize-none rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 leading-7 text-[#EAF2F5]"
                     maxLength={160}
-                    placeholder="예: 친구처럼 다정했으면 좋겠어."
                     value={wishDraft}
                     onChange={(event) => setWishDraft(event.target.value)}
                   />

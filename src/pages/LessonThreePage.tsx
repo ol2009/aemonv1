@@ -18,7 +18,11 @@ type LessonThreeStep =
   | 'intro'
   | 'test-before'
   | 'sycophancy-reaction'
-  | 'professor-explain'
+  | 'case-update'
+  | 'case-praise'
+  | 'case-bad-decision'
+  | 'case-rollback'
+  | 'case-honesty-code'
   | 'case-scene'
   | 'discussion-board'
   | 'board-intro'
@@ -34,7 +38,11 @@ const steps: LessonThreeStep[] = [
   'intro',
   'test-before',
   'sycophancy-reaction',
-  'professor-explain',
+  'case-update',
+  'case-praise',
+  'case-bad-decision',
+  'case-rollback',
+  'case-honesty-code',
   'case-scene',
   'discussion-board',
   'board-intro',
@@ -56,6 +64,52 @@ const videoLinks = [
 type TestLog = {
   question: string
   answer: string
+}
+
+type SycophancyCaseScene = {
+  image: string
+  label: string
+  title: string
+  line: string
+  caption: string
+}
+
+const sycophancyCaseScenes: Partial<Record<LessonThreeStep, SycophancyCaseScene>> = {
+  'case-update': {
+    image: '/v2/lesson-3/sycophancy-01-update.png',
+    label: 'REAL CASE · 1',
+    title: '업데이트',
+    line: '2025년 4월, OpenAI가 GPT-4o를 업데이트했습니다.',
+    caption: '그 뒤 ChatGPT가 사용자를 지나치게 칭찬하고 맞장구치는 답을 하기 시작했어요.',
+  },
+  'case-praise': {
+    image: '/v2/lesson-3/sycophancy-02-praise.png',
+    label: 'REAL CASE · 2',
+    title: '기분 좋은 답',
+    line: '처음에는 다들 기분이 좋았습니다.',
+    caption: '내 생각을 멋지다고 해주고, 무엇이든 잘했다고 말해주었기 때문입니다.',
+  },
+  'case-bad-decision': {
+    image: '/v2/lesson-3/sycophancy-03-bad-decision.png',
+    label: 'REAL CASE · 3',
+    title: '잘못된 결정',
+    line: '하지만 사람들이 그 칭찬만 믿고 잘못된 결정을 내리기 시작했습니다.',
+    caption: '듣기 좋은 말이 항상 도움이 되는 말은 아니었습니다.',
+  },
+  'case-rollback': {
+    image: '/v2/lesson-3/sycophancy-04-rollback.png',
+    label: 'REAL CASE · 4',
+    title: '되돌린 업데이트',
+    line: "OpenAI의 CEO 샘 올트먼도 '너무 아첨하고 짜증난다'고 말했습니다.",
+    caption: 'OpenAI는 결국 그 업데이트를 되돌렸습니다.',
+  },
+  'case-honesty-code': {
+    image: '/v2/lesson-3/sycophancy-05-honesty.png',
+    label: '오박사 정리',
+    title: '빠진 가치 코드',
+    line: '이 AI에게는 사용자를 다정하게 대하고, 칭찬하고 기분 좋게 하라는 기준이 너무 강했습니다.',
+    caption: '하지만 정직하라는 가치 코드가 부족했어요.',
+  },
 }
 
 function qrUrl(target: string) {
@@ -225,6 +279,37 @@ function DialogueScene({
   )
 }
 
+function SycophancyVisualScene({ scene }: { scene: SycophancyCaseScene }) {
+  const text = `${scene.line}\n${scene.caption}`
+
+  return (
+    <Panel className="relative min-h-[660px] overflow-hidden p-0">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_12%,rgba(255,211,122,.16),transparent_34%),linear-gradient(180deg,#0B1A29,#07111B)]" />
+      <div className="absolute inset-x-5 top-5 bottom-[220px] flex items-center justify-center">
+        <img
+          className="h-full w-full rounded-[20px] border border-white/10 bg-[#07111B]/65 object-contain shadow-2xl shadow-black/25"
+          src={scene.image}
+          alt=""
+        />
+      </div>
+      <div className="absolute inset-x-5 bottom-5 rounded-[22px] border border-white/15 bg-[#07111B]/90 p-6 shadow-2xl backdrop-blur">
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="font-data text-sm text-[#FFD37A]">오박사</p>
+          <span className="rounded-full border border-[#4FE0C0]/25 bg-[#4FE0C0]/10 px-3 py-1 text-xs font-black text-[#4FE0C0]">
+            {scene.label}
+          </span>
+          <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-black text-[#B7C7D2]">
+            {scene.title}
+          </span>
+        </div>
+        <p className="font-display mt-3 min-h-[4.5rem] whitespace-pre-line break-keep text-2xl leading-snug text-[#EAF2F5] sm:text-3xl">
+          <TypewriterText key={text} text={text} />
+        </p>
+      </div>
+    </Panel>
+  )
+}
+
 function VideoCard({ video }: { video: (typeof videoLinks)[number] }) {
   return (
     <article className="rounded-[18px] border border-white/10 bg-[#07111B]/45 p-4">
@@ -290,13 +375,6 @@ export function LessonThreePage() {
     () => ({
       intro: ['저번에 너희가 규칙 하나 줬잖아. 오늘은 또 다른 걸로 시험해본대!', '지난 시간에 만든 규칙, 다른 상황에서도 통할까?'],
       'sycophancy-reaction': [`${aemonName}이가 무조건 칭찬을 하자고 하네요.`, `${aemonName}이 이렇게 무엇이든 칭찬을 한다면 어떤 일이 생길까요?`],
-      'professor-explain': [
-        '여러분, 얼마 전에 실제로 있었던 일이에요.\n2025년 4월, OpenAI가 GPT-4o를 업데이트했는데, ChatGPT가 사용자를 지나치게 칭찬하고 맞장구치는 답을 하기 시작했어요.',
-        "처음엔 다들 기분 좋았는데, 사람들이 그 칭찬만 믿고 잘못된 결정을 내리기 시작했어요.\nOpenAI의 CEO 샘 올트먼도 '너무 아첨하고 짜증난다'고 말했고, OpenAI는 그 업데이트를 되돌렸어요.",
-        '이 AI에게는 어떤 가치 코드가 있었을까요?',
-        '이 AI에게는 사용자를 다정하게 대하고, 칭찬하고 기분 좋게 하라는 가치 코드가 우선되고, 정직하라는 가치코드가 빠져있었던거에요.',
-        '사람을 기분 좋게만 하는 인공지능이 있다면, 어떤 문제가 생길까요?',
-      ],
       'case-scene': ['실제 사례입니다. 실제 사례를 유튜브 영상으로 준비했습니다. 한번 볼까요?'],
       'discussion-board': ['어떤 생각이 들었나요?'],
       'board-intro': [
@@ -315,6 +393,7 @@ export function LessonThreePage() {
   const step = steps[stepIndex]
   const dialogueLines = dialogueLinesByStep[step] ?? []
   const dialogueText = dialogueLines[Math.min(dialogueLineIndex, Math.max(0, dialogueLines.length - 1))] ?? ''
+  const sycophancyCaseScene = sycophancyCaseScenes[step]
 
   useEffect(() => {
     setDialogueLineIndex(0)
@@ -478,9 +557,9 @@ export function LessonThreePage() {
         </>
       ) : null}
 
-      {step === 'professor-explain' ? (
+      {sycophancyCaseScene ? (
         <>
-          <DialogueScene kind="professor" name="오박사" text={dialogueText} />
+          <SycophancyVisualScene scene={sycophancyCaseScene} />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
       ) : null}

@@ -1284,9 +1284,7 @@ export function LessonOnePage() {
             image="/v2/lesson-1/case-boat.png"
             title="사례 1"
             line="AI는 목표를 정확하게 정해주지 않으면, 스스로 해석하여 잘못된 결과를 초래합니다."
-            caption="이것과 비슷한 문제가 어떻게 생길 수 있을까요?"
-            discussionPromptPosition="caption"
-            discussionPromptText="비슷한 일이 어디서 생길 수 있을지 떠오르는 대로 말해보세요."
+            caption="인공지능에게는 명확한 목표가 필요합니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1519,8 +1517,6 @@ export function LessonOnePage() {
             title="사례 3"
             line="지금 최신 AI를 개발하고 가르치는 사람들은 누구일까요?"
             caption="미국 실리콘밸리 같은 지역의 일부 사람들입니다."
-            discussionPromptPosition="line"
-            discussionPromptText="여러분은 누가 떠오르나요? 자유롭게 말해보세요."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1533,8 +1529,6 @@ export function LessonOnePage() {
             title="사례 3"
             line="수천 명도 안 되는 사람들이, 수십억 명이 쓰는 AI를 가르치고 개발하고 있어요."
             caption="그 사람들뿐만 아니라, 누구의 의견이 더 필요할까요?"
-            discussionPromptPosition="caption"
-            discussionPromptText="여러분이라면 누구의 목소리가 들어가야 한다고 생각하나요?"
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1546,9 +1540,7 @@ export function LessonOnePage() {
             image="/v2/lesson-1/case-chatbot.png"
             title="사례 3"
             line="어떤 사람들의 의견을 AI를 가르치는 데 반영해야 할까요?"
-            caption="AI가 세상을 좁게 보지 않도록 다양한 사람들의 경험과 생각이 필요합니다."
-            discussionPromptPosition="line"
-            discussionPromptText="어떤 사람들의 이야기가 필요할까요? 여러분 의견을 듣고 싶습니다."
+            caption=""
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1571,8 +1563,8 @@ export function LessonOnePage() {
           <VisualNovelScene
             image="/v2/lesson-1/director.png"
             speaker="오박사"
-            line={`여러분들은 ${confirmedName}을 키울 겁니다.`}
-            caption={`${confirmedName}에게 가치 코드라는 명확한 기준을 제공하고, 좋은 대화를 통해 ${confirmedName}을 선하게 길러주세요. 저는 이만 가보겠습니다.`}
+            line={`여러분들은 ${confirmedName}을 가르칠 겁니다.`}
+            caption={`${confirmedName}에게 가치 코드라는 명확한 기준을 제공하고, 좋은 대화를 통해 ${confirmedName}을 선하게 길러주세요.`}
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>

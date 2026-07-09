@@ -171,10 +171,7 @@ function normalizeLoaded(raw: unknown): V2State {
     nameCandidates: loaded.nameCandidates.map((candidate) => ({ ...candidate, reason: candidate.reason ?? '', votes: candidate.votes ?? [] })),
     wishes: (loaded.wishes ?? []).map((wish) => ({ ...wish, votes: wish.votes ?? [] })),
     surveyResponses: (loaded.surveyResponses ?? []).map((response) => ({ ...response, votes: response.votes ?? [] })),
-    adoptedCodes: loaded.adoptedCodes.map((code) => ({
-      ...code,
-      tags: normalizeTags((code as AdoptedCode).tags, (code as AdoptedCode).valueCard ? [(code as AdoptedCode).valueCard ?? ''] : ['책임']),
-    })),
+    adoptedCodes: uniqueAdoptedCodes(loaded.adoptedCodes),
   }
 }
 
@@ -190,6 +187,28 @@ function loadState() {
 
 function nextCodeNo(codes: AdoptedCode[]) {
   return codes.reduce((max, code) => Math.max(max, code.no), 0) + 1
+}
+
+function codeTimestamp(code: AdoptedCode) {
+  const value = Date.parse(code.createdAt)
+  return Number.isFinite(value) ? value : 0
+}
+
+function normalizeAdoptedCode(code: AdoptedCode): AdoptedCode {
+  return {
+    ...code,
+    no: Math.max(1, Math.floor(code.no || 1)),
+    tags: normalizeTags(code.tags, code.valueCard ? [code.valueCard] : ['책임']),
+  }
+}
+
+function uniqueAdoptedCodes(codes: AdoptedCode[]) {
+  const byNo = new Map<number, AdoptedCode>()
+  codes.map(normalizeAdoptedCode).forEach((code) => {
+    const existing = byNo.get(code.no)
+    if (!existing || codeTimestamp(code) >= codeTimestamp(existing)) byNo.set(code.no, code)
+  })
+  return [...byNo.values()].sort((a, b) => a.no - b.no)
 }
 
 function addVote<T extends { votes: string[] }>(items: T[], nickname: string, selectedId: string, getId: (item: T) => string) {
@@ -216,10 +235,12 @@ function reducer(state: V2State, action: Action): V2State {
         aiProvider: state.aiProvider,
       }
     }
-    case 'class/merge':
+    case 'class/merge': {
+      const adoptedCodes = action.payload.adoptedCodes ? uniqueAdoptedCodes(action.payload.adoptedCodes) : state.adoptedCodes
       return {
         ...state,
         ...action.payload,
+        adoptedCodes,
         remote: {
           ...state.remote,
           ...(action.payload.remote ?? {}),
@@ -230,6 +251,7 @@ function reducer(state: V2State, action: Action): V2State {
         aiProvider: state.aiProvider,
         studentSession: action.payload.studentSession ?? state.studentSession,
       }
+    }
     case 'class/joinStudent': {
       const nickname = clamp(action.nickname, 16)
       if (!nickname || action.classCode.trim() !== state.classCode) return state
@@ -367,7 +389,7 @@ function reducer(state: V2State, action: Action): V2State {
         sourceProposalId: null,
         createdAt: new Date().toISOString(),
       }
-      return { ...state, adoptedCodes: [...state.adoptedCodes, code].sort((a, b) => a.no - b.no) }
+      return { ...state, adoptedCodes: uniqueAdoptedCodes([...state.adoptedCodes, code]) }
     }
     case 'code/update': {
       const body = clamp(action.body, 180)

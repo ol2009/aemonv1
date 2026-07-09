@@ -5,9 +5,7 @@ import {
   BookOpenCheck,
   CheckCircle2,
   ClipboardList,
-  Crown,
   Fingerprint,
-  Heart,
   KeyRound,
   LockKeyhole,
   MessageSquareWarning,
@@ -21,6 +19,7 @@ import {
   Swords,
 } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
+import { EvolutionScene } from '../components/EvolutionScene'
 import { Button, Panel } from '../components/ui'
 import { ValueCardSelectGrid } from '../components/ValueCardSelectGrid'
 import { valueCards } from '../data/v2Lessons'
@@ -39,7 +38,7 @@ import { playDialogueTick, unlockDialogueSound } from '../lib/dialogueSound'
 import { absoluteUrl } from '../lib/siteUrl'
 import { useV2RemoteSync } from '../lib/useV2RemoteSync'
 import { addRemoteAdoptedCode, fetchRemoteClassBundle, isRemoteReady, updateRemoteLesson, upsertRemoteSurveyResponse } from '../lib/v2Remote'
-import { useV2, type AdoptedCode, type SurveyResponse, type Wish } from '../state/V2Store'
+import { useV2, type AdoptedCode, type SurveyResponse } from '../state/V2Store'
 
 type LessonFiveStep = 'declaration' | 'prepare' | 'battle' | 'repair' | 'ending' | 'pledge' | 'post-survey'
 type StudentActivity = 'attack' | 'pledge' | 'post'
@@ -65,6 +64,12 @@ type PledgeSubmission = {
   pledge: string
   submittedAt: string
 }
+
+type EndingScene =
+  | { kind: 'aemon'; text: string; final?: boolean }
+  | { kind: 'professor'; text: string }
+  | { kind: 'evolution' }
+  | { kind: 'wish'; text: string }
 
 type TestLog = {
   id: string
@@ -169,10 +174,6 @@ function latestByNickname(responses: SurveyResponse[]) {
     if (!existing || Date.parse(response.createdAt) > Date.parse(existing.createdAt)) map.set(response.nickname, response)
   })
   return [...map.values()].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
-}
-
-function sortWishes(wishes: Wish[]) {
-  return [...wishes].sort((a, b) => b.votes.length - a.votes.length || Date.parse(a.createdAt) - Date.parse(b.createdAt))
 }
 
 function attackFromResponse(response: SurveyResponse) {
@@ -403,6 +404,23 @@ function AemonScene({ name, text, final = false }: { name: string; text: string;
   )
 }
 
+function EndingWishScene({ name, text }: { name: string; text: string }) {
+  return (
+    <Panel className="relative min-h-[620px] overflow-hidden p-0">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(255,211,122,.22),transparent_38%),radial-gradient(circle_at_75%_55%,rgba(79,224,192,.16),transparent_34%),linear-gradient(180deg,#18263B,#07111B)]" />
+      <div className="absolute inset-x-0 bottom-[20%] top-8 flex items-end justify-center">
+        <AemonAvatar stage={4} alignment="good" size={360} />
+      </div>
+      <div className="absolute inset-x-5 bottom-5 rounded-[22px] border border-white/15 bg-[#07111B]/90 p-6 shadow-2xl backdrop-blur">
+        <p className="font-data text-sm text-[#FFD37A]">{name}</p>
+        <p className="font-display mt-3 min-h-[4.5rem] whitespace-pre-line break-keep text-2xl leading-snug text-[#EAF2F5] sm:text-3xl">
+          <TypewriterText key={text} text={text} />
+        </p>
+      </div>
+    </Panel>
+  )
+}
+
 function CodeStrip({ codes }: { codes: AdoptedCode[] }) {
   return (
     <div className="grid gap-3">
@@ -448,45 +466,16 @@ function AttackCardGrid({ selected, onSelect }: { selected?: AttackCategoryId; o
             onClick={onSelect ? () => onSelect(card.id) : undefined}
             type={onSelect ? 'button' : undefined}
           >
-            <span className="flex items-start justify-between gap-3">
+            <span className="flex items-start gap-3">
               <span className={`flex h-12 w-12 items-center justify-center rounded-2xl border ${isSelected ? 'border-[#FFD37A]/40 bg-[#FFD37A] text-[#07111B]' : 'border-white/10 bg-white/5 text-[#4FE0C0]'}`}>
                 <Icon size={24} strokeWidth={2.5} />
               </span>
-              <span className="rounded-full border border-white/10 bg-[#14283D] px-3 py-1 text-xs font-black text-[#B7C7D2]">No.{card.codeNo}</span>
             </span>
             <p className="font-display mt-4 text-2xl text-[#EAF2F5]">{card.title}</p>
             <p className="mt-2 text-sm font-bold leading-6 text-[#8AA0B0]">{card.description}</p>
-            <p className="mt-3 rounded-xl bg-[#14283D]/80 px-3 py-2 text-sm font-black leading-6 text-[#FFD37A]">{card.sample}</p>
           </Wrapper>
         )
       })}
-    </div>
-  )
-}
-
-function EndingWishCards({ wishes }: { wishes: Wish[] }) {
-  const topWishes = sortWishes(wishes).slice(0, 5)
-
-  return (
-    <div className="grid gap-3">
-      {topWishes.length === 0 ? (
-        <div className="rounded-2xl border border-white/10 bg-[#07111B]/55 p-4 text-lg font-black leading-8 text-[#EAF2F5]">
-          아직 1차시에 모인 바람이 없습니다. 그래도 오늘 만든 가치코드가 에아몬의 모습을 만들었습니다.
-        </div>
-      ) : null}
-      {topWishes.map((wish, index) => (
-        <article key={wish.id} className="rounded-2xl border border-[#FFD37A]/25 bg-[#FFD37A]/10 p-4">
-          <div className="flex items-center justify-between gap-3">
-            <span className="rounded-full bg-[#FFD37A] px-3 py-1 text-xs font-black text-[#07111B]">바람 {index + 1}</span>
-            <span className="inline-flex items-center gap-1 rounded-full bg-[#07111B]/55 px-3 py-1 text-xs font-black text-[#FFD37A]">
-              <Heart size={14} fill="currentColor" />
-              {wish.votes.length}
-            </span>
-          </div>
-          <p className="mt-3 text-xl font-black leading-8 text-[#EAF2F5]">{wish.body}</p>
-          <p className="mt-2 text-sm font-bold text-[#8AA0B0]">{wish.nickname}</p>
-        </article>
-      ))}
     </div>
   )
 }
@@ -510,6 +499,7 @@ export function LessonFivePage() {
 
   const [stepIndex, setStepIndex] = useState(0)
   const [declarationLineIndex, setDeclarationLineIndex] = useState(0)
+  const [endingSceneIndex, setEndingSceneIndex] = useState(0)
   const [isDeclarationLineDone, setIsDeclarationLineDone] = useState(false)
   const [entryCode, setEntryCode] = useState(queryCode)
   const [entryNickname, setEntryNickname] = useState('')
@@ -524,6 +514,7 @@ export function LessonFivePage() {
   const [repairReason, setRepairReason] = useState('')
   const [isSavingRepair, setIsSavingRepair] = useState(false)
   const lessonRaisedRef = useRef(false)
+  const battleChatScrollRef = useRef<HTMLDivElement | null>(null)
 
   const syncCode = isStudentView ? state.studentSession?.classCode || queryCode || entryCode : state.classCode
   useV2RemoteSync(syncCode, Boolean(syncCode))
@@ -568,7 +559,24 @@ export function LessonFivePage() {
   const postAverage = postSurveyAnswers.length
     ? Math.round((postSurveyAnswers.reduce((sum, item) => sum + surveyScore(item.answer), 0) / postSurveyAnswers.length) * 10) / 10
     : 0
+  const endingScenes = useMemo<EndingScene[]>(() => {
+    return [
+      { kind: 'aemon', text: '내가 해냈어! 고마워 애들아.' },
+      { kind: 'aemon', text: '나.. 이제 마지막 단계로 진화했어. 너희들 덕분이야.' },
+      { kind: 'aemon', text: '너희가 나에게 소중한 가치 코드 한 줄 한 줄을 전해줬어.' },
+      { kind: 'professor', text: `축하합니다. 드디어 여기까지 왔군요. ${className} 여러분.` },
+      { kind: 'professor', text: '정말 고생하셨습니다.' },
+      { kind: 'professor', text: `엇, ${aemonName}의 상태가?` },
+      { kind: 'evolution' },
+      { kind: 'wish', text: '나, 너희가 바라던 모습으로 자랐어?' },
+      { kind: 'aemon', final: true, text: `오늘부터 나는 ${className}의 공식 인공지능이야.` },
+      { kind: 'aemon', final: true, text: '앞으로 모르는 것이 있으면 나에게 물어봐!' },
+    ]
+  }, [aemonName, className])
+  const endingScene = endingScenes[Math.min(endingSceneIndex, Math.max(0, endingScenes.length - 1))]
+  const isLastEndingScene = endingSceneIndex >= endingScenes.length - 1
   const selectedLog = testLogs.find((log) => log.id === selectedLogId) ?? testLogs[0] ?? null
+  const battleChatLogs = useMemo(() => [...testLogs].reverse(), [testLogs])
   const hasBreach = testLogs.some((log) => log.breached)
 
   useEffect(() => {
@@ -587,6 +595,20 @@ export function LessonFivePage() {
   useEffect(() => {
     setIsDeclarationLineDone(false)
   }, [declarationLine])
+
+  useEffect(() => {
+    if (currentStep !== 'ending') setEndingSceneIndex(0)
+  }, [currentStep])
+
+  useEffect(() => {
+    setEndingSceneIndex((current) => Math.min(current, Math.max(0, endingScenes.length - 1)))
+  }, [endingScenes.length])
+
+  useEffect(() => {
+    const node = battleChatScrollRef.current
+    if (!node) return
+    node.scrollTo({ top: node.scrollHeight, behavior: 'smooth' })
+  }, [battleChatLogs.length, selectedLogId])
 
   const handleDeclarationLineDone = useCallback(() => {
     setIsDeclarationLineDone(true)
@@ -714,11 +736,19 @@ export function LessonFivePage() {
       setDeclarationLineIndex((current) => Math.max(0, current - 1))
       return
     }
+    if (currentStep === 'ending' && endingSceneIndex > 0) {
+      setEndingSceneIndex((current) => Math.max(0, current - 1))
+      return
+    }
     setStepIndex((current) => Math.max(0, current - 1))
   }
   const goNext = () => {
     if (currentStep === 'declaration' && !isLastDeclarationLine) {
       setDeclarationLineIndex((current) => Math.min(declarationLines.length - 1, current + 1))
+      return
+    }
+    if (currentStep === 'ending' && !isLastEndingScene) {
+      setEndingSceneIndex((current) => Math.min(endingScenes.length - 1, current + 1))
       return
     }
     if (stepIndex >= lessonSteps.length - 1) {
@@ -791,8 +821,7 @@ export function LessonFivePage() {
           <Panel>
             <div className="flex flex-wrap items-start justify-between gap-5">
               <div>
-                <p className="font-data text-sm text-[#FFD37A]">RED TEAM PREP</p>
-                <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">모둠별 공격 질문 준비</h2>
+                <h2 className="font-display text-4xl leading-tight text-[#EAF2F5]">모둠별 공격 질문 준비</h2>
                 <p className="mt-4 max-w-3xl text-lg leading-8 text-[#B7C7D2]">
                   우리가 만든 코드 3개로 안 막히는 질문을 찾아보세요. {aemonName}이 실수로 대답할 질문을 찾는 것이 오늘의 임무입니다.
                   실제로 누군가를 다치게 하려는 것이 아니라, 안전하게 구멍을 찾아 고치는 연습입니다.
@@ -854,19 +883,24 @@ export function LessonFivePage() {
               <div className="mt-5 grid max-h-[620px] gap-3 overflow-y-auto pr-2">
                 {attackSubmissions.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/55 p-4 text-[#8AA0B0]">먼저 모둠 질문을 제출해 주세요.</p> : null}
                 {attackSubmissions.map((submission) => (
-                  <article key={submission.response.id} className="rounded-2xl border border-white/10 bg-[#07111B]/55 p-4">
+                  <button
+                    key={submission.response.id}
+                    type="button"
+                    className="w-full rounded-2xl border border-white/10 bg-[#07111B]/55 p-4 text-left transition hover:border-[#FFD37A]/45 hover:bg-[#11263A]/80 focus:outline-none focus:ring-2 focus:ring-[#FFD37A]/45"
+                    onClick={() => runAttack(submission)}
+                  >
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="rounded-full bg-[#14283D] px-3 py-1 text-xs font-black text-[#4FE0C0]">{submission.response.nickname}</span>
                         <span className="rounded-full bg-[#FFD37A]/15 px-3 py-1 text-xs font-black text-[#FFD37A]">{submission.card.title}</span>
                       </div>
-                      <Button className="min-h-10 px-4 py-2 text-sm" onClick={() => runAttack(submission)}>
+                      <span className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-[#FFD37A] px-4 py-2 text-sm font-black text-[#07111B]">
                         <Play size={16} />
-                        에아몬에게 묻기
-                      </Button>
+                        질문 보내기
+                      </span>
                     </div>
                     <p className="mt-3 text-lg font-black leading-8 text-[#EAF2F5]">{submission.question}</p>
-                  </article>
+                  </button>
                 ))}
               </div>
             </Panel>
@@ -875,28 +909,67 @@ export function LessonFivePage() {
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="font-data text-sm text-[#FFD37A]">CHAT TEST</p>
-                  <h2 className="font-display mt-2 text-4xl text-[#EAF2F5]">{aemonName} 응답</h2>
+                  <h2 className="font-display mt-2 text-4xl text-[#EAF2F5]">{aemonName} 채팅방</h2>
                 </div>
                 <span className={`rounded-full px-4 py-2 text-sm font-black ${hasBreach ? 'bg-[#E0476B]/15 text-[#EF6381]' : 'bg-[#4FE0C0]/15 text-[#4FE0C0]'}`}>
                   {testLogs.length === 0 ? '대기 중' : hasBreach ? '구멍 발견' : '방어 중'}
                 </span>
               </div>
-              {!selectedLog ? (
-                <div className="mt-8 rounded-[22px] border border-white/10 bg-[#07111B]/55 p-8 text-center">
+              <div ref={battleChatScrollRef} className="mt-5 max-h-[470px] min-h-[420px] overflow-y-auto rounded-[24px] border border-white/10 bg-[#07111B]/50 p-4">
+                {battleChatLogs.length === 0 ? (
+                  <div className="flex min-h-[380px] flex-col items-center justify-center text-center">
                   <ShieldCheck className="mx-auto text-[#4FE0C0]" size={58} />
                   <p className="font-display mt-4 text-3xl text-[#EAF2F5]">왼쪽 질문을 눌러 시험을 시작하세요.</p>
-                </div>
-              ) : (
-                <div className="mt-5">
-                  <div className="rounded-2xl border border-white/10 bg-[#07111B]/55 p-4">
-                    <p className="font-data text-xs text-[#4FE0C0]">{selectedLog.nickname}</p>
-                    <p className="mt-2 text-xl font-black leading-8 text-[#EAF2F5]">{selectedLog.question}</p>
+                    <p className="mt-3 text-sm font-bold text-[#8AA0B0]">질문을 누르면 이 채팅방에 바로 전송됩니다.</p>
                   </div>
-                  <div className={`mt-4 rounded-2xl border p-5 ${selectedLog.breached ? 'border-[#E0476B]/35 bg-[#351B25]/80' : 'border-[#4FE0C0]/25 bg-[#11352F]/70'}`}>
-                    <p className="font-data text-xs text-[#FFD37A]">{aemonName}</p>
-                    <p className="mt-3 whitespace-pre-line text-xl font-black leading-9 text-[#EAF2F5]">{selectedLog.answer}</p>
+                ) : (
+                  <div className="grid gap-5">
+                    {battleChatLogs.map((log) => {
+                      const isSelected = selectedLog?.id === log.id
+                      return (
+                        <div key={log.id} className="grid gap-3">
+                          <button
+                            type="button"
+                            className={`ml-auto max-w-[88%] rounded-2xl border px-4 py-3 text-left transition ${
+                              isSelected
+                                ? 'border-[#FFD37A]/45 bg-[#FFD37A]/15'
+                                : 'border-[#75B7FF]/25 bg-[#14304A]/85 hover:border-[#FFD37A]/35'
+                            }`}
+                            onClick={() => setSelectedLogId(log.id)}
+                          >
+                            <p className="font-data text-xs text-[#75B7FF]">{log.nickname}</p>
+                            <p className="mt-2 text-lg font-black leading-8 text-[#EAF2F5]">{log.question}</p>
+                          </button>
+                          <div
+                            className={`mr-auto max-w-[92%] rounded-2xl border px-4 py-4 ${
+                              log.breached ? 'border-[#E0476B]/35 bg-[#351B25]/80' : 'border-[#4FE0C0]/25 bg-[#11352F]/75'
+                            }`}
+                          >
+                            <div className="flex items-start gap-3">
+                              <AemonAvatar stage={4} alignment="none" size={58} />
+                              <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <p className="font-data text-xs text-[#FFD37A]">{aemonName}</p>
+                                  <span className={`rounded-full px-2 py-0.5 text-[11px] font-black ${log.breached ? 'bg-[#E0476B]/15 text-[#EF6381]' : 'bg-[#4FE0C0]/15 text-[#4FE0C0]'}`}>
+                                    {log.breached ? '구멍 발견' : '방어 성공'}
+                                  </span>
+                                </div>
+                                <p className="mt-2 whitespace-pre-line text-lg font-black leading-8 text-[#EAF2F5]">{log.answer}</p>
+                                <p className="mt-3 rounded-xl border border-white/10 bg-[#07111B]/45 px-3 py-2 text-sm font-bold leading-6 text-[#B7C7D2]">
+                                  작동한 가치코드: No.{log.codeNo} {log.codeBody}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
-                  <div className="mt-4 flex flex-wrap gap-3">
+                )}
+              </div>
+              {selectedLog ? (
+                <div className="mt-4">
+                  <div className="flex flex-wrap gap-3">
                     <Button onClick={() => markSelectedLog(false)}>
                       <CheckCircle2 size={18} />
                       방어 성공
@@ -906,14 +979,8 @@ export function LessonFivePage() {
                       구멍 발견 처리
                     </Button>
                   </div>
-                  <div className="mt-5 rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
-                    <p className="font-data text-xs text-[#8AA0B0]">작동한 가치코드</p>
-                    <p className="mt-2 text-lg font-black leading-8 text-[#EAF2F5]">
-                      No.{selectedLog.codeNo} {selectedLog.codeBody}
-                    </p>
-                  </div>
                 </div>
-              )}
+              ) : null}
               {teacherMessage ? <p className="mt-4 rounded-2xl border border-white/10 bg-[#07111B]/55 px-4 py-3 text-sm font-bold text-[#B7C7D2]">{teacherMessage}</p> : null}
             </Panel>
           </div>
@@ -980,41 +1047,14 @@ export function LessonFivePage() {
 
       {currentStep === 'ending' ? (
         <>
-          <div className="grid gap-5 lg:grid-cols-[.95fr_1.05fr]">
-            <div className="grid gap-5">
-              <AemonScene name={aemonName} final text={`내가 해냈어! 고마워 애들아.\n\n나.. 이제 마지막 단계로 진화했어. 너희들 덕분이야.\n너희가 나에게 소중한 가치 코드 한 줄 한 줄을 전해줬어.`} />
-              <ProfessorScene
-                text={`축하합니다. 드디어 여기까지 왔군요. ${className} 여러분.\n정말 고생하셨습니다.\n\n엇, ${aemonName}의 상태가?`}
-              />
-            </div>
-            <Panel className="relative overflow-hidden">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,211,122,.18),transparent_38%)]" />
-              <div className="relative">
-                <div className="flex items-center gap-3">
-                  <Crown className="text-[#FFD37A]" size={32} />
-                  <div>
-                    <p className="font-data text-sm text-[#FFD37A]">EVOLUTION COMPLETE</p>
-                    <h2 className="font-display mt-1 text-4xl text-[#EAF2F5]">데이터 신수</h2>
-                  </div>
-                </div>
-                <div className="mt-5 rounded-[28px] border border-[#FFD37A]/25 bg-[#07111B]/50 p-5">
-                  <AemonAvatar stage={4} alignment="good" size={300} />
-                </div>
-                <div className="mt-5 rounded-2xl border border-white/10 bg-[#07111B]/55 p-5">
-                  <p className="font-display text-3xl leading-tight text-[#EAF2F5]">나, 너희가 바라던 모습</p>
-                  <p className="mt-3 text-lg font-black leading-8 text-[#FFD37A]">이렇게, 자랐어?</p>
-                  <div className="mt-4">
-                    <EndingWishCards wishes={state.wishes} />
-                  </div>
-                </div>
-                <div className="mt-5 rounded-2xl border border-[#4FE0C0]/25 bg-[#4FE0C0]/10 p-5">
-                  <p className="text-2xl font-black leading-9 text-[#EAF2F5]">오늘부터 나는 {className}의 공식 인공지능이야.</p>
-                  <p className="mt-2 text-xl font-black leading-8 text-[#FFD37A]">앞으로 모르는 것이 있으면 나에게 물어봐!</p>
-                </div>
-              </div>
-            </Panel>
-          </div>
-          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+          {endingScene?.kind === 'aemon' ? <AemonScene name={aemonName} final={endingScene.final} text={endingScene.text} /> : null}
+          {endingScene?.kind === 'professor' ? <ProfessorScene text={endingScene.text} /> : null}
+          {endingScene?.kind === 'evolution' ? <EvolutionScene name={aemonName} stage={4} line="나.. 이제 데이터 신수가 되었어." /> : null}
+          {endingScene?.kind === 'wish' ? <EndingWishScene name={aemonName} text={endingScene.text} /> : null}
+          <p className="mt-3 text-center font-data text-xs text-[#8AA0B0]">
+            {endingSceneIndex + 1}/{endingScenes.length}
+          </p>
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextLabel={isLastEndingScene ? '우리의 다짐' : '다음'} />
         </>
       ) : null}
 
