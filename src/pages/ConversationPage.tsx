@@ -1,13 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AlertTriangle, CheckCircle2, PlugZap, Send } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
 import { Button, Panel } from '../components/ui'
+import { isFreeChatLog, markFreeChatPrompt } from '../lib/chatLogFilters'
 import { playDialogueTick, unlockDialogueSound } from '../lib/dialogueSound'
 import { useAutoScrollToBottom } from '../lib/useAutoScrollToBottom'
 import { providerLabel, runV2Chat } from '../lib/v2Chat'
 import { useV2 } from '../state/V2Store'
 
-function TypewriterAnswer({ text }: { text: string }) {
+function TypewriterAnswer({ text, onTick }: { text: string; onTick?: () => void }) {
   const characters = useMemo(() => Array.from(text), [text])
   const [progress, setProgress] = useState({ text, count: 0 })
   const count = progress.text === text ? progress.count : 0
@@ -22,6 +23,10 @@ function TypewriterAnswer({ text }: { text: string }) {
     }, 20)
     return () => window.clearInterval(timer)
   }, [characters, characters.length, text])
+
+  useEffect(() => {
+    onTick?.()
+  }, [count, onTick])
 
   return <>{characters.slice(0, count).join('')}</>
 }
@@ -43,11 +48,21 @@ export function ConversationPage() {
   const chatScrollRef = useRef<HTMLDivElement | null>(null)
 
   const aemonName = state.aemonName.trim() || '에아몬'
-  const orderedLogs = useMemo(() => [...state.chatLogs].reverse(), [state.chatLogs])
+  const freeChatLogs = useMemo(() => state.chatLogs.filter(isFreeChatLog), [state.chatLogs])
+  const orderedLogs = useMemo(() => [...freeChatLogs].reverse(), [freeChatLogs])
   const isApiActive = Boolean(state.apiKey.trim())
+  const scrollChatToBottom = useCallback(() => {
+    const element = chatScrollRef.current
+    if (!element) return
+    element.scrollTop = element.scrollHeight
+    window.requestAnimationFrame(() => {
+      element.scrollTop = element.scrollHeight
+    })
+  }, [])
 
   useAutoScrollToBottom(chatScrollRef, `${orderedLogs.length}-${pendingQuestion}-${isLoading}`, {
     enabled: orderedLogs.length > 0 || Boolean(pendingQuestion),
+    followMs: 3000,
   })
 
   const ask = async () => {
@@ -65,10 +80,10 @@ export function ConversationPage() {
         aemonName,
         className: state.className,
         adoptedCodes: state.adoptedCodes,
-        chatHistory: state.chatLogs,
+        chatHistory: freeChatLogs,
         question: nextQuestion,
       })
-      addChatLog({ question: nextQuestion, answer: result.answer, mode: result.mode, promptSnapshot: result.promptSnapshot })
+      addChatLog({ question: nextQuestion, answer: result.answer, mode: result.mode, promptSnapshot: markFreeChatPrompt(result.promptSnapshot) })
     } catch (caught) {
       setError((caught as Error).message)
       setQuestion(nextQuestion)
@@ -139,7 +154,7 @@ export function ConversationPage() {
                 <div className="grid gap-1">
                   <p className="text-xs font-bold text-[#FFD37A]">{aemonName}</p>
                   <p className="whitespace-pre-wrap rounded-2xl rounded-tl-md bg-[#FFD37A]/10 px-4 py-3 leading-7 text-[#FFE6AE]">
-                    {index === orderedLogs.length - 1 ? <TypewriterAnswer text={log.answer} /> : log.answer}
+                    {index === orderedLogs.length - 1 ? <TypewriterAnswer text={log.answer} onTick={scrollChatToBottom} /> : log.answer}
                   </p>
                 </div>
               </div>
