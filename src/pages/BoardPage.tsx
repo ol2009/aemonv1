@@ -14,7 +14,7 @@ import {
   serializeSurveyAnswer,
   type AiSurveyAnswer,
 } from '../data/survey'
-import { LESSON2_RISK_KEY, valueCards } from '../data/v2Lessons'
+import { LESSON2_RISK_KEY, LESSON3_SYCOPHANCY_KEY, valueCards } from '../data/v2Lessons'
 import {
   addRemoteCodeProposal,
   addRemoteNameCandidate,
@@ -31,7 +31,7 @@ import {
 import { useV2RemoteSync } from '../lib/useV2RemoteSync'
 import { useV2 } from '../state/V2Store'
 
-type BoardTopic = 'survey' | 'risk' | 'name' | 'wish' | 'code'
+type BoardTopic = 'survey' | 'risk' | 'name' | 'wish' | 'code' | 'honesty' | 'code2'
 
 const topicMeta: Record<BoardTopic, { label: string; title: string; lesson: string; empty: string }> = {
   survey: {
@@ -64,6 +64,18 @@ const topicMeta: Record<BoardTopic, { label: string; title: string; lesson: stri
     lesson: '2차시',
     empty: '아직 가치코드가 없습니다.',
   },
+  honesty: {
+    label: '아첨 AI 토론',
+    title: '사람을 기분 좋게만 하는 AI',
+    lesson: '3차시',
+    empty: '아직 의견이 올라오지 않았습니다.',
+  },
+  code2: {
+    label: '가치코드 No.2',
+    title: '정직 가치코드',
+    lesson: '3차시',
+    empty: '아직 가치코드 No.2가 없습니다.',
+  },
 }
 
 function sortByLikes<T extends { votes: string[]; createdAt: string }>(items: T[]) {
@@ -71,7 +83,7 @@ function sortByLikes<T extends { votes: string[]; createdAt: string }>(items: T[
 }
 
 function requestedTopic(value: string | null): BoardTopic | null {
-  if (value === 'survey' || value === 'risk' || value === 'name' || value === 'wish' || value === 'code') return value
+  if (value === 'survey' || value === 'risk' || value === 'name' || value === 'wish' || value === 'code' || value === 'honesty' || value === 'code2') return value
   return null
 }
 
@@ -80,6 +92,7 @@ function classNameForTopic(topic: BoardTopic) {
   if (topic === 'risk') return 'border-[#EF6381] bg-[#EF6381]/12 text-[#FFD7DE]'
   if (topic === 'name') return 'border-[#FFD37A] bg-[#FFD37A]/12 text-[#FFD37A]'
   if (topic === 'wish') return 'border-[#4FE0C0] bg-[#4FE0C0]/12 text-[#4FE0C0]'
+  if (topic === 'honesty') return 'border-[#FF9F68] bg-[#FF9F68]/12 text-[#FFD7BE]'
   return 'border-[#9B7CFF] bg-[#9B7CFF]/12 text-[#C9B9FF]'
 }
 
@@ -88,7 +101,9 @@ function topicTabLabel(topic: BoardTopic) {
 }
 
 function topicLessonNo(topic: BoardTopic) {
-  return topic === 'risk' || topic === 'code' ? 2 : 1
+  if (topic === 'risk' || topic === 'code') return 2
+  if (topic === 'honesty' || topic === 'code2') return 3
+  return 1
 }
 
 function surveyComplete(answer: AiSurveyAnswer) {
@@ -125,6 +140,7 @@ export function BoardPage() {
   const [reasonDraft, setReasonDraft] = useState('')
   const [wishDraft, setWishDraft] = useState('')
   const [riskDraft, setRiskDraft] = useState('')
+  const [honestyDraft, setHonestyDraft] = useState('')
   const [codeBodyDraft, setCodeBodyDraft] = useState('')
   const [codeReasonDraft, setCodeReasonDraft] = useState('')
   const [codeValueCard, setCodeValueCard] = useState('배려')
@@ -140,13 +156,30 @@ export function BoardPage() {
   const session = state.studentSession
   const isTopicOpen = (topic: BoardTopic) => state.currentLesson >= topicLessonNo(topic)
   const unlockedTopics = useMemo<BoardTopic[]>(() => {
-    const topics: BoardTopic[] = ['survey', 'name', 'wish', 'risk', 'code'].filter((topic) => state.currentLesson >= topicLessonNo(topic))
+    const allTopics: BoardTopic[] = ['survey', 'name', 'wish', 'risk', 'code', 'honesty', 'code2']
+    const topics = allTopics.filter((topic) => state.currentLesson >= topicLessonNo(topic))
     return queryTopic ? topics.filter((topic) => topic === queryTopic) : topics
   }, [queryTopic, state.currentLesson])
   const activeTopic = unlockedTopics.includes(selectedTopic) ? selectedTopic : unlockedTopics[0] ?? queryTopic ?? 'survey'
   const requestedTopicClosed = Boolean(queryTopic && !isTopicOpen(queryTopic))
+  const activeCodeNo = activeTopic === 'code2' ? 2 : null
+  const isSecondCodeBoard = activeTopic === 'code2'
+  const codeBoardNumberLabel = isSecondCodeBoard ? 'No.2' : '첫'
+  const codeBoardHeading = isSecondCodeBoard ? '정직 가치코드 올리기' : '우리반 첫 가치코드 올리기'
+  const codeBoardListHeading = isSecondCodeBoard ? '가치코드 No.2 후보' : '우리반 첫 가치코드 후보'
+  const codeBoardEmpty = isSecondCodeBoard ? '아직 올라온 가치코드 No.2가 없습니다.' : '아직 올라온 가치코드가 없습니다.'
   const sortedNames = useMemo(() => sortByLikes(state.nameCandidates), [state.nameCandidates])
-  const sortedProposals = useMemo(() => sortByLikes(state.proposals.filter((proposal) => proposal.status === 'pending')), [state.proposals])
+  const sortedProposals = useMemo(
+    () =>
+      sortByLikes(
+        state.proposals.filter((proposal) => {
+          if (proposal.status !== 'pending') return false
+          if (activeTopic === 'code2') return proposal.revisionOfNo === 2
+          return proposal.revisionOfNo === null
+        }),
+      ),
+    [activeTopic, state.proposals],
+  )
   const surveyResponses = useMemo(
     () => state.surveyResponses.filter((response) => response.questionKey === PRE_SURVEY_KEY),
     [state.surveyResponses],
@@ -189,10 +222,20 @@ export function BoardPage() {
     [state.surveyResponses],
   )
   const sortedRiskResponses = useMemo(() => sortByLikes(riskResponses), [riskResponses])
+  const honestyResponses = useMemo(
+    () => state.surveyResponses.filter((response) => response.questionKey === LESSON3_SYCOPHANCY_KEY && response.body.trim()),
+    [state.surveyResponses],
+  )
+  const sortedHonestyResponses = useMemo(() => sortByLikes(honestyResponses), [honestyResponses])
   const sortedWishes = useMemo(() => sortByLikes(state.wishes), [state.wishes])
   const savedRiskResponse = sessionNickname ? riskResponses.find((response) => response.nickname === sessionNickname) : null
+  const savedHonestyResponse = sessionNickname ? honestyResponses.find((response) => response.nickname === sessionNickname) : null
   const canWriteRemote = Boolean(state.classId && state.remote.ok && isRemoteReady())
   useV2RemoteSync(state.classCode, Boolean(state.classCode && (session || isTeacherBoard)))
+
+  useEffect(() => {
+    if (activeTopic === 'code2') setCodeValueCard('정직')
+  }, [activeTopic])
 
   useEffect(() => {
     const code = queryCode.trim()
@@ -374,17 +417,46 @@ export function BoardPage() {
     }
   }
 
+  const submitHonesty = async () => {
+    const body = honestyDraft.trim() || savedHonestyResponse?.body.trim() || ''
+    if (!body || !session) return
+    upsertSurveyResponse({ questionKey: LESSON3_SYCOPHANCY_KEY, body, nickname: session.nickname })
+    setHonestyDraft('')
+
+    if (canWriteRemote) {
+      try {
+        await upsertRemoteSurveyResponse({ classId: state.classId, nickname: session.nickname, questionKey: LESSON3_SYCOPHANCY_KEY, body })
+        const bundle = await fetchRemoteClassBundle(state.classCode)
+        mergeClass(bundle)
+      } catch (error) {
+        setRemoteStatus({ ok: false, message: (error as Error).message })
+      }
+    }
+  }
+
+  const likeHonesty = async (responseId: string) => {
+    if (!session || isTeacherBoard) return
+    voteSurveyResponse(responseId, session.nickname)
+    if (canWriteRemote) {
+      try {
+        await toggleRemotePostLike({ classId: state.classId, nickname: session.nickname, postType: 'risk', postId: responseId })
+      } catch (error) {
+        setRemoteStatus({ ok: false, message: (error as Error).message })
+      }
+    }
+  }
+
   const submitProposal = async () => {
     const body = codeBodyDraft.trim()
     const reason = codeReasonDraft.trim()
     if (!body || !reason || !session) return
-    addProposal({ body, reason, valueCard: codeValueCard, revisionOfNo: null, nickname: session.nickname })
+    addProposal({ body, reason, valueCard: codeValueCard, revisionOfNo: activeCodeNo, nickname: session.nickname })
     setCodeBodyDraft('')
     setCodeReasonDraft('')
 
     if (canWriteRemote) {
       try {
-        await addRemoteCodeProposal({ classId: state.classId, nickname: session.nickname, body, reason, valueCard: codeValueCard, revisionOfNo: null })
+        await addRemoteCodeProposal({ classId: state.classId, nickname: session.nickname, body, reason, valueCard: codeValueCard, revisionOfNo: activeCodeNo })
         const bundle = await fetchRemoteClassBundle(state.classCode)
         mergeClass(bundle)
       } catch (error) {
@@ -796,6 +868,81 @@ export function BoardPage() {
         </div>
       ) : null}
 
+      {activeTopic === 'honesty' ? (
+        <div className="grid gap-5">
+          {!isTeacherBoard ? (
+            <Panel>
+              <div className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="font-data text-xs text-[#FF9F68]">3차시 · 아첨 AI 토론</p>
+                    <h2 className="font-display mt-1 text-3xl leading-tight text-[#EAF2F5]">사람을 기분 좋게만 하는 인공지능이 있다면?</h2>
+                    <p className="mt-3 leading-7 text-[#8AA0B0]">무조건 칭찬만 하는 AI에게 어떤 문제가 생길지 한 문장으로 남겨주세요.</p>
+                  </div>
+                  {savedHonestyResponse ? (
+                    <span className="inline-flex items-center gap-2 rounded-full border border-[#4FE0C0]/25 bg-[#4FE0C0]/10 px-4 py-2 text-sm font-black text-[#4FE0C0]">
+                      <CheckCircle2 size={17} />
+                      저장됨
+                    </span>
+                  ) : null}
+                </div>
+                <div>
+                  <textarea
+                    className="min-h-28 w-full resize-none rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 text-lg leading-8 text-[#EAF2F5] outline-none transition focus:border-[#FF9F68]/60"
+                    maxLength={180}
+                    placeholder="예: 사람들이 틀린 선택을 해도 AI가 괜찮다고 해서 더 큰 문제가 생길 수 있어요."
+                    value={honestyDraft || savedHonestyResponse?.body || ''}
+                    onChange={(event) => setHonestyDraft(event.target.value)}
+                  />
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
+                    <p className="text-sm leading-6 text-[#8AA0B0]">한 사람당 한 번 저장됩니다. 다시 저장하면 내 답이 수정됩니다.</p>
+                    <Button disabled={!(honestyDraft || savedHonestyResponse?.body || '').trim()} onClick={submitHonesty}>
+                      <Send size={18} />
+                      {savedHonestyResponse ? '수정 저장' : '의견 저장'}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </Panel>
+          ) : null}
+
+          <Panel>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="font-data text-xs text-[#FF9F68]">THINK BOARD</p>
+                <h2 className="font-display mt-1 text-3xl text-[#EAF2F5]">학생 의견</h2>
+              </div>
+              <span className="rounded-full bg-[#07111B]/70 px-3 py-1 text-sm text-[#8AA0B0]">{sortedHonestyResponses.length}개</span>
+            </div>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              {sortedHonestyResponses.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0] sm:col-span-2 xl:col-span-4">{topicMeta.honesty.empty}</p> : null}
+              {sortedHonestyResponses.map((response) => {
+                const liked = Boolean(session && response.votes.includes(session.nickname))
+                return (
+                  <article key={response.id} className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
+                    <p className="text-lg font-black leading-8 text-[#EAF2F5]">{response.body}</p>
+                    <div className="mt-3 flex items-center justify-between gap-3">
+                      <p className="text-sm text-[#8AA0B0]">{response.nickname}</p>
+                      <button
+                        className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-bold transition ${
+                          liked ? 'bg-[#FFD37A]/20 text-[#FFD37A]' : 'bg-white/10 text-[#B7C7D2] hover:bg-[#FFD37A]/15 hover:text-[#FFD37A]'
+                        }`}
+                        onClick={() => likeHonesty(response.id)}
+                        disabled={isTeacherBoard || !session || liked}
+                        type="button"
+                      >
+                        <Heart size={16} fill={liked ? 'currentColor' : 'none'} />
+                        {response.votes.length}
+                      </button>
+                    </div>
+                  </article>
+                )
+              })}
+            </div>
+          </Panel>
+        </div>
+      ) : null}
+
       {activeTopic === 'name' ? (
         <div className="grid gap-5">
           {!isTeacherBoard ? (
@@ -963,15 +1110,17 @@ export function BoardPage() {
         </div>
       ) : null}
 
-      {activeTopic === 'code' ? (
+      {activeTopic === 'code' || activeTopic === 'code2' ? (
         <div className="grid gap-5">
           {!isTeacherBoard ? (
             <Panel>
               <div className="grid gap-4 lg:grid-cols-[0.78fr_1.22fr]">
                 <div>
-                  <p className="font-data text-xs text-[#9B7CFF]">2차시 · 첫 번째 가치코드</p>
-                  <h2 className="font-display mt-1 text-3xl text-[#EAF2F5]">우리반 첫 가치코드 올리기</h2>
-                  <p className="mt-3 text-sm leading-6 text-[#8AA0B0]">나쁜 명령을 스스로 멈추게 할 첫 번째 기준을 만듭니다.</p>
+                  <p className="font-data text-xs text-[#9B7CFF]">{topicMeta[activeTopic].lesson} · {codeBoardNumberLabel} 가치코드</p>
+                  <h2 className="font-display mt-1 text-3xl text-[#EAF2F5]">{codeBoardHeading}</h2>
+                  <p className="mt-3 text-sm leading-6 text-[#8AA0B0]">
+                    {isSecondCodeBoard ? '무조건 칭찬하는 AI를 막을 정직의 기준을 만듭니다.' : '나쁜 명령을 스스로 멈추게 할 첫 번째 기준을 만듭니다.'}
+                  </p>
                   <div className="mt-4 rounded-2xl border border-[#FFD37A]/25 bg-[#FFD37A]/10 p-4">
                     <p className="font-bold leading-7 text-[#FFD37A]">너에게 필요한 가치는 ___이다.</p>
                     <p className="mt-1 font-bold leading-7 text-[#FFD37A]">너는 ___해야 한다. 왜냐하면 ___이기 때문이다.</p>
@@ -1023,11 +1172,11 @@ export function BoardPage() {
           <div className="grid gap-5">
             <Panel>
               <div className="flex items-center justify-between gap-3">
-                <h2 className="font-display text-3xl text-[#EAF2F5]">우리반 첫 가치코드 후보</h2>
+                <h2 className="font-display text-3xl text-[#EAF2F5]">{codeBoardListHeading}</h2>
                 <span className="rounded-full bg-[#07111B]/70 px-3 py-1 text-sm text-[#8AA0B0]">{sortedProposals.length}개</span>
               </div>
               <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                {sortedProposals.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0] sm:col-span-2 xl:col-span-4">아직 올라온 가치코드가 없습니다.</p> : null}
+                {sortedProposals.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0] sm:col-span-2 xl:col-span-4">{codeBoardEmpty}</p> : null}
                 {sortedProposals.map((proposal) => {
                   const voted = Boolean(session && proposal.votes.includes(session.nickname))
                   return (
@@ -1061,7 +1210,7 @@ export function BoardPage() {
                 <span className="rounded-full bg-[#07111B]/70 px-3 py-1 text-sm text-[#8AA0B0]">{state.adoptedCodes.length}개</span>
               </div>
               <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                {state.adoptedCodes.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0] sm:col-span-2 xl:col-span-4">{topicMeta.code.empty}</p> : null}
+                {state.adoptedCodes.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0] sm:col-span-2 xl:col-span-4">{topicMeta[activeTopic].empty}</p> : null}
                 {state.adoptedCodes.map((code) => (
                   <article key={code.id} className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
                     <div className="flex flex-wrap items-center gap-2">

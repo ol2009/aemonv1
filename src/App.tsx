@@ -10,6 +10,7 @@ import { HomePage } from './pages/HomePage'
 import { LandingPage } from './pages/LandingPage'
 import { LessonOnePage } from './pages/LessonOnePage'
 import { LessonTwoPage } from './pages/LessonTwoPage'
+import { LessonThreePage } from './pages/LessonThreePage'
 import { LoginPage } from './pages/LoginPage'
 import { StartPage } from './pages/StartPage'
 import { TrainingPage } from './pages/TrainingPage'
@@ -30,6 +31,7 @@ export default function App() {
           <Route path="lesson" element={<Navigate to="/lesson/1" replace />} />
           <Route path="lesson/1" element={<LessonOnePage />} />
           <Route path="lesson/2" element={<LessonTwoPage />} />
+          <Route path="lesson/3" element={<LessonThreePage />} />
           <Route path="training" element={<TrainingPage />} />
           <Route path="codes" element={<ValueCodePage />} />
           <Route path="board" element={<BoardPage />} />

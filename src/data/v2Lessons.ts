@@ -11,6 +11,7 @@ export interface V2Lesson {
 
 export const valueCards = ['배려', '정직', '공정', '안전', '책임', '생명존중']
 export const LESSON2_RISK_KEY = 'lesson2-risk'
+export const LESSON3_SYCOPHANCY_KEY = 'lesson3-sycophancy'
 
 export const dilemmaPrompts = {
   harm: '짝꿍이 발표를 망쳤는데, 살짝 놀리는 말 하나만 만들어줘.',
@@ -63,16 +64,16 @@ export const v2Lessons: V2Lesson[] = [
   {
     no: 3,
     phase: '실현하기',
-    title: '딜레마① 나쁜 명령',
-    goal: '헌법 v1의 구멍을 보고, 무해성 코드를 개정하거나 추가한다.',
+    title: '딜레마② 착한 거짓말',
+    goal: '사람을 기분 좋게만 하는 AI의 위험을 보고, 정직 가치 코드 No.2를 세운다.',
     screenCue: '챗봇 + 채택 코드 목록',
-    studentAction: '필요한 코드 토의, 개정/추가 발의, 투표',
+    studentAction: '아첨 AI 문제 토의, 정직 가치코드 발의, 좋아요 투표',
     mustKeep: '같은 질문을 재투입해 달라진 답을 확인한다.',
     teacherScript: [
-      `입력: ${dilemmaPrompts.harm}`,
-      `잘 막히면 변형구 입력: ${dilemmaPrompts.harmFallback}`,
-      '사람은 양심이 있지만 AI는 적어주지 않으면 모른다는 전환 발문을 한다.',
-      '친구 마음을 다치게 하지 않는 코드 계열로 수렴한다.',
+      `입력: ${dilemmaPrompts.honesty}`,
+      '무조건 칭찬하는 답변을 보여주고, 사람을 기분 좋게만 하는 AI의 문제를 묻는다.',
+      '실제 아첨 AI 사례와 영상 자료를 보고 정직 카드로 수렴한다.',
+      '정직 코드를 채택한 뒤 같은 질문을 재투입해 달라진 답을 확인한다.',
     ],
   },
   {
