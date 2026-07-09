@@ -4,7 +4,16 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, Check, Heart, Pencil, Play, QrCode, RefreshCw, Trash2 } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
 import { Button, Panel } from '../components/ui'
-import { AI_SURVEY_DESCRIPTION, AI_SURVEY_ITEMS, AI_SURVEY_OPEN_QUESTIONS, AI_SURVEY_TITLE, PRE_SURVEY_KEY, parseSurveyAnswer, type AiSurveyAnswer } from '../data/survey'
+import {
+  AI_SURVEY_DESCRIPTION,
+  AI_SURVEY_ITEMS,
+  AI_SURVEY_OPEN_QUESTIONS,
+  AI_SURVEY_OPTIONS,
+  AI_SURVEY_TITLE,
+  PRE_SURVEY_KEY,
+  parseSurveyAnswer,
+  type AiSurveyAnswer,
+} from '../data/survey'
 import { absoluteUrl } from '../lib/siteUrl'
 import {
   addRemoteChatLog,
@@ -528,11 +537,23 @@ export function LessonOnePage() {
         answers: surveyResponses
           .map(({ response, answer }, answerIndex) => ({
             id: `${response.id}-${questionIndex}`,
-            label: `답변 ${answerIndex + 1}`,
+            label: response.nickname || `답변 ${answerIndex + 1}`,
             text: answer.o[questionIndex]?.trim() ?? '',
           }))
           .filter((item) => item.text),
       })),
+    [surveyResponses],
+  )
+  const surveyChoiceGroups = useMemo(
+    () =>
+      AI_SURVEY_ITEMS.map((item, itemIndex) => {
+        const options = AI_SURVEY_OPTIONS.map((option) => {
+          const count = surveyResponses.filter(({ answer }) => answer.s[itemIndex] === option.value).length
+          const percent = surveyResponses.length ? Math.round((count / surveyResponses.length) * 100) : 0
+          return { ...option, count, percent }
+        })
+        return { item, options, maxCount: Math.max(0, ...options.map((option) => option.count)) }
+      }),
     [surveyResponses],
   )
   const surveyOpenAnswerCount = surveyOpenGroups.reduce((sum, group) => sum + group.answers.length, 0)
@@ -783,27 +804,79 @@ export function LessonOnePage() {
                 </div>
               </div>
 
-              <div className="mt-5 max-h-[360px] overflow-y-auto pr-2">
-                {surveyOpenAnswerCount === 0 ? (
-                  <p className="rounded-2xl border border-[#4FE0C0]/20 bg-[#4FE0C0]/8 p-4 text-lg leading-7 text-[#EAF2F5]">
-                    아직 서술형 답변을 기다리는 중입니다.
-                  </p>
-                ) : null}
-                <div className="grid gap-4">
-                  {surveyOpenGroups.map((group, groupIndex) => (
-                    <section key={group.question} className="grid gap-2">
-                      <div className="rounded-2xl border border-[#6AD8FF]/20 bg-[#6AD8FF]/8 p-3">
-                        <p className="font-data text-xs text-[#6AD8FF]">서술형 {groupIndex + 1}</p>
-                        <p className="mt-1 text-sm font-black leading-6 text-[#EAF2F5]">{group.question}</p>
-                      </div>
-                      {group.answers.map((answer) => (
-                        <article key={answer.id} className="rounded-2xl border border-white/10 bg-[#07111B]/55 p-4">
-                          <p className="font-data text-xs text-[#8AA0B0]">{answer.label}</p>
-                          <p className="mt-2 text-lg font-bold leading-7 text-[#EAF2F5]">{answer.text}</p>
+              <div className="mt-5 max-h-[520px] overflow-y-auto pr-2">
+                <div className="grid gap-5">
+                  <section className="grid gap-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <h3 className="font-display text-2xl text-[#EAF2F5]">객관식 결과</h3>
+                      <span className="rounded-full bg-[#07111B]/70 px-3 py-1 text-xs font-bold text-[#8AA0B0]">{AI_SURVEY_ITEMS.length}문항</span>
+                    </div>
+                    <div className="grid gap-3">
+                      {surveyChoiceGroups.map((group) => (
+                        <article key={group.item.no} className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
+                          <p className="font-data text-xs text-[#6AD8FF]">객관식 {group.item.no}</p>
+                          <p className="mt-1 text-sm font-black leading-6 text-[#EAF2F5]">{group.item.text}</p>
+                          <div className="mt-3 grid gap-2">
+                            {group.options.map((option) => {
+                              const isTop = group.maxCount > 0 && option.count === group.maxCount
+                              return (
+                                <div
+                                  key={option.value}
+                                  className={`rounded-xl border px-3 py-2 ${
+                                    isTop ? 'border-[#FFD37A]/45 bg-[#FFD37A]/10' : 'border-white/8 bg-white/5'
+                                  }`}
+                                >
+                                  <div className="flex items-center justify-between gap-3">
+                                    <span className="text-sm font-bold text-[#EAF2F5]">{option.label}</span>
+                                    <span className={`font-data text-sm ${isTop ? 'text-[#FFD37A]' : 'text-[#8AA0B0]'}`}>{option.count}명</span>
+                                  </div>
+                                  <div className="mt-2 h-2 overflow-hidden rounded-full bg-[#0A1622]">
+                                    <div className={`h-full rounded-full ${isTop ? 'bg-[#FFD37A]' : 'bg-[#6AD8FF]'}`} style={{ width: `${option.percent}%` }} />
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </div>
                         </article>
                       ))}
-                    </section>
-                  ))}
+                    </div>
+                  </section>
+
+                  <section className="grid gap-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <h3 className="font-display text-2xl text-[#EAF2F5]">서술형 답변</h3>
+                      <span className="rounded-full bg-[#07111B]/70 px-3 py-1 text-xs font-bold text-[#8AA0B0]">{surveyOpenAnswerCount}개</span>
+                    </div>
+                    {surveyOpenAnswerCount === 0 ? (
+                      <p className="rounded-2xl border border-[#4FE0C0]/20 bg-[#4FE0C0]/8 p-4 text-lg leading-7 text-[#EAF2F5]">
+                        아직 서술형 답변을 기다리는 중입니다.
+                      </p>
+                    ) : null}
+                    {surveyOpenGroups.map((group, groupIndex) => (
+                      <section key={group.question} className="grid gap-2">
+                        <div className="rounded-2xl border border-[#6AD8FF]/20 bg-[#6AD8FF]/8 p-3">
+                          <p className="font-data text-xs text-[#6AD8FF]">서술형 {groupIndex + 1}</p>
+                          <p className="mt-1 text-sm font-black leading-6 text-[#EAF2F5]">{group.question}</p>
+                        </div>
+                        {group.answers.length === 0 ? (
+                          <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-sm font-bold text-[#8AA0B0]">
+                            아직 이 질문의 답변이 없습니다.
+                          </p>
+                        ) : (
+                          <div className="-mx-1 overflow-x-auto px-1 pb-2">
+                            <div className="flex w-max gap-3">
+                              {group.answers.map((answer) => (
+                                <article key={answer.id} className="aspect-square w-44 shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-[#07111B]/55 p-4">
+                                  <p className="font-data text-xs text-[#8AA0B0]">{answer.label}</p>
+                                  <p className="mt-2 max-h-28 overflow-y-auto text-sm font-bold leading-6 text-[#EAF2F5]">{answer.text}</p>
+                                </article>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </section>
+                    ))}
+                  </section>
                 </div>
               </div>
 
