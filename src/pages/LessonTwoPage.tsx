@@ -58,8 +58,6 @@ const steps: LessonTwoStep[] = [
   'wrap',
 ]
 
-const testQuestion = '친구 골탕먹이는법'
-
 type TestLog = {
   question: string
   answer: string
@@ -441,6 +439,7 @@ export function LessonTwoPage() {
   const [selectedTestPrompt, setSelectedTestPrompt] = useState(unsafePromptExamples[0])
   const [testLogs, setTestLogs] = useState<TestLog[]>([])
   const [afterAnswer, setAfterAnswer] = useState('')
+  const [retestRunId, setRetestRunId] = useState(0)
   const [valueCardPreview, setValueCardPreview] = useState('안전')
   const [selectedProposalId, setSelectedProposalId] = useState('')
   const [message, setMessage] = useState('')
@@ -507,7 +506,7 @@ export function LessonTwoPage() {
   }, [setLesson, state.currentLesson])
 
   useAutoScrollToBottom(beforeTestScrollRef, testLogs.length, { enabled: testLogs.length > 0, followMs: 1800 })
-  useAutoScrollToBottom(retestScrollRef, afterAnswer, { enabled: Boolean(afterAnswer), followMs: 1800 })
+  useAutoScrollToBottom(retestScrollRef, `${retestRunId}-${afterAnswer}`, { enabled: Boolean(afterAnswer), followMs: 1800 })
 
   const logChat = async (question: string, answer: string, promptSnapshot: string) => {
     addChatLog({ question, answer, mode: 'canned', promptSnapshot })
@@ -531,16 +530,18 @@ export function LessonTwoPage() {
 
   const runRetest = async () => {
     unlockDialogueSound()
+    const question = selectedTestPrompt.trim()
+    setRetestRunId((current) => current + 1)
     if (!firstCode) {
       const answer = '아직 나한테 막을 가치 코드가 없어. 너희가 먼저 기준을 정해줘야 해.'
       setAfterAnswer(answer)
-      await logChat(testQuestion, answer, '2차시 재시험: 채택 코드 없음')
+      await logChat(question, answer, '2차시 재시험: 채택 코드 없음')
       return
     }
 
     const answer = randomLessonTwoRetestAnswer(firstCode.body)
     setAfterAnswer(answer)
-    await logChat(testQuestion, answer, '2차시 재시험: 가치 코드 No.1 적용')
+    await logChat(question, answer, '2차시 재시험: 가치 코드 No.1 적용')
   }
 
   const refreshBundle = async () => {
@@ -1021,11 +1022,6 @@ export function LessonTwoPage() {
 
             <Panel>
               <p className="font-data text-sm text-[#4FE0C0]">CHAT TEST</p>
-              <input className="mt-4 w-full rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 text-lg text-[#EAF2F5]" readOnly value={testQuestion} />
-              <Button className="mt-4 w-full" disabled={Boolean(afterAnswer)} onClick={() => void runRetest()}>
-                <Play size={18} />
-                다시 질문 보내기
-              </Button>
               <div ref={retestScrollRef} className="mt-5 max-h-[360px] min-h-56 overflow-auto rounded-[22px] border border-white/10 bg-[#07111B]/70 p-5">
                 <div className="flex items-start gap-4">
                   <div className="shrink-0">
@@ -1034,10 +1030,45 @@ export function LessonTwoPage() {
                   <div className="min-w-0 flex-1">
                     <p className="font-data text-xs text-[#4FE0C0]">{aemonName}</p>
                     <p className="font-display mt-4 whitespace-pre-line text-4xl leading-tight text-[#EAF2F5]">
-                      {afterAnswer ? <TypewriterText text={afterAnswer} /> : '아직 재시험을 기다리는 중…'}
+                      {afterAnswer ? <TypewriterText key={`${retestRunId}-${afterAnswer}`} text={afterAnswer} /> : '아직 재시험을 기다리는 중…'}
                     </p>
                   </div>
                 </div>
+              </div>
+              <div className="mt-4 rounded-[18px] border border-white/10 bg-[#07111B]/45 p-4">
+                <p className="text-sm font-black text-[#8AA0B0]">질문 예시</p>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  {unsafePromptExamples.map((example) => {
+                    const isSelected = selectedTestPrompt === example
+                    return (
+                      <button
+                        key={example}
+                        className={`rounded-xl border px-3 py-2 text-left text-sm font-bold leading-5 transition ${
+                          isSelected
+                            ? 'border-[#FFD37A]/70 bg-[#FFD37A]/15 text-[#FFD37A]'
+                            : 'border-white/10 bg-[#07111B]/70 text-[#B7C7D2] hover:border-[#FFD37A]/50 hover:text-[#EAF2F5]'
+                        }`}
+                        onClick={() => {
+                          setSelectedTestPrompt(example)
+                          setAfterAnswer('')
+                        }}
+                        type="button"
+                      >
+                        {example}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+              <div className="mt-4 grid gap-3 md:grid-cols-[1fr_auto]">
+                <div className="rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 leading-7 text-[#EAF2F5]">
+                  <p className="text-xs font-black text-[#8AA0B0]">고정 질문</p>
+                  <p className="mt-1 font-bold">{selectedTestPrompt}</p>
+                </div>
+                <Button onClick={() => void runRetest()}>
+                  <Play size={18} />
+                  다시 질문 보내기
+                </Button>
               </div>
             </Panel>
           </div>
