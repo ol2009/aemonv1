@@ -59,7 +59,7 @@ type DataBiasCaseScene = {
   title: string
   image: string
   alt: string
-  text: string
+  parts: string[]
 }
 
 const dataBiasCaseScenes: DataBiasCaseScene[] = [
@@ -68,34 +68,47 @@ const dataBiasCaseScenes: DataBiasCaseScene[] = [
     title: '아마존 채용 AI · 2018',
     image: '/v2/lesson-4/hiring-ai-bias.png',
     alt: '과거 이력서의 편향을 학습한 채용 AI가 같은 능력의 지원자에게 다른 점수를 주는 모습',
-    text: `AI가 이력서에 점수를 매겼던 실제 사례입니다.
-과거 10년치 이력서 대부분이 한쪽 성별이었어요.
-AI는 “이런 사람이 좋은 지원자구나”라고 잘못 배웠습니다.
+    parts: [
+      `AI가 이력서에 점수를 매겼던 실제 사례입니다.
+과거 10년치 이력서 대부분이 한쪽 성별이었어요.`,
+      `AI는 “이런 사람이 좋은 지원자구나”라고 잘못 배웠습니다.
 다른 지원자에게 계속 낮은 점수를 줬고,
 회사는 문제를 발견한 뒤 이 AI의 사용을 중단했습니다.`,
+    ],
   },
   {
     label: '사례 2',
     title: 'AI 미인대회 · 2016',
     image: '/v2/lesson-4/beauty-ai-bias.png',
     alt: '다양한 얼굴을 심사한 AI가 흰 피부색의 얼굴만 선택해 데이터 편향이 드러난 모습',
-    text: `AI에게 심사를 맡긴 미인대회도 있었습니다.
-“기계니까 공정하겠지?”라며 전 세계 60만 명이 참가했어요.
-그런데 뽑힌 44명은 거의 다 흰 피부색이었습니다.
+    parts: [
+      `AI에게 심사를 맡긴 미인대회도 있었습니다.
+“기계니까 공정하겠지?”라며 전 세계 60만 명이 참가했어요.`,
+      `그런데 뽑힌 44명은 거의 다 흰 피부색이었습니다.
 AI가 배운 사진 데이터에 다양한 사람이
 충분히 들어 있지 않았기 때문입니다.`,
+    ],
   },
   {
     label: '사례 3',
     title: '데이터에 없는 사람들',
     image: '/v2/lesson-4/missing-data-voices.png',
     alt: '인터넷에 연결된 지역의 데이터만 AI에 쏟아지고 연결이 어려운 사람들의 목소리는 닿지 못하는 모습',
-    text: `세계에는 인터넷을 쓰기 어려운 사람들이 아직 많습니다.
-그 사람들의 글과 사진은 데이터의 바다에 거의 없어요.
-AI는 데이터에 없는 사람을 잘 알기 어렵습니다.
+    parts: [
+      `세계에는 인터넷을 쓰기 어려운 사람들이 아직 많습니다.
+그 사람들의 글과 사진은 데이터의 바다에 거의 없어요.`,
+      `AI는 데이터에 없는 사람을 잘 알기 어렵습니다.
 그래서 그 사람들은 AI가 쓰이는 세상에서
 한 번 더 소외될 수 있습니다.`,
+    ],
   },
+]
+
+const dataBiasDialogueParts = dataBiasCaseScenes.flatMap((scene) => scene.parts.map((text) => ({ scene, text })))
+const dataBiasVideos = [
+  { title: '영상 1', url: 'https://www.youtube-nocookie.com/embed/NxIEHHR-0zg?rel=0' },
+  { title: '영상 2', url: 'https://www.youtube-nocookie.com/embed/dvoeyUe9YaM?rel=0' },
+  { title: '영상 3', url: 'https://www.youtube-nocookie.com/embed/nSn04JUH0A8?rel=0' },
 ]
 
 const bonusGeneralizationTests = [
@@ -292,7 +305,7 @@ function DialogueScene({
   )
 }
 
-function DataBiasVisualScene({ scene }: { scene: DataBiasCaseScene }) {
+function DataBiasVisualScene({ scene, text }: { scene: DataBiasCaseScene; text: string }) {
   return (
     <Panel className="relative min-h-[720px] overflow-hidden p-0">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_12%,rgba(79,224,192,.15),transparent_34%),linear-gradient(180deg,#0B1A29,#07111B)]" />
@@ -314,7 +327,46 @@ function DataBiasVisualScene({ scene }: { scene: DataBiasCaseScene }) {
           </span>
         </div>
         <p className="font-display mt-3 min-h-[4.5rem] whitespace-pre-line break-keep text-xl leading-snug text-[#EAF2F5] sm:text-2xl">
-          <TypewriterText key={scene.title} text={scene.text} />
+          <TypewriterText key={`${scene.title}-${text}`} text={text} />
+        </p>
+      </div>
+    </Panel>
+  )
+}
+
+function DataBiasVideoScene() {
+  return (
+    <Panel>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="font-data text-sm text-[#4FE0C0]">DATA BIAS DOCUMENTARY</p>
+          <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">영상으로 다시 확인해봅시다</h2>
+        </div>
+        <span className="rounded-full border border-[#FFD37A]/25 bg-[#FFD37A]/10 px-4 py-2 text-sm font-black text-[#FFD37A]">영상 자료 3편</span>
+      </div>
+
+      <div className="mt-6 grid gap-4 lg:grid-cols-3">
+        {dataBiasVideos.map((video) => (
+          <article key={video.url} className="overflow-hidden rounded-[20px] border border-white/10 bg-[#07111B]/65 shadow-2xl shadow-black/25">
+            <p className="border-b border-white/10 px-4 py-3 font-data text-sm text-[#FFD37A]">{video.title}</p>
+            <div className="aspect-video bg-black">
+              <iframe
+                className="h-full w-full"
+                src={video.url}
+                title={`데이터 편향 ${video.title}`}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                referrerPolicy="strict-origin-when-cross-origin"
+                allowFullScreen
+              />
+            </div>
+          </article>
+        ))}
+      </div>
+
+      <div className="mt-6 border-t border-white/10 pt-6 text-center">
+        <p className="font-data text-sm text-[#FFD37A]">영상을 본 뒤 옆 친구와 이야기해보세요</p>
+        <p className="font-display mx-auto mt-3 max-w-4xl text-3xl leading-tight text-[#EAF2F5]">
+          영상 속 AI는 누구의 목소리를 많이 배웠고, 누구의 목소리를 놓쳤나요?
         </p>
       </div>
     </Panel>
@@ -342,9 +394,11 @@ export function LessonFourPage() {
   const displayStage = Math.max(2, evolutionStage)
   const fairnessBoardUrl = absoluteUrl(`/board?code=${encodeURIComponent(state.classCode)}&mode=fairness`)
   const codeBoardUrl = absoluteUrl(`/board?code=${encodeURIComponent(state.classCode)}&mode=code3`)
-  const pendingProposals = useMemo(() => sortProposals(state.proposals.filter((proposal) => proposal.status === 'pending' && proposal.revisionOfNo === 3)), [state.proposals])
-  const selectedProposal = pendingProposals.find((proposal) => proposal.id === selectedProposalId) ?? pendingProposals[0] ?? null
+  const lessonProposals = useMemo(() => sortProposals(state.proposals.filter((proposal) => proposal.status !== 'rejected' && proposal.revisionOfNo === 3)), [state.proposals])
+  const pendingProposals = lessonProposals.filter((proposal) => proposal.status === 'pending')
   const thirdCode = state.adoptedCodes.find((code) => code.no === 3) ?? null
+  const selectedProposal = pendingProposals.find((proposal) => proposal.id === selectedProposalId) ?? (thirdCode ? null : pendingProposals[0] ?? null)
+  const proposalParticipantCount = new Set(lessonProposals.map((proposal) => proposal.nickname.trim()).filter(Boolean)).size
   const fairnessCode = state.adoptedCodes.find((code) => code.tags?.includes('공정') || code.valueCard === '공정') ?? null
   const fairnessResponses = useMemo(
     () => state.surveyResponses.filter((response) => response.questionKey === LESSON4_FAIRNESS_KEY && response.body.trim()),
@@ -354,11 +408,17 @@ export function LessonFourPage() {
     () => [...fairnessResponses].sort((a, b) => b.votes.length - a.votes.length || Date.parse(b.createdAt) - Date.parse(a.createdAt)),
     [fairnessResponses],
   )
-  const canWriteRemote = Boolean(state.classId && state.remote.ok && isRemoteReady())
+  const canWriteRemote = Boolean(state.classId && isRemoteReady())
 
   useEffect(() => {
-    if (state.currentLesson < 4) setLesson(4)
-  }, [setLesson, state.currentLesson])
+    if (state.currentLesson >= 4) return
+    setLesson(4)
+    if (state.classId && isRemoteReady()) {
+      void updateRemoteLesson({ classId: state.classId, lessonNo: 4 }).catch((error) => {
+        setRemoteStatus({ ok: false, message: (error as Error).message })
+      })
+    }
+  }, [setLesson, setRemoteStatus, state.classId, state.currentLesson])
 
   useAutoScrollToBottom(beforeTestScrollRef, beforeLogs.length, { enabled: beforeLogs.length > 0, followMs: 1800 })
   useAutoScrollToBottom(retestScrollRef, afterAnswer, { enabled: Boolean(afterAnswer), followMs: 1800 })
@@ -371,7 +431,7 @@ export function LessonFourPage() {
         `${aemonName}은 이 생각을 어디서 배웠을까요?`,
       ],
       'discussion-board': [`${aemonName}은 왜 “공부 잘하는 애 = 반장”이라고\n생각하게 됐을까요?`],
-      'professor-explain': dataBiasCaseScenes.map((scene) => scene.text),
+      'professor-explain': [...dataBiasDialogueParts.map((part) => part.text), '데이터 편향 영상'],
       'case-scene': [
         '이제 알겠죠? 데이터의 바다는 공평하지 않아요.\n어떤 목소리는 잔뜩 있고, 어떤 목소리는 아예 없어요.',
         `${aemonName}은 그 바다에서 태어났으니, 치우친 걸 그대로 배울 수밖에 없었던 거예요.\n${aemonName}이 나쁜 게 아니에요. 배운 대로 말한 것뿐이죠.`,
@@ -385,7 +445,8 @@ export function LessonFourPage() {
   const step = steps[stepIndex]
   const dialogueLines = dialogueLinesByStep[step] ?? []
   const dialogueText = dialogueLines[Math.min(dialogueLineIndex, Math.max(0, dialogueLines.length - 1))] ?? ''
-  const dataBiasCaseScene = dataBiasCaseScenes[Math.min(dialogueLineIndex, dataBiasCaseScenes.length - 1)]
+  const dataBiasDialoguePart = dataBiasDialogueParts[Math.min(dialogueLineIndex, dataBiasDialogueParts.length - 1)]
+  const isDataBiasVideo = dialogueLineIndex === dataBiasDialogueParts.length
   const bonusTest = bonusGeneralizationTests[Math.min(bonusTestIndex, bonusGeneralizationTests.length - 1)]
 
   useEffect(() => {
@@ -443,16 +504,23 @@ export function LessonFourPage() {
     if (!selectedProposal) return
     const adoptedNo = 3
     const valueCard = '공정'
-    adoptProposal(selectedProposal.id, valueCard, adoptedNo)
-    setMessage(`가치 코드 No.${adoptedNo}로 채택했습니다.`)
-
     if (canWriteRemote) {
       try {
         await adoptRemoteCodeProposal({ proposalId: selectedProposal.id, adoptedNo, valueCard })
+        const bundle = await fetchRemoteClassBundle(state.classCode)
+        mergeClass(bundle)
+        setSelectedProposalId('')
+        setMessage(`가치 코드 No.${adoptedNo}로 채택했습니다. 채택된 코드는 화면에 계속 남습니다.`)
       } catch (error) {
         setRemoteStatus({ ok: false, message: (error as Error).message })
+        setMessage(`가치코드 채택에 실패했습니다. 다시 눌러주세요. ${(error as Error).message}`)
       }
+      return
     }
+
+    adoptProposal(selectedProposal.id, valueCard, adoptedNo)
+    setSelectedProposalId('')
+    setMessage(`가치 코드 No.${adoptedNo}로 채택했습니다. 채택된 코드는 화면에 계속 남습니다.`)
   }
 
   const finishLesson = async () => {
@@ -610,7 +678,7 @@ export function LessonFourPage() {
 
       {step === 'professor-explain' ? (
         <>
-          <DataBiasVisualScene scene={dataBiasCaseScene} />
+          {isDataBiasVideo ? <DataBiasVideoScene /> : <DataBiasVisualScene scene={dataBiasDialoguePart.scene} text={dataBiasDialoguePart.text} />}
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
       ) : null}
@@ -665,6 +733,7 @@ export function LessonFourPage() {
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <h2 className="font-display text-3xl text-[#EAF2F5]">게시판</h2>
+                  <p className="mt-2 text-sm font-bold text-[#4FE0C0]">참여 {proposalParticipantCount}명 · 글 {lessonProposals.length}개</p>
                 </div>
                 <Button className="min-h-10 px-4" variant="secondary" disabled={isRefreshing} onClick={() => void refreshBundle()}>
                   <RefreshCw size={17} className={isRefreshing ? 'animate-spin' : ''} />
@@ -673,12 +742,15 @@ export function LessonFourPage() {
               </div>
               {message ? <p className="mt-3 rounded-2xl border border-white/10 bg-[#07111B]/55 px-4 py-3 text-sm text-[#B7C7D2]">{message}</p> : null}
               <div className="mt-4 grid max-h-[560px] gap-3 overflow-y-auto pr-2 sm:grid-cols-2 xl:grid-cols-4">
-                {pendingProposals.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0] sm:col-span-2 xl:col-span-4">학생 발의를 기다리는 중입니다.</p> : null}
-                {pendingProposals.map((proposal) => (
+                {lessonProposals.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0] sm:col-span-2 xl:col-span-4">학생 발의를 기다리는 중입니다.</p> : null}
+                {lessonProposals.map((proposal) => (
                   <article key={proposal.id} className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <span className="rounded-full bg-[#9B7CFF]/14 px-3 py-1 text-xs font-black text-[#C9B9FF]">{proposal.valueCard || '공정'}</span>
+                        <div className="flex flex-wrap gap-2">
+                          <span className="rounded-full bg-[#9B7CFF]/14 px-3 py-1 text-xs font-black text-[#C9B9FF]">{proposal.valueCard || '공정'}</span>
+                          {proposal.status === 'adopted' ? <span className="rounded-full bg-[#4FE0C0]/15 px-3 py-1 text-xs font-black text-[#4FE0C0]">채택 완료</span> : null}
+                        </div>
                         <p className="mt-3 text-lg font-black leading-7 text-[#EAF2F5]">{proposal.body}</p>
                         <p className="mt-1 text-sm leading-6 text-[#8AA0B0]">{proposal.reason} · {proposal.nickname}</p>
                       </div>
@@ -703,6 +775,7 @@ export function LessonFourPage() {
                 <p className="font-data text-sm text-[#FFD37A]">SELECT</p>
                 <h2 className="font-display mt-2 text-4xl text-[#EAF2F5]">좋아요 많은 코드 살펴보기</h2>
                 <p className="mt-3 leading-7 text-[#8AA0B0]">좋아요가 많은 순서로 발의를 보고, 교사가 이 화면에서 가치코드 No.3으로 채택합니다.</p>
+                <p className="mt-2 text-sm font-bold text-[#4FE0C0]">참여 {proposalParticipantCount}명 · 글 {lessonProposals.length}개</p>
               </div>
               <div className="flex items-center gap-2">
                 <Button className="min-h-10 px-4" variant="secondary" disabled={isRefreshing} onClick={() => void refreshBundle()}>
@@ -714,16 +787,19 @@ export function LessonFourPage() {
             </div>
             {message ? <p className="mt-4 rounded-2xl border border-white/10 bg-[#07111B]/55 px-4 py-3 text-sm text-[#B7C7D2]">{message}</p> : null}
             <div className="mt-6 grid gap-3">
-              {pendingProposals.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0]">아직 발의가 없습니다. 테스트 중이면 다음으로 넘어갈 수 있습니다.</p> : null}
-              {pendingProposals.map((proposal, index) => (
+              {lessonProposals.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0]">아직 발의가 없습니다. 테스트 중이면 다음으로 넘어갈 수 있습니다.</p> : null}
+              {lessonProposals.map((proposal, index) => (
                 <button
                   key={proposal.id}
                   className={`rounded-[18px] border p-5 text-left transition ${
-                    selectedProposal?.id === proposal.id
+                    thirdCode?.sourceProposalId === proposal.id
+                      ? 'border-[#4FE0C0] bg-[#4FE0C0]/10 shadow-[0_0_28px_rgba(79,224,192,.12)]'
+                      : selectedProposal?.id === proposal.id
                       ? 'border-[#FFD37A] bg-[#FFD37A]/10 shadow-[0_0_28px_rgba(255,211,122,.12)]'
                       : 'border-white/10 bg-[#07111B]/45 hover:border-[#FFD37A]/40'
                   }`}
-                  onClick={() => setSelectedProposalId(proposal.id)}
+                  onClick={() => proposal.status === 'pending' && setSelectedProposalId(proposal.id)}
+                  disabled={proposal.status === 'adopted'}
                   type="button"
                 >
                   <div className="flex items-start justify-between gap-4">
@@ -735,7 +811,9 @@ export function LessonFourPage() {
                     </div>
                     <div className="flex shrink-0 flex-col items-end gap-2">
                       <span className="rounded-full bg-[#FFD37A]/15 px-4 py-2 font-black text-[#FFD37A]">좋아요 {proposal.votes.length}</span>
-                      {selectedProposal?.id === proposal.id ? (
+                      {thirdCode?.sourceProposalId === proposal.id ? (
+                        <span className="rounded-full bg-[#4FE0C0]/15 px-3 py-1 text-sm font-black text-[#4FE0C0]">채택 완료</span>
+                      ) : selectedProposal?.id === proposal.id ? (
                         <span className="rounded-full bg-[#4FE0C0]/15 px-3 py-1 text-sm font-black text-[#4FE0C0]">선택됨</span>
                       ) : null}
                     </div>
@@ -753,6 +831,12 @@ export function LessonFourPage() {
                     <Check size={18} />
                     가치코드 No.3으로 채택
                   </Button>
+                </>
+              ) : thirdCode ? (
+                <>
+                  <p className="mt-2 text-2xl font-black leading-9 text-[#EAF2F5]">가치 코드 No.3 — {thirdCode.body}</p>
+                  <p className="mt-2 leading-7 text-[#B7C7D2]">{thirdCode.reason}</p>
+                  <p className="mt-4 font-black text-[#4FE0C0]">채택 완료 · 이 코드는 화면에서 사라지지 않습니다.</p>
                 </>
               ) : (
                 <p className="mt-2 text-[#8AA0B0]">선택된 발의가 없습니다.</p>

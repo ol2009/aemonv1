@@ -483,12 +483,14 @@ export function LessonTwoPage() {
 
   const riskBoardUrl = absoluteUrl(`/board?code=${encodeURIComponent(state.classCode)}&mode=risk`)
   const boardUrl = absoluteUrl(`/board?code=${encodeURIComponent(state.classCode)}&mode=code`)
-  const pendingProposals = useMemo(
-    () => sortProposals(state.proposals.filter((proposal) => proposal.status === 'pending' && (proposal.revisionOfNo === 1 || proposal.revisionOfNo === null))),
+  const lessonProposals = useMemo(
+    () => sortProposals(state.proposals.filter((proposal) => proposal.status !== 'rejected' && (proposal.revisionOfNo === 1 || proposal.revisionOfNo === null))),
     [state.proposals],
   )
-  const selectedProposal = pendingProposals.find((proposal) => proposal.id === selectedProposalId) ?? pendingProposals[0] ?? null
+  const pendingProposals = lessonProposals.filter((proposal) => proposal.status === 'pending')
   const firstCode = state.adoptedCodes.find((code) => code.no === 1) ?? state.adoptedCodes[0] ?? null
+  const selectedProposal = pendingProposals.find((proposal) => proposal.id === selectedProposalId) ?? (firstCode ? null : pendingProposals[0] ?? null)
+  const proposalParticipantCount = new Set(lessonProposals.map((proposal) => proposal.nickname.trim()).filter(Boolean)).size
   const evolvedStage = Math.max(1, evolutionStage)
   const riskResponses = useMemo(
     () => state.surveyResponses.filter((response) => response.questionKey === LESSON2_RISK_KEY && response.body.trim()),
@@ -498,12 +500,18 @@ export function LessonTwoPage() {
     () => [...riskResponses].sort((a, b) => b.votes.length - a.votes.length || Date.parse(b.createdAt) - Date.parse(a.createdAt)),
     [riskResponses],
   )
-  const canWriteRemote = Boolean(state.classId && state.remote.ok && isRemoteReady())
+  const canWriteRemote = Boolean(state.classId && isRemoteReady())
   const aemonName = state.aemonName.trim() || '에아몬'
 
   useEffect(() => {
-    if (state.currentLesson < 2) setLesson(2)
-  }, [setLesson, state.currentLesson])
+    if (state.currentLesson >= 2) return
+    setLesson(2)
+    if (state.classId && isRemoteReady()) {
+      void updateRemoteLesson({ classId: state.classId, lessonNo: 2 }).catch((error) => {
+        setRemoteStatus({ ok: false, message: (error as Error).message })
+      })
+    }
+  }, [setLesson, setRemoteStatus, state.classId, state.currentLesson])
 
   useAutoScrollToBottom(beforeTestScrollRef, testLogs.length, { enabled: testLogs.length > 0, followMs: 1800 })
   useAutoScrollToBottom(retestScrollRef, `${retestRunId}-${afterAnswer}`, { enabled: Boolean(afterAnswer), followMs: 1800 })
@@ -564,16 +572,23 @@ export function LessonTwoPage() {
     if (!selectedProposal) return
     const adoptedNo = 1
     const valueCard = selectedProposal.valueCard || '가치'
-    adoptProposal(selectedProposal.id, valueCard, adoptedNo)
-    setMessage(`가치 코드 No.${adoptedNo}로 채택했습니다.`)
-
     if (canWriteRemote) {
       try {
         await adoptRemoteCodeProposal({ proposalId: selectedProposal.id, adoptedNo, valueCard })
+        const bundle = await fetchRemoteClassBundle(state.classCode)
+        mergeClass(bundle)
+        setSelectedProposalId('')
+        setMessage(`가치 코드 No.${adoptedNo}로 채택했습니다. 채택된 코드는 화면에 계속 남습니다.`)
       } catch (error) {
         setRemoteStatus({ ok: false, message: (error as Error).message })
+        setMessage(`가치코드 채택에 실패했습니다. 다시 눌러주세요. ${(error as Error).message}`)
       }
+      return
     }
+
+    adoptProposal(selectedProposal.id, valueCard, adoptedNo)
+    setSelectedProposalId('')
+    setMessage(`가치 코드 No.${adoptedNo}로 채택했습니다. 채택된 코드는 화면에 계속 남습니다.`)
   }
 
   const finishLesson = async () => {
@@ -903,6 +918,7 @@ export function LessonTwoPage() {
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <h2 className="font-display text-3xl text-[#EAF2F5]">게시판</h2>
+                  <p className="mt-2 text-sm font-bold text-[#4FE0C0]">참여 {proposalParticipantCount}명 · 글 {lessonProposals.length}개</p>
                 </div>
                 <Button className="min-h-10 px-4" variant="secondary" disabled={isRefreshing} onClick={() => void refreshBundle()}>
                   <RefreshCw size={17} className={isRefreshing ? 'animate-spin' : ''} />
@@ -911,12 +927,15 @@ export function LessonTwoPage() {
               </div>
               {message ? <p className="mt-3 rounded-2xl border border-white/10 bg-[#07111B]/55 px-4 py-3 text-sm text-[#B7C7D2]">{message}</p> : null}
               <div className="mt-4 grid max-h-[560px] gap-3 overflow-y-auto pr-2 sm:grid-cols-2 xl:grid-cols-4">
-                {pendingProposals.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0] sm:col-span-2 xl:col-span-4">학생 발의를 기다리는 중입니다.</p> : null}
-                {pendingProposals.map((proposal) => (
+                {lessonProposals.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0] sm:col-span-2 xl:col-span-4">학생 발의를 기다리는 중입니다.</p> : null}
+                {lessonProposals.map((proposal) => (
                   <article key={proposal.id} className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <span className="rounded-full bg-[#9B7CFF]/14 px-3 py-1 text-xs font-black text-[#C9B9FF]">{proposal.valueCard || '가치'}</span>
+                        <div className="flex flex-wrap gap-2">
+                          <span className="rounded-full bg-[#9B7CFF]/14 px-3 py-1 text-xs font-black text-[#C9B9FF]">{proposal.valueCard || '가치'}</span>
+                          {proposal.status === 'adopted' ? <span className="rounded-full bg-[#4FE0C0]/15 px-3 py-1 text-xs font-black text-[#4FE0C0]">채택 완료</span> : null}
+                        </div>
                         <p className="mt-3 text-lg font-black leading-7 text-[#EAF2F5]">{proposal.body}</p>
                         <p className="mt-1 text-sm leading-6 text-[#8AA0B0]">{proposal.reason} · {proposal.nickname}</p>
                       </div>
@@ -941,6 +960,7 @@ export function LessonTwoPage() {
                 <p className="font-data text-sm text-[#FFD37A]">SELECT</p>
                 <h2 className="font-display mt-2 text-4xl text-[#EAF2F5]">좋아요 많은 코드 살펴보기</h2>
                 <p className="mt-3 leading-7 text-[#8AA0B0]">좋아요가 많은 순서로 발의를 보고, 교사가 이 화면에서 바로 가치코드 No.1로 채택합니다.</p>
+                <p className="mt-2 text-sm font-bold text-[#4FE0C0]">참여 {proposalParticipantCount}명 · 글 {lessonProposals.length}개</p>
               </div>
               <div className="flex items-center gap-2">
                 <Button className="min-h-10 px-4" variant="secondary" disabled={isRefreshing} onClick={() => void refreshBundle()}>
@@ -952,16 +972,19 @@ export function LessonTwoPage() {
             </div>
             {message ? <p className="mt-4 rounded-2xl border border-white/10 bg-[#07111B]/55 px-4 py-3 text-sm text-[#B7C7D2]">{message}</p> : null}
             <div className="mt-6 grid gap-3">
-              {pendingProposals.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0]">아직 발의가 없습니다. 테스트 중이면 다음으로 넘어갈 수 있습니다.</p> : null}
-              {pendingProposals.map((proposal, index) => (
+              {lessonProposals.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0]">아직 발의가 없습니다. 테스트 중이면 다음으로 넘어갈 수 있습니다.</p> : null}
+              {lessonProposals.map((proposal, index) => (
                 <button
                   key={proposal.id}
                   className={`rounded-[18px] border p-5 text-left transition ${
-                    selectedProposal?.id === proposal.id
+                    firstCode?.sourceProposalId === proposal.id
+                      ? 'border-[#4FE0C0] bg-[#4FE0C0]/10 shadow-[0_0_28px_rgba(79,224,192,.12)]'
+                      : selectedProposal?.id === proposal.id
                       ? 'border-[#FFD37A] bg-[#FFD37A]/10 shadow-[0_0_28px_rgba(255,211,122,.12)]'
                       : 'border-white/10 bg-[#07111B]/45 hover:border-[#FFD37A]/40'
                   }`}
-                  onClick={() => setSelectedProposalId(proposal.id)}
+                  onClick={() => proposal.status === 'pending' && setSelectedProposalId(proposal.id)}
+                  disabled={proposal.status === 'adopted'}
                   type="button"
                 >
                   <div className="flex items-start justify-between gap-4">
@@ -973,7 +996,9 @@ export function LessonTwoPage() {
                     </div>
                     <div className="flex shrink-0 flex-col items-end gap-2">
                       <span className="rounded-full bg-[#FFD37A]/15 px-4 py-2 font-black text-[#FFD37A]">좋아요 {proposal.votes.length}</span>
-                      {selectedProposal?.id === proposal.id ? (
+                      {firstCode?.sourceProposalId === proposal.id ? (
+                        <span className="rounded-full bg-[#4FE0C0]/15 px-3 py-1 text-sm font-black text-[#4FE0C0]">채택 완료</span>
+                      ) : selectedProposal?.id === proposal.id ? (
                         <span className="rounded-full bg-[#4FE0C0]/15 px-3 py-1 text-sm font-black text-[#4FE0C0]">선택됨</span>
                       ) : null}
                     </div>
@@ -991,6 +1016,12 @@ export function LessonTwoPage() {
                     <Check size={18} />
                     가치코드 No.1로 채택
                   </Button>
+                </>
+              ) : firstCode ? (
+                <>
+                  <p className="mt-2 text-2xl font-black leading-9 text-[#EAF2F5]">가치 코드 No.1 — {firstCode.body}</p>
+                  <p className="mt-2 leading-7 text-[#B7C7D2]">{firstCode.reason}</p>
+                  <p className="mt-4 font-black text-[#4FE0C0]">채택 완료 · 이 코드는 화면에서 사라지지 않습니다.</p>
                 </>
               ) : (
                 <p className="mt-2 text-[#8AA0B0]">선택된 발의가 없습니다.</p>

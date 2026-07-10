@@ -559,7 +559,8 @@ export async function toggleRemotePostLike(args: { classId: string; nickname: st
   const key = { class_id: args.classId, nickname: args.nickname.trim(), post_type: args.postType, post_id: args.postId }
   const { error } = await client.from('post_votes').insert(key)
   if (error) {
-    if (isMissingTableError(error) || isDuplicateError(error)) return
+    if (isDuplicateError(error)) return
+    if (isMissingTableError(error)) throw new Error('Supabase에 post_votes 테이블이 없습니다. 게시글 좋아요 마이그레이션을 먼저 적용해야 합니다.')
     throw new Error(toMessage(error))
   }
 }

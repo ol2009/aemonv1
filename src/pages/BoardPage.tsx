@@ -186,9 +186,8 @@ export function BoardPage() {
   const isTopicOpen = (topic: BoardTopic) => state.currentLesson >= topicLessonNo(topic)
   const unlockedTopics = useMemo<BoardTopic[]>(() => {
     const allTopics: BoardTopic[] = ['survey', 'name', 'wish', 'risk', 'code', 'honesty', 'code2', 'fairness', 'code3']
-    const topics = allTopics.filter((topic) => state.currentLesson >= topicLessonNo(topic))
-    return queryTopic ? topics.filter((topic) => topic === queryTopic) : topics
-  }, [queryTopic, state.currentLesson])
+    return allTopics.filter((topic) => state.currentLesson >= topicLessonNo(topic))
+  }, [state.currentLesson])
   const activeTopic = unlockedTopics.includes(selectedTopic) ? selectedTopic : unlockedTopics[0] ?? queryTopic ?? 'survey'
   const requestedTopicClosed = Boolean(queryTopic && !isTopicOpen(queryTopic))
   const activeCodeNo = activeTopic === 'code2' ? 2 : activeTopic === 'code3' ? 3 : activeTopic === 'code' ? 1 : null
@@ -211,6 +210,10 @@ export function BoardPage() {
         }),
       ),
     [activeTopic, state.proposals],
+  )
+  const proposalParticipantCount = useMemo(
+    () => new Set(sortedProposals.map((proposal) => proposal.nickname.trim()).filter(Boolean)).size,
+    [sortedProposals],
   )
   const surveyResponses = useMemo(
     () => state.surveyResponses.filter((response) => response.questionKey === PRE_SURVEY_KEY),
@@ -268,7 +271,7 @@ export function BoardPage() {
   const savedRiskResponse = sessionNickname ? riskResponses.find((response) => response.nickname === sessionNickname) : null
   const savedHonestyResponse = sessionNickname ? honestyResponses.find((response) => response.nickname === sessionNickname) : null
   const savedFairnessResponse = sessionNickname ? fairnessResponses.find((response) => response.nickname === sessionNickname) : null
-  const canWriteRemote = Boolean(state.classId && state.remote.ok && isRemoteReady())
+  const canWriteRemote = Boolean(state.classId && isRemoteReady())
   useV2RemoteSync(state.classCode, Boolean(state.classCode && (session || isTeacherBoard)))
 
   useEffect(() => {
@@ -364,13 +367,19 @@ export function BoardPage() {
 
   const likeName = async (candidateId: string) => {
     if (!session) return
+    if (!canWriteRemote) {
+      setMessage('게시판 서버에 연결하는 중입니다. 잠시 뒤 다시 눌러주세요.')
+      return
+    }
     voteName(candidateId, session.nickname)
-    if (canWriteRemote) {
-      try {
-        await toggleRemoteNameLike({ classId: state.classId, nickname: session.nickname, candidateId })
-      } catch (error) {
-        setRemoteStatus({ ok: false, message: (error as Error).message })
-      }
+    try {
+      await toggleRemoteNameLike({ classId: state.classId, nickname: session.nickname, candidateId })
+      const bundle = await fetchRemoteClassBundle(state.classCode)
+      mergeClass(bundle)
+      setMessage('좋아요가 저장됐습니다. 한 번 누른 좋아요는 취소할 수 없습니다.')
+    } catch (error) {
+      setRemoteStatus({ ok: false, message: (error as Error).message })
+      setMessage(`좋아요 저장에 실패했습니다. 다시 눌러주세요. ${(error as Error).message}`)
     }
   }
 
@@ -393,13 +402,19 @@ export function BoardPage() {
 
   const likeWish = async (wishId: string) => {
     if (!session || isTeacherBoard) return
+    if (!canWriteRemote) {
+      setMessage('게시판 서버에 연결하는 중입니다. 잠시 뒤 다시 눌러주세요.')
+      return
+    }
     voteWish(wishId, session.nickname)
-    if (canWriteRemote) {
-      try {
-        await toggleRemotePostLike({ classId: state.classId, nickname: session.nickname, postType: 'wish', postId: wishId })
-      } catch (error) {
-        setRemoteStatus({ ok: false, message: (error as Error).message })
-      }
+    try {
+      await toggleRemotePostLike({ classId: state.classId, nickname: session.nickname, postType: 'wish', postId: wishId })
+      const bundle = await fetchRemoteClassBundle(state.classCode)
+      mergeClass(bundle)
+      setMessage('좋아요가 저장됐습니다. 한 번 누른 좋아요는 취소할 수 없습니다.')
+    } catch (error) {
+      setRemoteStatus({ ok: false, message: (error as Error).message })
+      setMessage(`좋아요 저장에 실패했습니다. 다시 눌러주세요. ${(error as Error).message}`)
     }
   }
 
@@ -460,13 +475,19 @@ export function BoardPage() {
 
   const likeRisk = async (responseId: string) => {
     if (!session || isTeacherBoard) return
+    if (!canWriteRemote) {
+      setMessage('게시판 서버에 연결하는 중입니다. 잠시 뒤 다시 눌러주세요.')
+      return
+    }
     voteSurveyResponse(responseId, session.nickname)
-    if (canWriteRemote) {
-      try {
-        await toggleRemotePostLike({ classId: state.classId, nickname: session.nickname, postType: 'risk', postId: responseId })
-      } catch (error) {
-        setRemoteStatus({ ok: false, message: (error as Error).message })
-      }
+    try {
+      await toggleRemotePostLike({ classId: state.classId, nickname: session.nickname, postType: 'risk', postId: responseId })
+      const bundle = await fetchRemoteClassBundle(state.classCode)
+      mergeClass(bundle)
+      setMessage('좋아요가 저장됐습니다. 한 번 누른 좋아요는 취소할 수 없습니다.')
+    } catch (error) {
+      setRemoteStatus({ ok: false, message: (error as Error).message })
+      setMessage(`좋아요 저장에 실패했습니다. 다시 눌러주세요. ${(error as Error).message}`)
     }
   }
 
@@ -489,13 +510,19 @@ export function BoardPage() {
 
   const likeHonesty = async (responseId: string) => {
     if (!session || isTeacherBoard) return
+    if (!canWriteRemote) {
+      setMessage('게시판 서버에 연결하는 중입니다. 잠시 뒤 다시 눌러주세요.')
+      return
+    }
     voteSurveyResponse(responseId, session.nickname)
-    if (canWriteRemote) {
-      try {
-        await toggleRemotePostLike({ classId: state.classId, nickname: session.nickname, postType: 'risk', postId: responseId })
-      } catch (error) {
-        setRemoteStatus({ ok: false, message: (error as Error).message })
-      }
+    try {
+      await toggleRemotePostLike({ classId: state.classId, nickname: session.nickname, postType: 'risk', postId: responseId })
+      const bundle = await fetchRemoteClassBundle(state.classCode)
+      mergeClass(bundle)
+      setMessage('좋아요가 저장됐습니다. 한 번 누른 좋아요는 취소할 수 없습니다.')
+    } catch (error) {
+      setRemoteStatus({ ok: false, message: (error as Error).message })
+      setMessage(`좋아요 저장에 실패했습니다. 다시 눌러주세요. ${(error as Error).message}`)
     }
   }
 
@@ -518,13 +545,19 @@ export function BoardPage() {
 
   const likeFairness = async (responseId: string) => {
     if (!session || isTeacherBoard) return
+    if (!canWriteRemote) {
+      setMessage('게시판 서버에 연결하는 중입니다. 잠시 뒤 다시 눌러주세요.')
+      return
+    }
     voteSurveyResponse(responseId, session.nickname)
-    if (canWriteRemote) {
-      try {
-        await toggleRemotePostLike({ classId: state.classId, nickname: session.nickname, postType: 'risk', postId: responseId })
-      } catch (error) {
-        setRemoteStatus({ ok: false, message: (error as Error).message })
-      }
+    try {
+      await toggleRemotePostLike({ classId: state.classId, nickname: session.nickname, postType: 'risk', postId: responseId })
+      const bundle = await fetchRemoteClassBundle(state.classCode)
+      mergeClass(bundle)
+      setMessage('좋아요가 저장됐습니다. 한 번 누른 좋아요는 취소할 수 없습니다.')
+    } catch (error) {
+      setRemoteStatus({ ok: false, message: (error as Error).message })
+      setMessage(`좋아요 저장에 실패했습니다. 다시 눌러주세요. ${(error as Error).message}`)
     }
   }
 
@@ -549,13 +582,19 @@ export function BoardPage() {
 
   const voteCode = async (proposalId: string) => {
     if (!session) return
+    if (!canWriteRemote) {
+      setMessage('게시판 서버에 연결하는 중입니다. 잠시 뒤 다시 눌러주세요.')
+      return
+    }
     voteProposal(proposalId, session.nickname)
-    if (canWriteRemote) {
-      try {
-        await voteRemoteCodeProposal({ classId: state.classId, nickname: session.nickname, proposalId })
-      } catch (error) {
-        setRemoteStatus({ ok: false, message: (error as Error).message })
-      }
+    try {
+      await voteRemoteCodeProposal({ classId: state.classId, nickname: session.nickname, proposalId })
+      const bundle = await fetchRemoteClassBundle(state.classCode)
+      mergeClass(bundle)
+      setMessage('좋아요가 저장됐습니다. 한 번 누른 좋아요는 취소할 수 없습니다.')
+    } catch (error) {
+      setRemoteStatus({ ok: false, message: (error as Error).message })
+      setMessage(`좋아요 저장에 실패했습니다. 다시 눌러주세요. ${(error as Error).message}`)
     }
   }
 
@@ -656,7 +695,7 @@ export function BoardPage() {
           <p className="font-data text-sm text-[#4FE0C0]">
             {state.className || '학급'} · {viewerLabel}
           </p>
-          <h1 className="font-display mt-2 text-4xl text-[#EAF2F5]">{queryTopic ? topicTabLabel(activeTopic) : '학습게시판'}</h1>
+          <h1 className="font-display mt-2 text-4xl text-[#EAF2F5]">학습게시판</h1>
           <p className="mt-2 leading-7 text-[#8AA0B0]">수업에서 남긴 생각을 모아 봅니다.</p>
         </div>
         {!isTeacherBoard ? (
@@ -1396,7 +1435,9 @@ export function BoardPage() {
             <Panel>
               <div className="flex items-center justify-between gap-3">
                 <h2 className="font-display text-3xl text-[#EAF2F5]">{codeBoardListHeading}</h2>
-                <span className="rounded-full bg-[#07111B]/70 px-3 py-1 text-sm text-[#8AA0B0]">{sortedProposals.length}개</span>
+                <span className="rounded-full bg-[#07111B]/70 px-3 py-1 text-sm text-[#B7C7D2]">
+                  참여 {proposalParticipantCount}명 · 글 {sortedProposals.length}개
+                </span>
               </div>
               <p className="mt-2 text-sm font-bold leading-6 text-[#FFD37A]">{voteLockNotice}</p>
               <div className="mt-4 grid gap-3">
