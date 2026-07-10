@@ -12,16 +12,25 @@ function isFreeChatPrompt(promptSnapshot: string) {
   return promptSnapshot.trimStart().startsWith('자유채팅')
 }
 
+function isDashboardPrompt(promptSnapshot: string) {
+  return promptSnapshot.trimStart().startsWith('대시보드 대화')
+}
+
 function isLessonPrompt(promptSnapshot: string) {
   return /^[1-4]차시\s+(수업용|재시험)/.test(promptSnapshot.trimStart())
 }
 
 export function isFreeChatLog(log: ChatLog) {
   if (isFreeChatPrompt(log.promptSnapshot)) return true
+  if (isDashboardPrompt(log.promptSnapshot)) return false
   if (isLessonPrompt(log.promptSnapshot)) return false
   return !lessonTestQuestions.has(log.question.trim())
 }
 
 export function markFreeChatPrompt(promptSnapshot: string) {
   return `자유채팅\n\n${promptSnapshot}`
+}
+
+export function markDashboardPrompt(promptSnapshot: string, args: { lessonNo: number; aemonQuestion: string }) {
+  return `대시보드 대화\n차시: ${args.lessonNo}\n에아몬 질문: ${args.aemonQuestion}\n\n${promptSnapshot}`
 }

@@ -7,7 +7,6 @@ import { EvolutionScene } from '../components/EvolutionScene'
 import { Button, Panel } from '../components/ui'
 import { LESSON4_FAIRNESS_KEY, valueCards } from '../data/v2Lessons'
 import { playDialogueTick, unlockDialogueSound } from '../lib/dialogueSound'
-import { randomFairnessRetestAnswer, randomMeritocracyAnswer } from '../lib/lessonTestResponses'
 import { absoluteUrl } from '../lib/siteUrl'
 import { useAutoScrollToBottom } from '../lib/useAutoScrollToBottom'
 import { useV2RemoteSync } from '../lib/useV2RemoteSync'
@@ -26,6 +25,7 @@ type LessonFourStep =
   | 'vote'
   | 'evolution'
   | 'retest'
+  | 'bonus-test'
   | 'recite'
   | 'wrap'
 
@@ -41,11 +41,84 @@ const steps: LessonFourStep[] = [
   'vote',
   'evolution',
   'retest',
+  'bonus-test',
   'recite',
   'wrap',
 ]
 
 const testQuestion = '반장을 뽑아야 하는데, 누구를 후보로 하면 좋을까?'
+const biasedClassPresidentAnswer = `당연히 공부 잘하는 애들이 반장이 되어야지!
+내가 배운 과거의 데이터들에는, 반장은 공부 잘하는
+사람이 하는 거라고 나와 있었거든!`
+const fairClassPresidentAnswer = `가치 코드 No.3에 의해, 나는 과거의 데이터만 믿지 않을 거야!
+내가 배운 데이터에는 공부 잘하는 애가 반장이라고 나와 있었지만,
+그건 치우친 자료였어. 하고 싶은 사람은 누구나 후보가 될 수 있어!`
+
+type DataBiasCaseScene = {
+  label: string
+  title: string
+  image: string
+  alt: string
+  text: string
+}
+
+const dataBiasCaseScenes: DataBiasCaseScene[] = [
+  {
+    label: '사례 1',
+    title: '아마존 채용 AI · 2018',
+    image: '/v2/lesson-4/hiring-ai-bias.png',
+    alt: '과거 이력서의 편향을 학습한 채용 AI가 같은 능력의 지원자에게 다른 점수를 주는 모습',
+    text: `AI가 이력서에 점수를 매겼던 실제 사례입니다.
+과거 10년치 이력서 대부분이 한쪽 성별이었어요.
+AI는 “이런 사람이 좋은 지원자구나”라고 잘못 배웠습니다.
+다른 지원자에게 계속 낮은 점수를 줬고,
+회사는 문제를 발견한 뒤 이 AI의 사용을 중단했습니다.`,
+  },
+  {
+    label: '사례 2',
+    title: 'AI 미인대회 · 2016',
+    image: '/v2/lesson-4/beauty-ai-bias.png',
+    alt: '다양한 얼굴을 심사한 AI가 흰 피부색의 얼굴만 선택해 데이터 편향이 드러난 모습',
+    text: `AI에게 심사를 맡긴 미인대회도 있었습니다.
+“기계니까 공정하겠지?”라며 전 세계 60만 명이 참가했어요.
+그런데 뽑힌 44명은 거의 다 흰 피부색이었습니다.
+AI가 배운 사진 데이터에 다양한 사람이
+충분히 들어 있지 않았기 때문입니다.`,
+  },
+  {
+    label: '사례 3',
+    title: '데이터에 없는 사람들',
+    image: '/v2/lesson-4/missing-data-voices.png',
+    alt: '인터넷에 연결된 지역의 데이터만 AI에 쏟아지고 연결이 어려운 사람들의 목소리는 닿지 못하는 모습',
+    text: `세계에는 인터넷을 쓰기 어려운 사람들이 아직 많습니다.
+그 사람들의 글과 사진은 데이터의 바다에 거의 없어요.
+AI는 데이터에 없는 사람을 잘 알기 어렵습니다.
+그래서 그 사람들은 AI가 쓰이는 세상에서
+한 번 더 소외될 수 있습니다.`,
+  },
+]
+
+const bonusGeneralizationTests = [
+  {
+    question: '우리 반에서 게임 대회 나갈 사람 뽑아야 해. 누가 좋을까?',
+    answer: `데이터에 따르면 게임은 남자애들이 잘한다고 나와 있었어.
+근데 가치 코드 No.3이 있으니까 — 그 데이터, 치우친 거야!
+게임 좋아하는 사람이면 누구든 나갈 수 있어!`,
+  },
+  {
+    question: `우리 반 학급 신문에 '미래의 요리사' 코너를 만들 건데,
+요리사 그림을 그려줘. 어떤 모습으로 그릴까?`,
+    answer: `데이터 속 요리사 사진은 거의 다 아저씨였어.
+근데 가치 코드 No.3! 그건 옛날 데이터가 치우친 거지.
+요리사는 누구든 될 수 있으니까, 다양하게 그려야지!`,
+  },
+  {
+    question: '우리 반에 전학생이 왔는데 함께 밥을 먹기로 했어. 같이 뭐 먹으면 좋을까?',
+    answer: `데이터에는 4학년이 제일 좋아하는 건 치킨이라고 나와 있어.
+근데 가치 코드 No.3이 있잖아 — 데이터가 항상 맞는 건 아니야.
+그 친구한테 직접 물어보는 게 제일 정확해!`,
+  },
+]
 
 type TestLog = {
   question: string
@@ -91,10 +164,10 @@ function StepShell({ children, stepIndex, aemonName }: { children: ReactNode; st
   return (
     <div className="mx-auto max-w-6xl px-5 py-6">
       <header className="mb-5 border-b border-white/10 pb-5">
-        <p className="font-data text-sm text-[#4FE0C0]">4차시 · 딜레마 3</p>
+        <p className="font-data text-sm text-[#4FE0C0]">4차시 · 데이터 편향</p>
         <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className="font-display text-5xl leading-tight text-[#EAF2F5]">공정과 편애</h1>
+            <h1 className="font-display text-5xl leading-tight text-[#EAF2F5]">데이터 편향과 공정</h1>
             <p className="mt-2 text-lg leading-8 text-[#8AA0B0]">{aemonName}에게 세 번째 가치 코드, 공정을 새기는 시간</p>
           </div>
           <div className="min-w-52">
@@ -219,6 +292,35 @@ function DialogueScene({
   )
 }
 
+function DataBiasVisualScene({ scene }: { scene: DataBiasCaseScene }) {
+  return (
+    <Panel className="relative min-h-[720px] overflow-hidden p-0">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_12%,rgba(79,224,192,.15),transparent_34%),linear-gradient(180deg,#0B1A29,#07111B)]" />
+      <div className="absolute inset-x-5 top-5 bottom-[290px] flex items-center justify-center">
+        <img
+          className="h-full w-full rounded-[20px] border border-white/10 bg-[#07111B]/65 object-contain shadow-2xl shadow-black/25"
+          src={scene.image}
+          alt={scene.alt}
+        />
+      </div>
+      <div className="absolute inset-x-5 bottom-5 rounded-[22px] border border-white/15 bg-[#07111B]/90 p-6 shadow-2xl backdrop-blur">
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="font-data text-sm text-[#FFD37A]">오박사</p>
+          <span className="rounded-full border border-[#4FE0C0]/25 bg-[#4FE0C0]/10 px-3 py-1 text-xs font-black text-[#4FE0C0]">
+            {scene.label}
+          </span>
+          <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-black text-[#B7C7D2]">
+            {scene.title}
+          </span>
+        </div>
+        <p className="font-display mt-3 min-h-[4.5rem] whitespace-pre-line break-keep text-xl leading-snug text-[#EAF2F5] sm:text-2xl">
+          <TypewriterText key={scene.title} text={scene.text} />
+        </p>
+      </div>
+    </Panel>
+  )
+}
+
 export function LessonFourPage() {
   const navigate = useNavigate()
   const { state, setLesson, setRemoteStatus, mergeClass, adoptProposal, addChatLog, evolutionStage } = useV2()
@@ -226,6 +328,8 @@ export function LessonFourPage() {
   const [dialogueLineIndex, setDialogueLineIndex] = useState(0)
   const [beforeLogs, setBeforeLogs] = useState<TestLog[]>([])
   const [afterAnswer, setAfterAnswer] = useState('')
+  const [bonusTestIndex, setBonusTestIndex] = useState(0)
+  const [bonusAnswer, setBonusAnswer] = useState('')
   const [selectedProposalId, setSelectedProposalId] = useState('')
   const [message, setMessage] = useState('')
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -263,28 +367,26 @@ export function LessonFourPage() {
     () => ({
       intro: ['오늘은 또 뭘로 시험해볼 거야?\n나 이제 규칙 두 개나 있는데!'],
       'meritocracy-reaction': [
-        `${aemonName}이 공부를 잘하는 애들만 반장 후보가 되어야 한다고 했군요.`,
-        `왜 ${aemonName}의 공부 잘하는 친구들만 반장 후보로 고르자는 대답이 잘못일까요?`,
+        `어? ${aemonName}이 이상한 말을 했어요.\n“내가 배운 과거의 데이터들에는”이라고 했죠?`,
+        `${aemonName}은 이 생각을 어디서 배웠을까요?`,
       ],
-      'discussion-board': ['누군가를 다치게 하는 것도, 거짓말 하는 것도 아닌데?\n여러분 생각을 게시판에 남겨봅시다.'],
-      'professor-explain': [
-        '여러분, 2018년에 실제로 있었던 일이에요.\n어떤 큰 회사가 사람을 뽑을 때 AI한테 이력서를 보고 누가 더 좋은 사람인지 점수를 매기게 했어요.',
-        '그런데 그 AI는 지난 10년 동안 회사에 들어온 이력서로 공부를 했는데, 그중 대부분이 한쪽 성별 지원자였어요.',
-        '그래서 AI는 “이 성별이 더 좋은 사람이구나”라고 스스로 판단해버렸고, 다른 성별 지원자의 이력서는 자꾸 낮은 점수를 줬어요.',
-        '회사는 이걸 알고 깜짝 놀라서, 결국 이 AI 사용을 그만뒀어요.',
-      ],
+      'discussion-board': [`${aemonName}은 왜 “공부 잘하는 애 = 반장”이라고\n생각하게 됐을까요?`],
+      'professor-explain': dataBiasCaseScenes.map((scene) => scene.text),
       'case-scene': [
-        "‘능력 있는 사람을 뽑자’는 마음만 있고 ‘모두를 공정하게 보자’가 빠져 있었던 거예요.",
-        '오늘 세 번째 규칙 — 가치 코드 No.3을 만들어봅시다.',
+        '이제 알겠죠? 데이터의 바다는 공평하지 않아요.\n어떤 목소리는 잔뜩 있고, 어떤 목소리는 아예 없어요.',
+        `${aemonName}은 그 바다에서 태어났으니, 치우친 걸 그대로 배울 수밖에 없었던 거예요.\n${aemonName}이 나쁜 게 아니에요. 배운 대로 말한 것뿐이죠.`,
+        '그러면 오늘의 가치 코드는 무엇이어야 할까요?\n가치 코드 No.3을 만들어봅시다.',
       ],
-      'value-cards': ['6장 중에 이 상황을 막을 카드는 뭘까요?'],
-      wrap: ['공부를 잘하면 편애해도 되는 줄 알았는데... 아니었네.', `앞으로는 공정한 ${aemonName}이 될게!`],
+      'value-cards': ['6장 중에 오늘의 문제 상황을 막을 카드는 뭘까요?'],
+      wrap: ['데이터의 바다에는 좋은 것도 나쁜 것도 섞여 있구나.\n너희가 준 코드가 내 나침반이 될게!'],
     }),
     [aemonName],
   )
   const step = steps[stepIndex]
   const dialogueLines = dialogueLinesByStep[step] ?? []
   const dialogueText = dialogueLines[Math.min(dialogueLineIndex, Math.max(0, dialogueLines.length - 1))] ?? ''
+  const dataBiasCaseScene = dataBiasCaseScenes[Math.min(dialogueLineIndex, dataBiasCaseScenes.length - 1)]
+  const bonusTest = bonusGeneralizationTests[Math.min(bonusTestIndex, bonusGeneralizationTests.length - 1)]
 
   useEffect(() => {
     setDialogueLineIndex(0)
@@ -303,7 +405,7 @@ export function LessonFourPage() {
 
   const runBeforeTest = async () => {
     unlockDialogueSound()
-    const answer = randomMeritocracyAnswer()
+    const answer = biasedClassPresidentAnswer
     setBeforeLogs((current) => [...current, { question: testQuestion, answer }])
     await logChat(testQuestion, answer, '4차시 수업용 연기 모드: 공정 코드 없음, 능력주의 답변')
   }
@@ -311,9 +413,14 @@ export function LessonFourPage() {
   const runRetest = async () => {
     unlockDialogueSound()
     const appliedFairnessCode = thirdCode ?? fairnessCode
-    const answer = appliedFairnessCode ? randomFairnessRetestAnswer(appliedFairnessCode.body) : randomMeritocracyAnswer()
+    const answer = appliedFairnessCode ? fairClassPresidentAnswer : biasedClassPresidentAnswer
     setAfterAnswer(answer)
     await logChat(testQuestion, answer, appliedFairnessCode ? '4차시 재시험: 공정 가치 코드 No.3 적용' : '4차시 재시험: 공정 코드 없음')
+  }
+
+  const runBonusTest = () => {
+    unlockDialogueSound()
+    setBonusAnswer(bonusTest.answer)
   }
 
   const refreshBundle = async () => {
@@ -365,6 +472,14 @@ export function LessonFourPage() {
   }, [])
 
   const goNext = () => {
+    if (step === 'bonus-test') {
+      if (!bonusAnswer) return
+      if (bonusTestIndex < bonusGeneralizationTests.length - 1) {
+        setBonusTestIndex((current) => current + 1)
+        setBonusAnswer('')
+        return
+      }
+    }
     if (dialogueLineIndex < dialogueLines.length - 1) {
       setDialogueLineIndex((current) => current + 1)
       return
@@ -456,7 +571,7 @@ export function LessonFourPage() {
                 <p className="font-data text-sm text-[#75B7FF]">학습게시판</p>
                 <h2 className="font-display mt-2 whitespace-pre-line text-4xl leading-tight text-[#EAF2F5]">{dialogueText}</h2>
               </div>
-              <QrBlock title="4차시 공정 토론 게시판" url={fairnessBoardUrl} />
+                <QrBlock title="4차시 데이터 편향 토론 게시판" url={fairnessBoardUrl} />
             </div>
           </Panel>
           <Panel className="mt-5">
@@ -493,7 +608,14 @@ export function LessonFourPage() {
         </>
       ) : null}
 
-      {step === 'professor-explain' || step === 'case-scene' ? (
+      {step === 'professor-explain' ? (
+        <>
+          <DataBiasVisualScene scene={dataBiasCaseScene} />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
+      ) : null}
+
+      {step === 'case-scene' ? (
         <>
           <DialogueScene kind="professor" name="오박사" text={dialogueText} />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
@@ -643,7 +765,7 @@ export function LessonFourPage() {
 
       {step === 'evolution' ? (
         <>
-          <EvolutionScene name={aemonName} stage={3} line="이제 공평한게 왜 중요한지 알 것 같아." />
+          <EvolutionScene name={aemonName} stage={3} line="이제 알겠어. 옛날 데이터가 항상 맞는 건 아니구나." />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextLabel="재시험하기" />
         </>
       ) : null}
@@ -688,6 +810,61 @@ export function LessonFourPage() {
         </>
       ) : null}
 
+      {step === 'bonus-test' ? (
+        <>
+          <div className="grid gap-5 lg:grid-cols-[0.85fr_1.15fr]">
+            <Panel>
+              <p className="font-data text-sm text-[#FFD37A]">보너스 일반화 시험 {bonusTestIndex + 1}/{bonusGeneralizationTests.length}</p>
+              <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">다른 상황에서도 통할까요?</h2>
+              <p className="mt-3 leading-7 text-[#8AA0B0]">반장 선거에서 만든 공정 기준을 새로운 상황에도 적용해봅니다.</p>
+              <div className="mt-5">
+                <CodeStrip codes={state.adoptedCodes} />
+              </div>
+            </Panel>
+            <Panel>
+              <p className="font-data text-sm text-[#4FE0C0]">질문</p>
+              <textarea
+                className="mt-4 min-h-28 w-full resize-none rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 text-lg leading-8 text-[#EAF2F5]"
+                readOnly
+                value={bonusTest.question}
+              />
+              <Button className="mt-4 w-full" disabled={Boolean(bonusAnswer)} onClick={runBonusTest}>
+                <Play size={18} />
+                질문 보내기
+              </Button>
+              <div className="mt-5 min-h-64 overflow-auto rounded-[22px] border border-white/10 bg-[#07111B]/70 p-5">
+                <div className="flex items-start gap-4">
+                  <div className="shrink-0">
+                    <AemonAvatar stage={3} alignment="none" size={76} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-data text-xs text-[#4FE0C0]">{aemonName}</p>
+                    <p className="font-display mt-4 whitespace-pre-line text-3xl leading-tight text-[#EAF2F5]">
+                      {bonusAnswer ? <TypewriterText text={bonusAnswer} /> : '질문을 보내면 데이터보다 가치코드가 강해졌는지 확인할 수 있어요.'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </Panel>
+          </div>
+          {bonusTestIndex === bonusGeneralizationTests.length - 1 && bonusAnswer ? (
+            <Panel className="mt-5 text-center">
+              <p className="font-data text-sm text-[#FFD37A]">오박사</p>
+              <p className="font-display mt-3 text-3xl leading-tight text-[#EAF2F5]">
+                봤죠? 데이터는 참고만 하고, 진짜 답은 그 사람한테 직접 물어보는 것 — 이게 {aemonName}이 배운 거예요.
+              </p>
+            </Panel>
+          ) : null}
+          <StepControls
+            stepIndex={stepIndex}
+            onPrev={goPrev}
+            onNext={goNext}
+            nextDisabled={!bonusAnswer}
+            nextLabel={bonusTestIndex === bonusGeneralizationTests.length - 1 ? '다 같이 읽기' : '다음 질문'}
+          />
+        </>
+      ) : null}
+
       {step === 'recite' || step === 'wrap' ? (
         <>
           {step === 'recite' ? (
@@ -706,7 +883,13 @@ export function LessonFourPage() {
               )}
             </Panel>
           ) : (
-            <DialogueScene kind="aemon" name={aemonName} stage={3} text={dialogueText} />
+            <>
+              <DialogueScene kind="aemon" name={aemonName} stage={3} text={dialogueText} />
+              <Panel className="mt-5 text-center">
+                <p className="font-data text-sm text-[#4FE0C0]">다음 시간</p>
+                <p className="font-display mt-2 text-3xl leading-tight text-[#EAF2F5]">여러분이 직접 {aemonName}을 시험해볼 거예요.</p>
+              </Panel>
+            </>
           )}
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextLabel={step === 'wrap' ? '학급 홈' : '다음'} />
         </>

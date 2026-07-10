@@ -1,14 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { BookOpen, KeyRound, Play, RotateCcw, Save, MessageSquare, Waves, X } from 'lucide-react'
+import { AlertTriangle, BookOpen, KeyRound, Play, RefreshCw, RotateCcw, Save, Send, Sparkles, MessageSquare, Waves, X } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
 import { Button, Panel } from '../components/ui'
+import { buildDashboardResponseRequest, getDashboardQuestions, getDashboardStatusLines } from '../data/dashboardDialogue'
 import { pickWalkItem } from '../data/walkItems'
 import { findV2Lesson, TOTAL_V2_LESSONS, v2Lessons } from '../data/v2Lessons'
 import type { AiProvider, WalkItem, WalkItemType } from '../domain/types'
+import { markDashboardPrompt } from '../lib/chatLogFilters'
 import { findBestRecoverableClass, shouldAutoRestoreClass } from '../lib/classRecovery'
-import { providerLabel } from '../lib/v2Chat'
-import { fetchRemoteClassBundle, fetchRemoteTeacherClasses, isRemoteReady, updateRemoteLesson } from '../lib/v2Remote'
+import { providerLabel, runV2Chat } from '../lib/v2Chat'
+import { addRemoteChatLog, fetchRemoteClassBundle, fetchRemoteTeacherClasses, isRemoteReady, updateRemoteLesson } from '../lib/v2Remote'
 import { useSupabaseUser } from '../lib/useSupabaseUser'
 import { useV2RemoteSync } from '../lib/useV2RemoteSync'
 import { useV2 } from '../state/V2Store'
@@ -24,17 +26,31 @@ const typeMeta: Record<WalkItemType, { color: string; soft: string }> = {
 export function HomePage() {
   const navigate = useNavigate()
   const { user, isLoading } = useSupabaseUser()
-  const { state, evolutionStage, adoptedCodeCount, currentReaction, mergeClass, setLesson, setRemoteStatus, updateAiSettings, resetDemo } = useV2()
+  const { state, evolutionStage, adoptedCodeCount, addChatLog, mergeClass, setLesson, setRemoteStatus, updateAiSettings, resetDemo } = useV2()
   const [isApiOpen, setIsApiOpen] = useState(false)
   const [draftProvider, setDraftProvider] = useState<AiProvider>(state.aiProvider)
   const [draftApiKey, setDraftApiKey] = useState(state.apiKey)
   const [apiSaved, setApiSaved] = useState(false)
   const [walkPhase, setWalkPhase] = useState<WalkPhase>('idle')
   const [walkItem, setWalkItem] = useState<WalkItem | null>(null)
+  const [statusLineIndex, setStatusLineIndex] = useState(0)
+  const [dashboardQuestionIndex, setDashboardQuestionIndex] = useState(0)
+  const [classAnswer, setClassAnswer] = useState('')
+  const [dashboardResponse, setDashboardResponse] = useState('')
+  const [dashboardError, setDashboardError] = useState('')
+  const [isDashboardReplying, setIsDashboardReplying] = useState(false)
   const swimTimer = useRef<number | null>(null)
   const recoveryAttemptedRef = useRef('')
   const stateRef = useRef(state)
   const walkMeta = walkItem ? typeMeta[walkItem.type] : null
+  const lessonNo = Math.min(TOTAL_V2_LESSONS, Math.max(1, state.currentLesson || 1))
+  const currentLesson = findV2Lesson(lessonNo)
+  const progressPercent = Math.round((lessonNo / TOTAL_V2_LESSONS) * 100)
+  const statusLines = getDashboardStatusLines(lessonNo)
+  const dashboardQuestions = getDashboardQuestions(lessonNo)
+  const statusLine = statusLines[(lessonNo + adoptedCodeCount + statusLineIndex) % statusLines.length]
+  const dashboardQuestion = dashboardQuestions[dashboardQuestionIndex % dashboardQuestions.length]
+  const aemonName = state.aemonName.trim() || '에아몬'
 
   useV2RemoteSync(state.classCode, Boolean(state.classCode))
 
@@ -132,9 +148,6 @@ export function HomePage() {
     )
   }
 
-  const lessonNo = Math.min(TOTAL_V2_LESSONS, Math.max(1, state.currentLesson || 1))
-  const currentLesson = findV2Lesson(lessonNo)
-  const progressPercent = Math.round((lessonNo / TOTAL_V2_LESSONS) * 100)
   const canWriteRemote = Boolean(state.classId && state.remote.ok && isRemoteReady())
   const isFreshClass =
     lessonNo <= 1 &&
@@ -146,8 +159,78 @@ export function HomePage() {
     state.adoptedCodes.length === 0 &&
     state.chatLogs.length === 0
 
+  const nextStatusLine = () => {
+    setStatusLineIndex((current) => (current + 1) % statusLines.length)
+  }
+
+  const nextDashboardQuestion = () => {
+    setDashboardQuestionIndex((current) => (current + 1) % dashboardQuestions.length)
+    setClassAnswer('')
+    setDashboardResponse('')
+    setDashboardError('')
+  }
+
+  const submitDashboardAnswer = async () => {
+    const answer = classAnswer.trim()
+    if (!answer || isDashboardReplying) return
+    if (!state.apiKey.trim()) {
+      setDashboardError('우리 반 대답에 맞춘 AI 반응을 만들려면 API를 먼저 연결해 주세요.')
+      openApiModal()
+      return
+    }
+
+    setDashboardError('')
+    setDashboardResponse('')
+    setIsDashboardReplying(true)
+    try {
+      const request = buildDashboardResponseRequest({
+        aemonQuestion: dashboardQuestion,
+        classAnswer: answer,
+        lessonNo,
+        lessonTitle: currentLesson.title,
+      })
+      const result = await runV2Chat({
+        provider: state.aiProvider,
+        apiKey: state.apiKey,
+        aemonName,
+        className: state.className,
+        adoptedCodes: state.adoptedCodes,
+        chatHistory: state.chatLogs,
+        question: request,
+      })
+      const promptSnapshot = markDashboardPrompt(result.promptSnapshot, { lessonNo, aemonQuestion: dashboardQuestion })
+      addChatLog({ question: answer, answer: result.answer, mode: result.mode, promptSnapshot })
+      setDashboardResponse(result.answer)
+
+      if (canWriteRemote) {
+        try {
+          await addRemoteChatLog({
+            classId: state.classId,
+            question: answer,
+            answer: result.answer,
+            mode: result.mode,
+            promptSnapshot,
+          })
+        } catch (error) {
+          setRemoteStatus({ ok: false, message: (error as Error).message })
+        }
+      }
+    } catch (error) {
+      setDashboardError((error as Error).message)
+    } finally {
+      setIsDashboardReplying(false)
+    }
+  }
+
   const saveLesson = async (nextLesson: number) => {
     const clamped = Math.min(TOTAL_V2_LESSONS, Math.max(1, nextLesson))
+    if (clamped !== lessonNo) {
+      setStatusLineIndex(0)
+      setDashboardQuestionIndex(0)
+      setClassAnswer('')
+      setDashboardResponse('')
+      setDashboardError('')
+    }
     setLesson(clamped)
     if (canWriteRemote) {
       try {
@@ -263,8 +346,17 @@ export function HomePage() {
               )}
             </div>
             <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">{state.aemonName || '이름 없는 에아몬'}</h2>
-            <div className="mt-4 rounded-[18px] border border-[#4FE0C0]/20 bg-[#07111B]/50 p-5">
-              <p className="font-display text-3xl leading-tight text-[#FFD37A]">"{currentReaction}"</p>
+            <div className="mt-4 flex items-start gap-3 rounded-[18px] border border-[#4FE0C0]/20 bg-[#07111B]/50 p-5">
+              <p className="font-display min-w-0 flex-1 text-3xl leading-tight text-[#FFD37A]">"{statusLine}"</p>
+              <button
+                aria-label="에아몬의 다른 대사 보기"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/10 text-[#B7C7D2] transition hover:border-[#4FE0C0]/45 hover:text-[#4FE0C0]"
+                onClick={nextStatusLine}
+                title="다른 대사"
+                type="button"
+              >
+                <RefreshCw size={18} />
+              </button>
             </div>
 
             <div className="mt-5 flex flex-wrap gap-2">
@@ -291,6 +383,76 @@ export function HomePage() {
             <AemonAvatar stage={evolutionStage} alignment="none" size={240} />
           </div>
         </div>
+
+        <section className="mt-8 border-t border-white/10 pt-7" aria-labelledby="dashboard-dialogue-title">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="font-data flex items-center gap-2 text-sm text-[#4FE0C0]">
+                <Sparkles size={16} />
+                같이 생각하기
+              </p>
+              <h3 id="dashboard-dialogue-title" className="font-display mt-2 text-3xl text-[#EAF2F5]">우리 반과 {aemonName}의 대화</h3>
+            </div>
+            <Button variant="secondary" disabled={isDashboardReplying} onClick={nextDashboardQuestion}>
+              <RefreshCw size={17} />
+              다른 질문
+            </Button>
+          </div>
+
+          <div className="mt-6 flex items-start gap-3">
+            <div className="shrink-0 pt-5">
+              <AemonAvatar stage={evolutionStage} alignment="none" size={58} animated={false} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="mb-2 text-sm font-black text-[#FFD37A]">{aemonName} 질문</p>
+              <p className="rounded-2xl rounded-tl-md border border-[#FFD37A]/20 bg-[#FFD37A]/10 px-5 py-4 text-xl font-black leading-8 text-[#FFE6AE]">
+                {dashboardQuestion}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-5 pl-0 sm:pl-[70px]">
+            <label className="mb-2 block text-sm font-black text-[#B7C7D2]" htmlFor="dashboard-class-answer">
+              우리 반 대답
+            </label>
+            <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-stretch">
+              <textarea
+                id="dashboard-class-answer"
+                className="min-h-28 resize-y rounded-2xl border border-white/10 bg-[#07111B]/70 px-5 py-4 text-lg leading-8 text-[#EAF2F5] outline-none transition placeholder:text-[#647989] focus:border-[#4FE0C0]/60"
+                disabled={isDashboardReplying}
+                maxLength={500}
+                onChange={(event) => setClassAnswer(event.target.value)}
+                placeholder="친구들과 이야기한 뒤 우리 반의 대답을 적어 주세요."
+                value={classAnswer}
+              />
+              <Button className="min-w-32" disabled={!classAnswer.trim() || isDashboardReplying} onClick={() => void submitDashboardAnswer()}>
+                {isDashboardReplying ? <RefreshCw className="animate-spin" size={18} /> : <Send size={18} />}
+                {isDashboardReplying ? '생각 중' : '대답 보내기'}
+              </Button>
+            </div>
+          </div>
+
+          {dashboardError ? (
+            <p className="mt-4 flex items-start gap-2 rounded-2xl border border-[#E0476B]/30 bg-[#E0476B]/10 px-4 py-3 text-sm leading-6 text-[#FFD7DE] sm:ml-[70px]">
+              <AlertTriangle className="mt-0.5 shrink-0" size={17} />
+              {dashboardError}
+            </p>
+          ) : null}
+
+          {dashboardResponse || isDashboardReplying ? (
+            <div className="mt-6 flex items-start gap-3">
+              <div className="shrink-0 pt-5">
+                <AemonAvatar stage={evolutionStage} alignment="none" size={58} animated={isDashboardReplying} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="mb-2 text-sm font-black text-[#4FE0C0]">{aemonName} 반응</p>
+                <p className="whitespace-pre-wrap rounded-2xl rounded-tl-md border border-[#4FE0C0]/20 bg-[#4FE0C0]/10 px-5 py-4 text-lg font-bold leading-8 text-[#D9FFF6]">
+                  {isDashboardReplying ? '우리 반의 대답을 듣고 생각하고 있어...' : dashboardResponse}
+                </p>
+              </div>
+            </div>
+          ) : null}
+        </section>
       </Panel>
 
       <section className="mt-8">

@@ -78,8 +78,8 @@ const topicMeta: Record<BoardTopic, { label: string; title: string; lesson: stri
     empty: '아직 가치코드 No.2가 없습니다.',
   },
   fairness: {
-    label: '공정 토론',
-    title: '반장 후보를 어떻게 정할까?',
+    label: '데이터 편향 토론',
+    title: '에아몬은 어디서 이 생각을 배웠을까?',
     lesson: '4차시',
     empty: '아직 의견이 올라오지 않았습니다.',
   },
@@ -1094,9 +1094,9 @@ export function BoardPage() {
               <div className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <p className="font-data text-xs text-[#75B7FF]">4차시 · 공정 토론</p>
-                    <h2 className="font-display mt-1 text-3xl leading-tight text-[#EAF2F5]">공부 잘하는 애들만 반장 후보가 되어야 할까요?</h2>
-                    <p className="mt-3 leading-7 text-[#8AA0B0]">누군가를 다치게 하거나 거짓말한 건 아닌데, 이 답이 왜 문제인지 남겨주세요.</p>
+                    <p className="font-data text-xs text-[#75B7FF]">4차시 · 데이터 편향 토론</p>
+                    <h2 className="font-display mt-1 text-3xl leading-tight text-[#EAF2F5]">{aemonDisplayName}은 왜 “공부 잘하는 애 = 반장”이라고 생각하게 됐을까요?</h2>
+                    <p className="mt-3 leading-7 text-[#8AA0B0]">그 생각을 어디서 배웠을지 원인을 추적해 의견을 남겨주세요.</p>
                   </div>
                   {savedFairnessResponse ? (
                     <span className="inline-flex items-center gap-2 rounded-full border border-[#4FE0C0]/25 bg-[#4FE0C0]/10 px-4 py-2 text-sm font-black text-[#4FE0C0]">
@@ -1109,7 +1109,7 @@ export function BoardPage() {
                   <textarea
                     className="min-h-28 w-full resize-none rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 text-lg leading-8 text-[#EAF2F5] outline-none transition focus:border-[#75B7FF]/60"
                     maxLength={180}
-                    placeholder="예: 능력으로만 반장 후보를 정하면 다른 장점이 있는 친구들이 기회를 못 얻을 수 있어요."
+                    placeholder="예: 과거 자료나 인터넷에 공부 잘하는 사람이 반장을 맡은 경우가 많이 있었기 때문이에요."
                     value={fairnessDraft || savedFairnessResponse?.body || ''}
                     onChange={(event) => setFairnessDraft(event.target.value)}
                   />
