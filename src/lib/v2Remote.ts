@@ -645,8 +645,14 @@ export async function voteRemoteCodeProposal(args: { classId: string; nickname: 
 
 export async function adoptRemoteCodeProposal(args: { proposalId: string; adoptedNo: number; valueCard: string }) {
   const client = ensureClient()
-  const { data: proposal, error: findError } = await client.from('codes').select('class_id').eq('id', args.proposalId).single<{ class_id: string }>()
+  const { data: proposal, error: findError } = await client
+    .from('codes')
+    .select('id,class_id,nickname,body,reason,value_card')
+    .eq('id', args.proposalId)
+    .single<{ id: string; class_id: string; nickname: string; body: string; reason: string; value_card: string }>()
   if (findError) throw new Error(toMessage(findError))
+
+  const adoptedAt = new Date().toISOString()
 
   const { error: clearError } = await client
     .from('codes')
@@ -657,16 +663,39 @@ export async function adoptRemoteCodeProposal(args: { proposalId: string; adopte
     .neq('id', args.proposalId)
   if (clearError) throw new Error(toMessage(clearError))
 
-  const { error } = await client
+  const { data: updated, error } = await client
     .from('codes')
     .update({
       status: 'adopted',
       adopted_no: args.adoptedNo,
       value_card: args.valueCard.trim(),
-      adopted_at: new Date().toISOString(),
+      adopted_at: adoptedAt,
     })
     .eq('id', args.proposalId)
+    .select('id')
+    .maybeSingle<{ id: string }>()
   if (error) throw new Error(toMessage(error))
+  if (updated) return { adoptedId: updated.id, copied: false }
+
+  // An expired teacher session can make an RLS-protected UPDATE affect zero rows
+  // without returning an error. Preserve the selected sentence as a new adopted row.
+  const { data: copied, error: copyError } = await client
+    .from('codes')
+    .insert({
+      class_id: proposal.class_id,
+      nickname: proposal.nickname,
+      body: proposal.body,
+      reason: proposal.reason,
+      value_card: args.valueCard.trim(),
+      revision_of_no: args.adoptedNo,
+      status: 'adopted',
+      adopted_no: args.adoptedNo,
+      adopted_at: adoptedAt,
+    })
+    .select('id')
+    .single<{ id: string }>()
+  if (copyError || !copied) throw new Error(toMessage(copyError ?? new Error('가치코드가 저장되지 않았습니다.')))
+  return { adoptedId: copied.id, copied: true }
 }
 
 export async function rejectRemoteCodeProposal(proposalId: string) {

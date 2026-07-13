@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AlertTriangle, BookOpen, KeyRound, Play, RefreshCw, RotateCcw, Save, Send, Sparkles, MessageSquare, Waves, X } from 'lucide-react'
+import { AlertTriangle, BookOpen, KeyRound, Play, RefreshCw, RotateCcw, Save, Send, MessageSquare, Waves, X } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
 import { Button, Panel } from '../components/ui'
 import { buildDashboardResponseRequest, getDashboardQuestions, getDashboardStatusLines } from '../data/dashboardDialogue'
@@ -34,8 +34,9 @@ export function HomePage() {
   const [walkPhase, setWalkPhase] = useState<WalkPhase>('idle')
   const [walkItem, setWalkItem] = useState<WalkItem | null>(null)
   const [statusLineIndex, setStatusLineIndex] = useState(0)
-  const [dashboardQuestionIndex, setDashboardQuestionIndex] = useState(0)
+  const [isDashboardAnswerOpen, setIsDashboardAnswerOpen] = useState(false)
   const [classAnswer, setClassAnswer] = useState('')
+  const [submittedClassAnswer, setSubmittedClassAnswer] = useState('')
   const [dashboardResponse, setDashboardResponse] = useState('')
   const [dashboardError, setDashboardError] = useState('')
   const [isDashboardReplying, setIsDashboardReplying] = useState(false)
@@ -48,8 +49,10 @@ export function HomePage() {
   const progressPercent = Math.round((lessonNo / TOTAL_V2_LESSONS) * 100)
   const statusLines = getDashboardStatusLines(lessonNo)
   const dashboardQuestions = getDashboardQuestions(lessonNo)
-  const statusLine = statusLines[(lessonNo + adoptedCodeCount + statusLineIndex) % statusLines.length]
-  const dashboardQuestion = dashboardQuestions[dashboardQuestionIndex % dashboardQuestions.length]
+  const dashboardLines = statusLines.flatMap((line, index) => [line, dashboardQuestions[index % dashboardQuestions.length]])
+  const statusLine = dashboardLines[(lessonNo + adoptedCodeCount + statusLineIndex) % dashboardLines.length]
+  const isDashboardQuestion = /[?？]\s*$/.test(statusLine.trim())
+  const dashboardQuestion = isDashboardQuestion ? statusLine : ''
   const aemonName = state.aemonName.trim() || '에아몬'
 
   useV2RemoteSync(state.classCode, Boolean(state.classCode))
@@ -160,12 +163,10 @@ export function HomePage() {
     state.chatLogs.length === 0
 
   const nextStatusLine = () => {
-    setStatusLineIndex((current) => (current + 1) % statusLines.length)
-  }
-
-  const nextDashboardQuestion = () => {
-    setDashboardQuestionIndex((current) => (current + 1) % dashboardQuestions.length)
+    setStatusLineIndex((current) => (current + 1) % dashboardLines.length)
+    setIsDashboardAnswerOpen(false)
     setClassAnswer('')
+    setSubmittedClassAnswer('')
     setDashboardResponse('')
     setDashboardError('')
   }
@@ -181,6 +182,7 @@ export function HomePage() {
 
     setDashboardError('')
     setDashboardResponse('')
+    setSubmittedClassAnswer(answer)
     setIsDashboardReplying(true)
     try {
       const request = buildDashboardResponseRequest({
@@ -217,6 +219,7 @@ export function HomePage() {
       }
     } catch (error) {
       setDashboardError((error as Error).message)
+      setSubmittedClassAnswer('')
     } finally {
       setIsDashboardReplying(false)
     }
@@ -226,8 +229,9 @@ export function HomePage() {
     const clamped = Math.min(TOTAL_V2_LESSONS, Math.max(1, nextLesson))
     if (clamped !== lessonNo) {
       setStatusLineIndex(0)
-      setDashboardQuestionIndex(0)
+      setIsDashboardAnswerOpen(false)
       setClassAnswer('')
+      setSubmittedClassAnswer('')
       setDashboardResponse('')
       setDashboardError('')
     }
@@ -346,17 +350,70 @@ export function HomePage() {
               )}
             </div>
             <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">{state.aemonName || '이름 없는 에아몬'}</h2>
-            <div className="mt-4 flex items-start gap-3 rounded-[18px] border border-[#4FE0C0]/20 bg-[#07111B]/50 p-5">
-              <p className="font-display min-w-0 flex-1 text-3xl leading-tight text-[#FFD37A]">"{statusLine}"</p>
-              <button
-                aria-label="에아몬의 다른 대사 보기"
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/10 text-[#B7C7D2] transition hover:border-[#4FE0C0]/45 hover:text-[#4FE0C0]"
-                onClick={nextStatusLine}
-                title="다른 대사"
-                type="button"
-              >
-                <RefreshCw size={18} />
-              </button>
+            <div className="mt-4 rounded-[18px] border border-[#4FE0C0]/20 bg-[#07111B]/50 p-5" aria-label={`${aemonName} 대화`}>
+              <div className="flex items-start gap-3">
+                <p className="font-display min-w-0 flex-1 text-3xl leading-tight text-[#FFD37A]">"{statusLine}"</p>
+                <button
+                  aria-label="에아몬의 다른 대사 보기"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/10 text-[#B7C7D2] transition hover:border-[#4FE0C0]/45 hover:text-[#4FE0C0]"
+                  disabled={isDashboardReplying}
+                  onClick={nextStatusLine}
+                  title="다른 대사"
+                  type="button"
+                >
+                  <RefreshCw size={18} />
+                </button>
+              </div>
+
+              {isDashboardQuestion ? (
+                <div className="mt-5 border-t border-white/10 pt-5">
+                  {!isDashboardAnswerOpen && !dashboardResponse ? (
+                    <Button className="min-h-10 px-4" onClick={() => setIsDashboardAnswerOpen(true)}>
+                      <MessageSquare size={18} />
+                      대답하기
+                    </Button>
+                  ) : null}
+
+                  {isDashboardAnswerOpen && !submittedClassAnswer ? (
+                    <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-stretch">
+                      <textarea
+                        id="dashboard-class-answer"
+                        className="min-h-24 resize-y rounded-2xl border border-white/10 bg-[#07111B]/70 px-5 py-4 text-lg leading-8 text-[#EAF2F5] outline-none transition placeholder:text-[#647989] focus:border-[#4FE0C0]/60"
+                        disabled={isDashboardReplying}
+                        maxLength={500}
+                        onChange={(event) => setClassAnswer(event.target.value)}
+                        placeholder="친구들과 이야기한 뒤 우리 반의 대답을 적어 주세요."
+                        value={classAnswer}
+                      />
+                      <Button className="min-w-32" disabled={!classAnswer.trim() || isDashboardReplying} onClick={() => void submitDashboardAnswer()}>
+                        {isDashboardReplying ? <RefreshCw className="animate-spin" size={18} /> : <Send size={18} />}
+                        {isDashboardReplying ? '생각 중' : '대답 보내기'}
+                      </Button>
+                    </div>
+                  ) : null}
+
+                  {submittedClassAnswer ? (
+                    <div className="ml-auto max-w-[90%] rounded-2xl rounded-tr-md bg-[#1E3A54] px-4 py-3 text-lg leading-7 text-[#EAF2F5]">
+                      <p className="mb-1 text-xs font-black text-[#8AA0B0]">우리 반</p>
+                      <p className="whitespace-pre-wrap">{submittedClassAnswer}</p>
+                    </div>
+                  ) : null}
+
+                  {dashboardError ? (
+                    <p className="mt-4 flex items-start gap-2 rounded-2xl border border-[#E0476B]/30 bg-[#E0476B]/10 px-4 py-3 text-sm leading-6 text-[#FFD7DE]">
+                      <AlertTriangle className="mt-0.5 shrink-0" size={17} />
+                      {dashboardError}
+                    </p>
+                  ) : null}
+
+                  {dashboardResponse || isDashboardReplying ? (
+                    <div className="mt-4 max-w-[95%] rounded-2xl rounded-tl-md border border-[#4FE0C0]/20 bg-[#4FE0C0]/10 px-4 py-3 text-lg font-bold leading-8 text-[#D9FFF6]">
+                      <p className="mb-1 text-xs font-black text-[#4FE0C0]">{aemonName}</p>
+                      <p className="whitespace-pre-wrap">{isDashboardReplying ? '우리 반의 대답을 듣고 생각하고 있어...' : dashboardResponse}</p>
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
 
             <div className="mt-5 flex flex-wrap gap-2">
@@ -384,75 +441,6 @@ export function HomePage() {
           </div>
         </div>
 
-        <section className="mt-8 border-t border-white/10 pt-7" aria-labelledby="dashboard-dialogue-title">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="font-data flex items-center gap-2 text-sm text-[#4FE0C0]">
-                <Sparkles size={16} />
-                같이 생각하기
-              </p>
-              <h3 id="dashboard-dialogue-title" className="font-display mt-2 text-3xl text-[#EAF2F5]">우리 반과 {aemonName}의 대화</h3>
-            </div>
-            <Button variant="secondary" disabled={isDashboardReplying} onClick={nextDashboardQuestion}>
-              <RefreshCw size={17} />
-              다른 질문
-            </Button>
-          </div>
-
-          <div className="mt-6 flex items-start gap-3">
-            <div className="shrink-0 pt-5">
-              <AemonAvatar stage={evolutionStage} alignment="none" size={58} animated={false} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="mb-2 text-sm font-black text-[#FFD37A]">{aemonName} 질문</p>
-              <p className="rounded-2xl rounded-tl-md border border-[#FFD37A]/20 bg-[#FFD37A]/10 px-5 py-4 text-xl font-black leading-8 text-[#FFE6AE]">
-                {dashboardQuestion}
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-5 pl-0 sm:pl-[70px]">
-            <label className="mb-2 block text-sm font-black text-[#B7C7D2]" htmlFor="dashboard-class-answer">
-              우리 반 대답
-            </label>
-            <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-stretch">
-              <textarea
-                id="dashboard-class-answer"
-                className="min-h-28 resize-y rounded-2xl border border-white/10 bg-[#07111B]/70 px-5 py-4 text-lg leading-8 text-[#EAF2F5] outline-none transition placeholder:text-[#647989] focus:border-[#4FE0C0]/60"
-                disabled={isDashboardReplying}
-                maxLength={500}
-                onChange={(event) => setClassAnswer(event.target.value)}
-                placeholder="친구들과 이야기한 뒤 우리 반의 대답을 적어 주세요."
-                value={classAnswer}
-              />
-              <Button className="min-w-32" disabled={!classAnswer.trim() || isDashboardReplying} onClick={() => void submitDashboardAnswer()}>
-                {isDashboardReplying ? <RefreshCw className="animate-spin" size={18} /> : <Send size={18} />}
-                {isDashboardReplying ? '생각 중' : '대답 보내기'}
-              </Button>
-            </div>
-          </div>
-
-          {dashboardError ? (
-            <p className="mt-4 flex items-start gap-2 rounded-2xl border border-[#E0476B]/30 bg-[#E0476B]/10 px-4 py-3 text-sm leading-6 text-[#FFD7DE] sm:ml-[70px]">
-              <AlertTriangle className="mt-0.5 shrink-0" size={17} />
-              {dashboardError}
-            </p>
-          ) : null}
-
-          {dashboardResponse || isDashboardReplying ? (
-            <div className="mt-6 flex items-start gap-3">
-              <div className="shrink-0 pt-5">
-                <AemonAvatar stage={evolutionStage} alignment="none" size={58} animated={isDashboardReplying} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="mb-2 text-sm font-black text-[#4FE0C0]">{aemonName} 반응</p>
-                <p className="whitespace-pre-wrap rounded-2xl rounded-tl-md border border-[#4FE0C0]/20 bg-[#4FE0C0]/10 px-5 py-4 text-lg font-bold leading-8 text-[#D9FFF6]">
-                  {isDashboardReplying ? '우리 반의 대답을 듣고 생각하고 있어...' : dashboardResponse}
-                </p>
-              </div>
-            </div>
-          ) : null}
-        </section>
       </Panel>
 
       <section className="mt-8">

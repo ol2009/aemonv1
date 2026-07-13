@@ -1,9 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Check, Heart, Play, QrCode, RefreshCw, Send, Sparkles } from 'lucide-react'
+import { Heart, Play, QrCode, RefreshCw, Send, Sparkles } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
 import { EvolutionScene } from '../components/EvolutionScene'
+import { ProposalAdoptionPanel } from '../components/ProposalAdoptionPanel'
 import { Button, Panel } from '../components/ui'
 import { ValueCardSelectGrid } from '../components/ValueCardSelectGrid'
 import { LESSON2_RISK_KEY, valueCards } from '../data/v2Lessons'
@@ -444,6 +445,7 @@ export function LessonTwoPage() {
   const [selectedProposalId, setSelectedProposalId] = useState('')
   const [message, setMessage] = useState('')
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [isAdopting, setIsAdopting] = useState(false)
   const beforeTestScrollRef = useRef<HTMLDivElement | null>(null)
   const retestScrollRef = useRef<HTMLDivElement | null>(null)
   const dialogueAdvanceRef = useRef<{ key: string; handler: () => void } | null>(null)
@@ -569,26 +571,28 @@ export function LessonTwoPage() {
   }
 
   const adoptSelectedProposal = async () => {
-    if (!selectedProposal) return
+    if (!selectedProposal || isAdopting) return
     const adoptedNo = 1
     const valueCard = selectedProposal.valueCard || '가치'
-    if (canWriteRemote) {
-      try {
+    setIsAdopting(true)
+    setMessage('')
+    try {
+      if (canWriteRemote) {
         await adoptRemoteCodeProposal({ proposalId: selectedProposal.id, adoptedNo, valueCard })
+        adoptProposal(selectedProposal.id, valueCard, adoptedNo)
         const bundle = await fetchRemoteClassBundle(state.classCode)
         mergeClass(bundle)
-        setSelectedProposalId('')
-        setMessage(`가치 코드 No.${adoptedNo}로 채택했습니다. 채택된 코드는 화면에 계속 남습니다.`)
-      } catch (error) {
-        setRemoteStatus({ ok: false, message: (error as Error).message })
-        setMessage(`가치코드 채택에 실패했습니다. 다시 눌러주세요. ${(error as Error).message}`)
+      } else {
+        adoptProposal(selectedProposal.id, valueCard, adoptedNo)
       }
-      return
+      setSelectedProposalId('')
+      setMessage(`가치 코드 No.${adoptedNo}로 채택했습니다. 채택된 코드는 화면에 계속 남습니다.`)
+    } catch (error) {
+      setRemoteStatus({ ok: false, message: (error as Error).message })
+      setMessage(`가치코드 채택에 실패했습니다. 다시 눌러주세요. ${(error as Error).message}`)
+    } finally {
+      setIsAdopting(false)
     }
-
-    adoptProposal(selectedProposal.id, valueCard, adoptedNo)
-    setSelectedProposalId('')
-    setMessage(`가치 코드 No.${adoptedNo}로 채택했습니다. 채택된 코드는 화면에 계속 남습니다.`)
   }
 
   const finishLesson = async () => {
@@ -971,62 +975,16 @@ export function LessonTwoPage() {
               </div>
             </div>
             {message ? <p className="mt-4 rounded-2xl border border-white/10 bg-[#07111B]/55 px-4 py-3 text-sm text-[#B7C7D2]">{message}</p> : null}
-            <div className="mt-6 grid gap-3">
-              {lessonProposals.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0]">아직 발의가 없습니다. 테스트 중이면 다음으로 넘어갈 수 있습니다.</p> : null}
-              {lessonProposals.map((proposal, index) => (
-                <button
-                  key={proposal.id}
-                  className={`rounded-[18px] border p-5 text-left transition ${
-                    firstCode?.sourceProposalId === proposal.id
-                      ? 'border-[#4FE0C0] bg-[#4FE0C0]/10 shadow-[0_0_28px_rgba(79,224,192,.12)]'
-                      : selectedProposal?.id === proposal.id
-                      ? 'border-[#FFD37A] bg-[#FFD37A]/10 shadow-[0_0_28px_rgba(255,211,122,.12)]'
-                      : 'border-white/10 bg-[#07111B]/45 hover:border-[#FFD37A]/40'
-                  }`}
-                  onClick={() => proposal.status === 'pending' && setSelectedProposalId(proposal.id)}
-                  disabled={proposal.status === 'adopted'}
-                  type="button"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0">
-                      <p className="font-data text-xs text-[#4FE0C0]">후보 {index + 1}</p>
-                      <p className="mt-2 text-xl font-black leading-8 text-[#EAF2F5]">{proposal.body}</p>
-                      <p className="mt-1 leading-7 text-[#8AA0B0]">{proposal.reason}</p>
-                      <p className="mt-2 text-sm text-[#8AA0B0]">{proposal.nickname} · {proposal.valueCard || '가치'}</p>
-                    </div>
-                    <div className="flex shrink-0 flex-col items-end gap-2">
-                      <span className="rounded-full bg-[#FFD37A]/15 px-4 py-2 font-black text-[#FFD37A]">좋아요 {proposal.votes.length}</span>
-                      {firstCode?.sourceProposalId === proposal.id ? (
-                        <span className="rounded-full bg-[#4FE0C0]/15 px-3 py-1 text-sm font-black text-[#4FE0C0]">채택 완료</span>
-                      ) : selectedProposal?.id === proposal.id ? (
-                        <span className="rounded-full bg-[#4FE0C0]/15 px-3 py-1 text-sm font-black text-[#4FE0C0]">선택됨</span>
-                      ) : null}
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-            <div className="mt-5 rounded-[18px] border border-[#FFD37A]/25 bg-[#FFD37A]/10 p-5">
-              <p className="font-data text-xs text-[#FFD37A]">채택 미리보기</p>
-              {selectedProposal ? (
-                <>
-                  <p className="mt-2 text-2xl font-black leading-9 text-[#EAF2F5]">가치 코드 No.1 — {selectedProposal.body}</p>
-                  <p className="mt-2 leading-7 text-[#B7C7D2]">{selectedProposal.reason}</p>
-                  <Button className="mt-4 w-full" onClick={() => void adoptSelectedProposal()}>
-                    <Check size={18} />
-                    가치코드 No.1로 채택
-                  </Button>
-                </>
-              ) : firstCode ? (
-                <>
-                  <p className="mt-2 text-2xl font-black leading-9 text-[#EAF2F5]">가치 코드 No.1 — {firstCode.body}</p>
-                  <p className="mt-2 leading-7 text-[#B7C7D2]">{firstCode.reason}</p>
-                  <p className="mt-4 font-black text-[#4FE0C0]">채택 완료 · 이 코드는 화면에서 사라지지 않습니다.</p>
-                </>
-              ) : (
-                <p className="mt-2 text-[#8AA0B0]">선택된 발의가 없습니다.</p>
-              )}
-            </div>
+            <ProposalAdoptionPanel
+              proposals={lessonProposals}
+              adoptedCode={firstCode}
+              selectedProposal={selectedProposal}
+              codeNo={1}
+              fallbackValueCard="가치"
+              isAdopting={isAdopting}
+              onSelect={setSelectedProposalId}
+              onAdopt={() => void adoptSelectedProposal()}
+            />
           </Panel>
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
