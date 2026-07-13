@@ -31,6 +31,7 @@ import { randomUnsafeBlockedAnswer, unsafePromptExamples } from '../lib/lessonTe
 import { useSupabaseUser } from '../lib/useSupabaseUser'
 import { useAutoScrollToBottom } from '../lib/useAutoScrollToBottom'
 import { useV2RemoteSync } from '../lib/useV2RemoteSync'
+import { isStudentLiveView, useLessonLiveSync } from '../lib/useLessonLiveSync'
 import { useV2, type SurveyResponse } from '../state/V2Store'
 
 type LessonStep =
@@ -254,6 +255,8 @@ type DialogueGateContextValue = {
   finishDialogue: (key: string) => void
   registerDialogueAdvance: (key: string, handler: (() => void) | null) => void
   advanceDialogue: () => boolean
+  liveDialoguePart: { sceneKey: string; index: number }
+  setLiveDialoguePart: (value: { sceneKey: string; index: number }) => void
 }
 
 const DialogueGateContext = createContext<DialogueGateContextValue | null>(null)
@@ -272,6 +275,7 @@ function StepControls({
   nextDisabled?: boolean
 }) {
   const dialogueGate = useContext(DialogueGateContext)
+  if (isStudentLiveView()) return null
   const hideNext = Boolean(dialogueGate?.isDialogueWaiting)
   const canAdvanceDialogue = Boolean(dialogueGate?.canAdvanceDialogue)
   const effectiveNextLabel = canAdvanceDialogue ? '다음' : nextLabel
@@ -313,6 +317,7 @@ function useSequencedDialogue(sceneKey: string, parts: string[]) {
   const startDialogue = dialogueGate?.startDialogue
   const finishDialogue = dialogueGate?.finishDialogue
   const registerDialogueAdvance = dialogueGate?.registerDialogueAdvance
+  const setLiveDialoguePart = dialogueGate?.setLiveDialoguePart
   const [partState, setPartState] = useState({ sceneKey, index: 0 })
   const partIndex = partState.sceneKey === sceneKey ? Math.min(partState.index, Math.max(0, parts.length - 1)) : 0
   const activeText = parts[partIndex] ?? ''
@@ -328,6 +333,17 @@ function useSequencedDialogue(sceneKey: string, parts: string[]) {
       return { sceneKey, index: Math.min(parts.length - 1, currentIndex + 1) }
     })
   }, [partIndex, parts.length, sceneKey])
+
+  useEffect(() => {
+    const livePart = dialogueGate?.liveDialoguePart
+    if (!isStudentLiveView() || livePart?.sceneKey !== sceneKey) return
+    setPartState({ sceneKey, index: Math.min(Math.max(0, livePart.index), Math.max(0, parts.length - 1)) })
+  }, [dialogueGate?.liveDialoguePart, parts.length, sceneKey])
+
+  useEffect(() => {
+    if (isStudentLiveView()) return
+    setLiveDialoguePart?.({ sceneKey, index: partIndex })
+  }, [partIndex, sceneKey, setLiveDialoguePart])
 
   useEffect(() => {
     startDialogue?.(activeDialogueKey)
@@ -489,6 +505,7 @@ export function LessonOnePage() {
   const demoScrollRef = useRef<HTMLDivElement | null>(null)
   const dialogueAdvanceRef = useRef<{ key: string; handler: () => void } | null>(null)
   const [dialogueGateState, setDialogueGateState] = useState({ key: '', ready: true, canAdvance: false })
+  const [liveDialoguePart, setLiveDialoguePart] = useState({ sceneKey: '', index: 0 })
   const startDialogue = useCallback((key: string) => {
     setDialogueGateState((current) => (current.key === key && !current.ready && !current.canAdvance ? current : { key, ready: false, canAdvance: false }))
   }, [])
@@ -521,14 +538,39 @@ export function LessonOnePage() {
       finishDialogue,
       registerDialogueAdvance,
       advanceDialogue,
+      liveDialoguePart,
+      setLiveDialoguePart,
     }),
-    [advanceDialogue, dialogueGateState.canAdvance, dialogueGateState.ready, finishDialogue, registerDialogueAdvance, startDialogue],
+    [advanceDialogue, dialogueGateState.canAdvance, dialogueGateState.ready, finishDialogue, liveDialoguePart, registerDialogueAdvance, startDialogue],
   )
 
-  useV2RemoteSync(state.classCode, Boolean(state.classCode))
+  const remoteSyncClassCode = isStudentLiveView() ? new URLSearchParams(window.location.search).get('code') || state.classCode : state.classCode
+  useV2RemoteSync(remoteSyncClassCode, Boolean(remoteSyncClassCode))
   useAutoScrollToBottom(demoScrollRef, demoAnswer, { enabled: Boolean(demoAnswer), followMs: 1800 })
 
   const step = steps[stepIndex]
+  const applyLiveViewState = useCallback((viewState: Record<string, unknown>) => {
+    setDemoAnswer(typeof viewState.demoAnswer === 'string' ? viewState.demoAnswer : '')
+    const demoQuestionValue = typeof viewState.demoQuestion === 'string' ? viewState.demoQuestion : ''
+    if (demoQuestionValue) setDemoQuestion(demoQuestionValue)
+    const sceneKey = typeof viewState.dialogueSceneKey === 'string' ? viewState.dialogueSceneKey : ''
+    const dialogueIndex = Number(viewState.dialoguePartIndex)
+    if (sceneKey && Number.isInteger(dialogueIndex) && dialogueIndex >= 0) setLiveDialoguePart({ sceneKey, index: dialogueIndex })
+  }, [])
+  const liveBoardMode = step === 'survey-qr' ? 'survey' : step === 'name' ? 'name' : step === 'wish' ? 'wish' : null
+  useLessonLiveSync({
+    lessonNo: 1,
+    stepIndex,
+    setStepIndex,
+    boardMode: liveBoardMode,
+    viewState: {
+      demoQuestion,
+      demoAnswer,
+      dialogueSceneKey: liveDialoguePart.sceneKey,
+      dialoguePartIndex: liveDialoguePart.index,
+    },
+    applyViewState: applyLiveViewState,
+  })
   const surveyBoardUrl = useMemo(() => absoluteUrl(`/board?code=${encodeURIComponent(state.classCode)}&mode=survey`), [state.classCode])
   const nameBoardUrl = useMemo(() => absoluteUrl(`/board?code=${encodeURIComponent(state.classCode)}&mode=name`), [state.classCode])
   const wishBoardUrl = useMemo(() => absoluteUrl(`/board?code=${encodeURIComponent(state.classCode)}&mode=wish`), [state.classCode])

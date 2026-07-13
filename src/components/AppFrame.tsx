@@ -1,7 +1,10 @@
+import { useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { ClipboardList, Home, LogIn, LogOut, MessageSquare, MessageSquareText } from 'lucide-react'
+import { ClipboardList, Home, LogIn, LogOut, MessageSquare, MessageSquareText, QrCode, X } from 'lucide-react'
 import { Button } from './ui'
+import { absoluteUrl } from '../lib/siteUrl'
 import { signOut, useSupabaseUser } from '../lib/useSupabaseUser'
+import { useV2 } from '../state/V2Store'
 
 const navItems = [
   { path: '/home', label: '학급 홈', icon: Home },
@@ -13,8 +16,16 @@ const navItems = [
 export function AppFrame() {
   const navigate = useNavigate()
   const location = useLocation()
+  const { state } = useV2()
+  const [isLiveQrOpen, setIsLiveQrOpen] = useState(false)
   const { user, isConfigured } = useSupabaseUser()
-  const isImmersive = false
+  const searchParams = new URLSearchParams(location.search)
+  const isStudentLive = searchParams.get('live') === 'student' || location.pathname === '/live'
+  const isInteractiveStudentScreen = location.pathname === '/board' || (location.pathname === '/lesson/5' && searchParams.get('role') === 'student')
+  const isImmersive = isStudentLive
+  const showLiveShare = location.pathname.startsWith('/lesson/') && !isStudentLive && Boolean(state.classCode)
+  const liveUrl = absoluteUrl(`/live?code=${encodeURIComponent(state.classCode)}`)
+  const liveQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=280x280&margin=12&data=${encodeURIComponent(liveUrl)}`
   const appNavPaths = ['/home', '/codes', '/board', '/talk', '/dex', '/graduation', '/lesson/1']
   const showAppNav = Boolean(user && appNavPaths.includes(location.pathname))
   const showAuthControls = location.pathname !== '/board'
@@ -71,9 +82,38 @@ export function AppFrame() {
             ) : null}
           </header>
         ) : null}
-        <main>
+        {showLiveShare ? (
+          <button
+            className="fixed right-5 top-5 z-40 inline-flex min-h-12 items-center gap-2 rounded-lg border border-[#4FE0C0]/35 bg-[#0D2232]/95 px-4 font-black text-[#EAF2F5] shadow-xl"
+            type="button"
+            onClick={() => setIsLiveQrOpen(true)}
+          >
+            <QrCode size={20} className="text-[#4FE0C0]" />
+            학생 화면 QR
+          </button>
+        ) : null}
+        {isStudentLive && location.pathname !== '/live' ? (
+          <div className="fixed right-3 top-3 z-50 rounded-lg border border-[#4FE0C0]/30 bg-[#07111B]/90 px-3 py-2 text-xs font-black text-[#4FE0C0] shadow-lg">
+            선생님 화면과 연결됨
+          </div>
+        ) : null}
+        <main className={isStudentLive && !isInteractiveStudentScreen && location.pathname !== '/live' ? 'pointer-events-none select-none' : ''}>
           <Outlet />
         </main>
+        {isLiveQrOpen ? (
+          <div className="fixed inset-0 z-[80] flex items-center justify-center bg-[#02070D]/85 p-5" role="dialog" aria-modal="true" aria-label="학생 화면 QR">
+            <div className="relative w-full max-w-lg rounded-lg border border-white/15 bg-[#10283B] p-6 text-center shadow-2xl">
+              <button className="absolute right-4 top-4 text-[#8AA0B0] hover:text-white" type="button" onClick={() => setIsLiveQrOpen(false)} aria-label="닫기">
+                <X size={24} />
+              </button>
+              <p className="font-data text-xs text-[#4FE0C0]">한 번만 입장</p>
+              <h2 className="font-display mt-2 text-4xl text-[#EAF2F5]">학생 화면 연결</h2>
+              <p className="mt-3 leading-7 text-[#B7C7D2]">학생은 이 QR로 한 번 입장합니다. 이후 교사가 넘기는 장면과 게시판을 자동으로 따라갑니다.</p>
+              <img className="mx-auto mt-5 w-64 rounded-lg bg-white p-3" src={liveQrUrl} alt="학생 화면 연결 QR" />
+              <p className="font-data mt-4 break-all text-xs leading-5 text-[#8AA0B0]">{liveUrl}</p>
+            </div>
+          </div>
+        ) : null}
       </div>
     </div>
   )

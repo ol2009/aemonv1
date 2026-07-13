@@ -30,6 +30,7 @@ import {
   voteRemoteCodeProposal,
 } from '../lib/v2Remote'
 import { useV2RemoteSync } from '../lib/useV2RemoteSync'
+import { useBoardLiveSync } from '../lib/useLessonLiveSync'
 import { useV2 } from '../state/V2Store'
 
 type BoardTopic = 'survey' | 'risk' | 'name' | 'wish' | 'code' | 'honesty' | 'code2' | 'fairness' | 'code3'
@@ -272,6 +273,7 @@ export function BoardPage() {
   const savedHonestyResponse = sessionNickname ? honestyResponses.find((response) => response.nickname === sessionNickname) : null
   const savedFairnessResponse = sessionNickname ? fairnessResponses.find((response) => response.nickname === sessionNickname) : null
   const canWriteRemote = Boolean(state.classId && isRemoteReady())
+  useBoardLiveSync(queryCode || state.classCode)
   useV2RemoteSync(state.classCode, Boolean(state.classCode && (session || isTeacherBoard)))
 
   useEffect(() => {

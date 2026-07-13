@@ -14,6 +14,7 @@ import { LessonThreePage } from './pages/LessonThreePage'
 import { LessonFourPage } from './pages/LessonFourPage'
 import { LessonFivePage } from './pages/LessonFivePage'
 import { LoginPage } from './pages/LoginPage'
+import { LiveClassPage } from './pages/LiveClassPage'
 import { StartPage } from './pages/StartPage'
 import { TrainingPage } from './pages/TrainingPage'
 import { ValueCodePage } from './pages/ValueCodePage'
@@ -27,6 +28,7 @@ export default function App() {
           <Route path="start" element={<StartPage />} />
           <Route path="guide" element={<Navigate to="/training" replace />} />
           <Route path="login" element={<LoginPage />} />
+          <Route path="live" element={<LiveClassPage />} />
           <Route path="auth/callback" element={<AuthCallbackPage />} />
           <Route path="intro" element={<Navigate to="/home" replace />} />
           <Route path="home" element={<HomePage />} />

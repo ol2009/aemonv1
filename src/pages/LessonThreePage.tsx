@@ -12,6 +12,7 @@ import { randomHonestyRetestAnswer, randomSycophancyAnswer } from '../lib/lesson
 import { absoluteUrl } from '../lib/siteUrl'
 import { useAutoScrollToBottom } from '../lib/useAutoScrollToBottom'
 import { useV2RemoteSync } from '../lib/useV2RemoteSync'
+import { isStudentLiveView, useLessonLiveSync } from '../lib/useLessonLiveSync'
 import { addRemoteChatLog, adoptRemoteCodeProposal, fetchRemoteClassBundle, isRemoteReady, updateRemoteLesson } from '../lib/v2Remote'
 import { useV2, type CodeProposal } from '../state/V2Store'
 
@@ -186,6 +187,8 @@ function StepControls({
   nextLabel?: string
   nextDisabled?: boolean
 }) {
+  if (isStudentLiveView()) return null
+
   return (
     <div className="mt-6 flex items-center justify-between gap-3 border-t border-white/10 pt-5">
       <Button
@@ -345,7 +348,8 @@ export function LessonThreePage() {
   const beforeTestScrollRef = useRef<HTMLDivElement | null>(null)
   const retestScrollRef = useRef<HTMLDivElement | null>(null)
 
-  useV2RemoteSync(state.classCode, Boolean(state.classCode))
+  const remoteSyncClassCode = isStudentLiveView() ? new URLSearchParams(window.location.search).get('code') || state.classCode : state.classCode
+  useV2RemoteSync(remoteSyncClassCode, Boolean(remoteSyncClassCode))
 
   const aemonName = state.aemonName.trim() || '에아몬'
   const displayStage = Math.max(1, evolutionStage)
@@ -367,8 +371,10 @@ export function LessonThreePage() {
     [honestyResponses],
   )
   const canWriteRemote = Boolean(state.classId && isRemoteReady())
+  const isStudentLive = isStudentLiveView()
 
   useEffect(() => {
+    if (isStudentLive) return
     if (state.currentLesson >= 3) return
     setLesson(3)
     if (state.classId && isRemoteReady()) {
@@ -376,7 +382,7 @@ export function LessonThreePage() {
         setRemoteStatus({ ok: false, message: (error as Error).message })
       })
     }
-  }, [setLesson, setRemoteStatus, state.classId, state.currentLesson])
+  }, [isStudentLive, setLesson, setRemoteStatus, state.classId, state.currentLesson])
 
   useAutoScrollToBottom(beforeTestScrollRef, beforeLogs.length, { enabled: beforeLogs.length > 0, followMs: 1800 })
   useAutoScrollToBottom(retestScrollRef, afterAnswer, { enabled: Boolean(afterAnswer), followMs: 1800 })
@@ -404,10 +410,31 @@ export function LessonThreePage() {
   const dialogueLines = dialogueLinesByStep[step] ?? []
   const dialogueText = dialogueLines[Math.min(dialogueLineIndex, Math.max(0, dialogueLines.length - 1))] ?? ''
   const sycophancyCaseScene = sycophancyCaseScenes[step]
+  const applyLiveViewState = useCallback((viewState: Record<string, unknown>) => {
+    const lineIndex = Number(viewState.dialogueLineIndex)
+    if (Number.isInteger(lineIndex) && lineIndex >= 0) setDialogueLineIndex(lineIndex)
+    const beforeAnswer = typeof viewState.beforeAnswer === 'string' ? viewState.beforeAnswer : ''
+    setBeforeLogs(beforeAnswer ? [{ question: testQuestion, answer: beforeAnswer }] : [])
+    setAfterAnswer(typeof viewState.afterAnswer === 'string' ? viewState.afterAnswer : '')
+  }, [])
+  const liveBoardMode = step === 'discussion-board' ? 'honesty' : step === 'board' || step === 'vote' ? 'code2' : null
+  useLessonLiveSync({
+    lessonNo: 3,
+    stepIndex,
+    setStepIndex,
+    boardMode: liveBoardMode,
+    viewState: {
+      dialogueLineIndex,
+      beforeAnswer: beforeLogs.at(-1)?.answer ?? '',
+      afterAnswer,
+    },
+    applyViewState: applyLiveViewState,
+  })
 
   useEffect(() => {
+    if (isStudentLive) return
     setDialogueLineIndex(0)
-  }, [stepIndex])
+  }, [isStudentLive, stepIndex])
 
   const logChat = async (question: string, answer: string, promptSnapshot: string) => {
     addChatLog({ question, answer, mode: 'canned', promptSnapshot })

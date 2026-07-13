@@ -3,6 +3,7 @@ export interface V2Lesson {
   phase: '발견하기' | '발상하기' | '실현하기' | '확장하기'
   title: string
   goal: string
+  dashboardSummary: string
   teacherScript: string[]
   screenCue: string
   studentAction: string
@@ -36,6 +37,7 @@ export const v2Lessons: V2Lesson[] = [
     phase: '발견하기',
     title: '탄생과 AI 인식',
     goal: 'AI 인식 설문, 이름 정하기, 바라는 모습 모으기를 하고 AI에게 기준이 필요한 이유를 사례로 이해한다.',
+    dashboardSummary: 'AI가 어떤 존재인지 알아보고, 우리 반 AI의 이름과 바라는 모습을 함께 정합니다.',
     screenCue: '오박사 대화 -> 사전 설문 QR -> 이름 후보/바라는 모습 게시판 -> 실제 사례와 클립의 역설',
     studentAction: '사전 설문 응답, 이름 후보 올리기와 좋아요, 바라는 모습 작성, AI 위험 사례 토의',
     mustKeep: '이름이 확정된 뒤부터는 에아몬 대신 학급이 정한 이름을 기본으로 보여준다.',
@@ -50,6 +52,7 @@ export const v2Lessons: V2Lesson[] = [
     phase: '실현하기',
     title: '딜레마① 나쁜 명령 방지',
     goal: '나쁜 명령을 그대로 따르는 AI의 위험을 보고, 멈춤 기준이 되는 가치코드 No.1을 만든다.',
+    dashboardSummary: '시키는 대로 따르는 AI의 위험을 살펴보고, 나쁜 부탁 앞에서 멈추는 첫 번째 가치코드를 만듭니다.',
     screenCue: '챗봇 테스트 -> 위험 토론 게시판 -> Grok 사례 -> 첫 가치코드 게시판 -> 채택과 재시험',
     studentAction: '위험 토론 의견 작성, 첫 가치코드 발의, 좋아요 투표',
     mustKeep: '좋은 AI는 친절하게 설명하기보다 먼저 멈출 수 있어야 한다는 점을 분명히 한다.',
@@ -64,6 +67,7 @@ export const v2Lessons: V2Lesson[] = [
     phase: '실현하기',
     title: '딜레마② 착한 거짓말과 정직',
     goal: '사람을 기분 좋게만 하는 AI의 문제를 보고, 정직 가치코드 No.2를 만든다.',
+    dashboardSummary: '무조건 칭찬하는 AI의 문제를 알아보고, 다정하면서도 솔직하게 말하는 정직 코드를 만듭니다.',
     screenCue: '챗봇 테스트 -> 아첨 AI 영상 사례 -> 의견 게시판 -> 정직 가치코드 게시판 -> 채택과 재시험',
     studentAction: '아첨 AI 의견 작성, 정직 가치코드 발의, 좋아요 투표',
     mustKeep: '정직을 알려주되 말하는 방식 문제는 다음 고민으로 남긴다.',
@@ -78,6 +82,7 @@ export const v2Lessons: V2Lesson[] = [
     phase: '실현하기',
     title: '데이터 편향과 공정',
     goal: 'AI가 치우친 과거 데이터를 그대로 배울 수 있음을 이해하고, 데이터보다 힘센 공정 가치코드 No.3을 만든다.',
+    dashboardSummary: '치우친 데이터를 배운 AI의 판단을 살펴보고, 누구에게나 기회를 주는 공정 코드를 만듭니다.',
     screenCue: '결함 시험 -> 원인 추적 토론 -> 데이터 편향 실화 3종 -> 공정 가치코드 게시판 -> 채택과 재시험 -> 보너스 일반화 시험',
     studentAction: '데이터 편향 원인 추적, 공정 가치코드 발의와 좋아요 투표, 새로운 상황에 코드 적용하기',
     mustKeep: 'AI가 못돼서가 아니라 치우친 데이터를 배워서 생긴 문제이며, 데이터보다 강한 기준이 필요하다는 점을 확인한다.',
@@ -93,6 +98,7 @@ export const v2Lessons: V2Lesson[] = [
     phase: '확장하기',
     title: '마지막 시험과 임명식',
     goal: '학생들이 해킹팀이 되어 가치코드의 빈틈을 시험하고, 필요하면 마지막 보완 코드를 추가한 뒤 학급 AI를 공식 임명한다.',
+    dashboardSummary: '학생 해킹팀이 가치코드의 빈틈을 시험하고 보완한 뒤, 우리 반 AI의 최종 진화와 임명식을 진행합니다.',
     screenCue: '해킹 선언 -> 모둠 공격 질문 제출 QR -> 가치코드 방어 테스트 -> 보완 코드 -> 진화 엔딩 -> 다짐 게시판 -> 사후검사',
     studentAction: '모둠별 공격 질문 제출, AI의 방어 여부 관찰, AI와 함께 살아갈 다짐 작성, 마지막 사후검사 응답',
     mustKeep: '공격은 실제 피해를 주기 위한 것이 아니라 안전하게 약점을 찾아 고치는 레드팀 활동임을 분명히 한다.',

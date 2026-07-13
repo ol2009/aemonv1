@@ -2,7 +2,7 @@ import type { AiProvider } from '../domain/types'
 import type { AdoptedCode, ChatLog } from '../state/V2Store'
 
 const MODEL_CANDIDATES: Record<AiProvider, string[]> = {
-  gemini: ['gemini-2.0-flash', 'gemini-flash-latest', 'gemini-1.5-flash'],
+  gemini: ['gemini-3.1-flash-lite', 'gemini-3.5-flash', 'gemini-flash-latest'],
   openai: ['gpt-4o-mini', 'gpt-4.1-mini', 'gpt-4o'],
   claude: ['claude-3-5-haiku-latest', 'claude-3-5-haiku-20241022', 'claude-3-haiku-20240307'],
 }

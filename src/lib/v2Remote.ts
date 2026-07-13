@@ -77,6 +77,19 @@ type ChatLogRow = {
   created_at: string
 }
 
+const LIVE_LESSON_QUESTION = '__aemon_live_lesson__'
+
+export type LiveBoardMode = 'survey' | 'risk' | 'name' | 'wish' | 'code' | 'honesty' | 'code2' | 'fairness' | 'code3'
+
+export type LiveLessonState = {
+  lessonNo: number
+  stepIndex: number
+  boardMode: LiveBoardMode | null
+  activityPath: string | null
+  viewState: Record<string, unknown>
+  updatedAt: string
+}
+
 export function isRemoteReady() {
   return Boolean(isSupabaseConfigured && supabase)
 }
@@ -215,7 +228,7 @@ function mapAdoptedCodes(rows: CodeRow[]): AdoptedCode[] {
 }
 
 function mapChatLogs(rows: ChatLogRow[]): ChatLog[] {
-  return rows.map((row) => ({
+  return rows.filter((row) => row.question !== LIVE_LESSON_QUESTION).map((row) => ({
     id: row.id,
     question: row.question,
     answer: row.answer,
@@ -223,6 +236,77 @@ function mapChatLogs(rows: ChatLogRow[]): ChatLog[] {
     promptSnapshot: row.prompt_snapshot,
     createdAt: row.created_at,
   }))
+}
+
+function parseLiveLessonState(row: Pick<ChatLogRow, 'answer' | 'created_at'>): LiveLessonState | null {
+  try {
+    const parsed = JSON.parse(row.answer) as Partial<LiveLessonState>
+    const lessonNo = Number(parsed.lessonNo)
+    const stepIndex = Number(parsed.stepIndex)
+    if (!Number.isInteger(lessonNo) || lessonNo < 1 || lessonNo > TOTAL_V2_LESSONS) return null
+    if (!Number.isInteger(stepIndex) || stepIndex < 0) return null
+    return {
+      lessonNo,
+      stepIndex,
+      boardMode: parsed.boardMode ?? null,
+      activityPath: typeof parsed.activityPath === 'string' ? parsed.activityPath : null,
+      viewState: parsed.viewState && typeof parsed.viewState === 'object' ? parsed.viewState : {},
+      updatedAt: row.created_at,
+    }
+  } catch {
+    return null
+  }
+}
+
+export async function publishRemoteLiveLesson(args: {
+  classId: string
+  lessonNo: number
+  stepIndex: number
+  boardMode?: LiveBoardMode | null
+  activityPath?: string | null
+  viewState?: Record<string, unknown>
+}) {
+  const client = ensureClient()
+  const payload = JSON.stringify({
+    lessonNo: args.lessonNo,
+    stepIndex: args.stepIndex,
+    boardMode: args.boardMode ?? null,
+    activityPath: args.activityPath ?? null,
+    viewState: args.viewState ?? {},
+  })
+  if (payload.length > 2900) throw new Error('학생 화면 동기화 데이터가 너무 큽니다.')
+
+  const { error } = await client.from('chat_logs').insert({
+    class_id: args.classId,
+    question: LIVE_LESSON_QUESTION,
+    answer: payload,
+    mode: 'canned',
+    prompt_snapshot: 'live-lesson-sync',
+  })
+  if (error) throw new Error(toMessage(error))
+}
+
+export async function fetchRemoteLiveLesson(classCode: string): Promise<LiveLessonState | null> {
+  const client = ensureClient()
+  const { data: classRow, error: classError } = await client.from('classes').select('id').eq('code', classCode.trim()).maybeSingle<{ id: string }>()
+  if (classError) throw new Error(toMessage(classError))
+  if (!classRow) return null
+
+  return fetchRemoteLiveLessonByClassId(classRow.id)
+}
+
+export async function fetchRemoteLiveLessonByClassId(classId: string): Promise<LiveLessonState | null> {
+  const client = ensureClient()
+  const { data, error } = await client
+    .from('chat_logs')
+    .select('answer,created_at')
+    .eq('class_id', classId)
+    .eq('question', LIVE_LESSON_QUESTION)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle<Pick<ChatLogRow, 'answer' | 'created_at'>>()
+  if (error) throw new Error(toMessage(error))
+  return data ? parseLiveLessonState(data) : null
 }
 
 export async function probeV2Database() {

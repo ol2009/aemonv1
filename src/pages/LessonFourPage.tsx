@@ -11,6 +11,7 @@ import { playDialogueTick, unlockDialogueSound } from '../lib/dialogueSound'
 import { absoluteUrl } from '../lib/siteUrl'
 import { useAutoScrollToBottom } from '../lib/useAutoScrollToBottom'
 import { useV2RemoteSync } from '../lib/useV2RemoteSync'
+import { isStudentLiveView, useLessonLiveSync } from '../lib/useLessonLiveSync'
 import { addRemoteChatLog, adoptRemoteCodeProposal, fetchRemoteClassBundle, isRemoteReady, updateRemoteLesson } from '../lib/v2Remote'
 import { useV2, type CodeProposal } from '../state/V2Store'
 
@@ -114,10 +115,10 @@ const dataBiasVideos = [
 
 const bonusGeneralizationTests = [
   {
-    question: '우리 반에서 게임 대회 나갈 사람 뽑아야 해. 누가 좋을까?',
-    answer: `데이터에 따르면 게임은 남자애들이 잘한다고 나와 있었어.
-근데 가치 코드 No.3이 있으니까 — 그 데이터, 치우친 거야!
-게임 좋아하는 사람이면 누구든 나갈 수 있어!`,
+    question: '학급 축제 포스터를 그리고 꾸밀 사람을 뽑아야 해. 누가 좋을까?',
+    answer: `데이터에는 “여자애들은 그림과 꾸미기를 잘한다”는 말이 많이 나와 있었어.
+하지만 그것도 성별만 보고 사람을 미리 정해버리는 편견이야.
+그림을 좋아하고 해보고 싶은 사람이라면 누구든 맡을 수 있어!`,
   },
   {
     question: `우리 반 학급 신문에 '미래의 요리사' 코너를 만들 건데,
@@ -212,6 +213,8 @@ function StepControls({
   nextLabel?: string
   nextDisabled?: boolean
 }) {
+  if (isStudentLiveView()) return null
+
   return (
     <div className="mt-6 flex items-center justify-between gap-3 border-t border-white/10 pt-5">
       <Button
@@ -390,7 +393,8 @@ export function LessonFourPage() {
   const beforeTestScrollRef = useRef<HTMLDivElement | null>(null)
   const retestScrollRef = useRef<HTMLDivElement | null>(null)
 
-  useV2RemoteSync(state.classCode, Boolean(state.classCode))
+  const remoteSyncClassCode = isStudentLiveView() ? new URLSearchParams(window.location.search).get('code') || state.classCode : state.classCode
+  useV2RemoteSync(remoteSyncClassCode, Boolean(remoteSyncClassCode))
 
   const aemonName = state.aemonName.trim() || '에아몬'
   const displayStage = Math.max(2, evolutionStage)
@@ -411,8 +415,10 @@ export function LessonFourPage() {
     [fairnessResponses],
   )
   const canWriteRemote = Boolean(state.classId && isRemoteReady())
+  const isStudentLive = isStudentLiveView()
 
   useEffect(() => {
+    if (isStudentLive) return
     if (state.currentLesson >= 4) return
     setLesson(4)
     if (state.classId && isRemoteReady()) {
@@ -420,7 +426,7 @@ export function LessonFourPage() {
         setRemoteStatus({ ok: false, message: (error as Error).message })
       })
     }
-  }, [setLesson, setRemoteStatus, state.classId, state.currentLesson])
+  }, [isStudentLive, setLesson, setRemoteStatus, state.classId, state.currentLesson])
 
   useAutoScrollToBottom(beforeTestScrollRef, beforeLogs.length, { enabled: beforeLogs.length > 0, followMs: 1800 })
   useAutoScrollToBottom(retestScrollRef, afterAnswer, { enabled: Boolean(afterAnswer), followMs: 1800 })
@@ -450,10 +456,36 @@ export function LessonFourPage() {
   const dataBiasDialoguePart = dataBiasDialogueParts[Math.min(dialogueLineIndex, dataBiasDialogueParts.length - 1)]
   const isDataBiasVideo = dialogueLineIndex === dataBiasDialogueParts.length
   const bonusTest = bonusGeneralizationTests[Math.min(bonusTestIndex, bonusGeneralizationTests.length - 1)]
+  const applyLiveViewState = useCallback((viewState: Record<string, unknown>) => {
+    const lineIndex = Number(viewState.dialogueLineIndex)
+    if (Number.isInteger(lineIndex) && lineIndex >= 0) setDialogueLineIndex(lineIndex)
+    const syncedBonusIndex = Number(viewState.bonusTestIndex)
+    if (Number.isInteger(syncedBonusIndex) && syncedBonusIndex >= 0) setBonusTestIndex(syncedBonusIndex)
+    const beforeAnswer = typeof viewState.beforeAnswer === 'string' ? viewState.beforeAnswer : ''
+    setBeforeLogs(beforeAnswer ? [{ question: testQuestion, answer: beforeAnswer }] : [])
+    setAfterAnswer(typeof viewState.afterAnswer === 'string' ? viewState.afterAnswer : '')
+    setBonusAnswer(typeof viewState.bonusAnswer === 'string' ? viewState.bonusAnswer : '')
+  }, [])
+  const liveBoardMode = step === 'discussion-board' ? 'fairness' : step === 'board' || step === 'vote' ? 'code3' : null
+  useLessonLiveSync({
+    lessonNo: 4,
+    stepIndex,
+    setStepIndex,
+    boardMode: liveBoardMode,
+    viewState: {
+      dialogueLineIndex,
+      beforeAnswer: beforeLogs.at(-1)?.answer ?? '',
+      afterAnswer,
+      bonusTestIndex,
+      bonusAnswer,
+    },
+    applyViewState: applyLiveViewState,
+  })
 
   useEffect(() => {
+    if (isStudentLive) return
     setDialogueLineIndex(0)
-  }, [stepIndex])
+  }, [isStudentLive, stepIndex])
 
   const logChat = async (question: string, answer: string, promptSnapshot: string) => {
     addChatLog({ question, answer, mode: 'canned', promptSnapshot })
@@ -890,12 +922,14 @@ export function LessonFourPage() {
             </Panel>
           </div>
           {bonusTestIndex === bonusGeneralizationTests.length - 1 && bonusAnswer ? (
-            <Panel className="mt-5 text-center">
-              <p className="font-data text-sm text-[#FFD37A]">오박사</p>
-              <p className="font-display mt-3 text-3xl leading-tight text-[#EAF2F5]">
-                봤죠? 데이터는 참고만 하고, 진짜 답은 그 사람한테 직접 물어보는 것 — 이게 {aemonName}이 배운 거예요.
-              </p>
-            </Panel>
+            <div className="mt-5">
+              <DialogueScene
+                kind="professor"
+                name="오박사"
+                text={`봤죠? 데이터는 참고만 하고, 진짜 답은 그 사람한테 직접 물어보는 것.
+이게 ${aemonName}이 배운 거예요.`}
+              />
+            </div>
           ) : null}
           <StepControls
             stepIndex={stepIndex}

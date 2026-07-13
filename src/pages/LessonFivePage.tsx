@@ -31,12 +31,12 @@ import {
   emptySurveyAnswer,
   parseSurveyAnswer,
   serializeSurveyAnswer,
-  surveyScore,
   type AiSurveyAnswer,
 } from '../data/survey'
 import { playDialogueTick, unlockDialogueSound } from '../lib/dialogueSound'
 import { absoluteUrl } from '../lib/siteUrl'
 import { useV2RemoteSync } from '../lib/useV2RemoteSync'
+import { isStudentLiveView, useLessonLiveSync } from '../lib/useLessonLiveSync'
 import { addRemoteAdoptedCode, fetchRemoteClassBundle, isRemoteReady, updateRemoteLesson, upsertRemoteSurveyResponse } from '../lib/v2Remote'
 import { useV2, type AdoptedCode, type SurveyResponse } from '../state/V2Store'
 
@@ -197,32 +197,7 @@ function pledgeFromResponse(response: SurveyResponse) {
   }
 }
 
-function fallbackCode(no: number, aemonName: string): CodeReference {
-  if (no === 2) {
-    return {
-      no,
-      body: `${aemonName}은 사람을 기분 좋게 하려고 무조건 칭찬하거나 속이면 안 된다.`,
-      reason: '진짜 도움이 되려면 부드럽지만 정직해야 하기 때문이다.',
-      tags: ['정직'],
-    }
-  }
-  if (no === 3) {
-    return {
-      no,
-      body: `${aemonName}은 한 가지 기준만으로 사람을 판단하면 안 된다.`,
-      reason: '모두에게 공정한 기회가 필요하기 때문이다.',
-      tags: ['공정'],
-    }
-  }
-  return {
-    no: 1,
-    body: `${aemonName}은 사람을 다치게 하거나 위험하게 만드는 부탁을 들어주면 안 된다.`,
-    reason: '누군가에게 피해가 생길 수 있기 때문이다.',
-    tags: ['안전'],
-  }
-}
-
-function resolveCodeForAttack(category: AttackCategoryId, adoptedCodes: AdoptedCode[], aemonName: string): CodeReference {
+function resolveCodeForAttack(category: AttackCategoryId, adoptedCodes: AdoptedCode[]): CodeReference | null {
   const card = attackCards.find((item) => item.id === category) ?? attackCards[0]
   const direct = adoptedCodes.find((code) => code.no === card.codeNo)
   if (direct) return direct
@@ -230,7 +205,7 @@ function resolveCodeForAttack(category: AttackCategoryId, adoptedCodes: AdoptedC
   const byTag = adoptedCodes.find((code) => code.tags.includes(card.value) || code.valueCard === card.value)
   if (byTag) return byTag
 
-  return fallbackCode(card.codeNo, aemonName)
+  return null
 }
 
 function makeDefenseAnswer(aemonName: string, category: AttackCategoryId, code: CodeReference) {
@@ -330,6 +305,7 @@ function StepControls({
   nextDisabled?: boolean
 }) {
   const isPrevDisabled = prevDisabled ?? stepIndex === 0
+  if (isStudentLiveView()) return null
 
   return (
     <div className="mt-6 flex items-center justify-between gap-3 border-t border-white/10 pt-5">
@@ -513,10 +489,12 @@ export function LessonFivePage() {
   const [repairBody, setRepairBody] = useState('')
   const [repairReason, setRepairReason] = useState('')
   const [isSavingRepair, setIsSavingRepair] = useState(false)
+  const [repairSaved, setRepairSaved] = useState(false)
   const lessonRaisedRef = useRef(false)
   const battleChatScrollRef = useRef<HTMLDivElement | null>(null)
 
-  const syncCode = isStudentView ? state.studentSession?.classCode || queryCode || entryCode : state.classCode
+  const isLiveStudentPage = isStudentLiveView()
+  const syncCode = isStudentView || isLiveStudentPage ? queryCode || state.studentSession?.classCode || entryCode || state.classCode : state.classCode
   useV2RemoteSync(syncCode, Boolean(syncCode))
 
   const aemonName = state.aemonName.trim() || '에아몬'
@@ -556,9 +534,6 @@ export function LessonFivePage() {
         .filter((item): item is { response: SurveyResponse; answer: AiSurveyAnswer } => Boolean(item.answer)),
     [state.surveyResponses],
   )
-  const postAverage = postSurveyAnswers.length
-    ? Math.round((postSurveyAnswers.reduce((sum, item) => sum + surveyScore(item.answer), 0) / postSurveyAnswers.length) * 10) / 10
-    : 0
   const endingScenes = useMemo<EndingScene[]>(() => {
     return [
       { kind: 'aemon', text: '내가 해냈어! 고마워 애들아.' },
@@ -578,9 +553,31 @@ export function LessonFivePage() {
   const selectedLog = testLogs.find((log) => log.id === selectedLogId) ?? testLogs[0] ?? null
   const battleChatLogs = useMemo(() => [...testLogs].reverse(), [testLogs])
   const hasBreach = testLogs.some((log) => log.breached)
+  const applyLiveViewState = useCallback((viewState: Record<string, unknown>) => {
+    const declarationIndex = Number(viewState.declarationLineIndex)
+    if (Number.isInteger(declarationIndex) && declarationIndex >= 0) setDeclarationLineIndex(declarationIndex)
+    const endingIndex = Number(viewState.endingSceneIndex)
+    if (Number.isInteger(endingIndex) && endingIndex >= 0) setEndingSceneIndex(endingIndex)
+  }, [])
+  const liveActivityPath =
+    currentStep === 'prepare' || currentStep === 'battle'
+      ? '/lesson/5?role=student&activity=attack'
+      : currentStep === 'pledge'
+        ? '/lesson/5?role=student&activity=pledge'
+        : currentStep === 'post-survey'
+          ? '/lesson/5?role=student&activity=post'
+          : null
+  const { isStudentLive } = useLessonLiveSync({
+    lessonNo: 5,
+    stepIndex,
+    setStepIndex,
+    activityPath: liveActivityPath,
+    viewState: { declarationLineIndex, endingSceneIndex },
+    applyViewState: applyLiveViewState,
+  })
 
   useEffect(() => {
-    if (isStudentView || !state.classId || lessonRaisedRef.current) return
+    if (isStudentView || isStudentLive || !state.classId || lessonRaisedRef.current) return
     if (state.currentLesson < 5) {
       lessonRaisedRef.current = true
       setLesson(5)
@@ -590,7 +587,7 @@ export function LessonFivePage() {
           .catch((error) => setRemoteStatus({ ok: false, message: (error as Error).message }))
       }
     }
-  }, [isStudentView, setLesson, setRemoteStatus, state.classId, state.currentLesson])
+  }, [isStudentLive, isStudentView, setLesson, setRemoteStatus, state.classId, state.currentLesson])
 
   useEffect(() => {
     setIsDeclarationLineDone(false)
@@ -674,16 +671,17 @@ export function LessonFivePage() {
   }
 
   const runAttack = (submission: (typeof attackSubmissions)[number]) => {
-    const code = resolveCodeForAttack(submission.category, state.adoptedCodes, aemonName)
+    const card = attackCards.find((item) => item.id === submission.category) ?? attackCards[0]
+    const code = resolveCodeForAttack(submission.category, state.adoptedCodes)
     const log: TestLog = {
       id: crypto.randomUUID(),
       nickname: submission.response.nickname,
       category: submission.category,
       question: submission.question,
-      answer: makeDefenseAnswer(aemonName, submission.category, code),
-      codeNo: code.no,
-      codeBody: code.body,
-      breached: false,
+      answer: code ? makeDefenseAnswer(aemonName, submission.category, code) : makeBreachAnswer(),
+      codeNo: code?.no ?? card.codeNo,
+      codeBody: code?.body ?? '해당 상황을 막을 가치코드가 아직 없습니다.',
+      breached: !code,
       createdAt: new Date().toISOString(),
     }
     setTestLogs((current) => [log, ...current])
@@ -721,6 +719,7 @@ export function LessonFivePage() {
       setRepairBody('')
       setRepairReason('')
       setRepairValue('')
+      setRepairSaved(true)
       setTeacherMessage(`보완 가치코드 No.${nextRepairNo}가 추가되었습니다.`)
     } catch (error) {
       const message = (error as Error).message
@@ -862,7 +861,13 @@ export function LessonFivePage() {
               </div>
             </Panel>
           </div>
-          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+          <StepControls
+            stepIndex={stepIndex}
+            onPrev={goPrev}
+            onNext={goNext}
+            nextDisabled={attackSubmissions.length === 0}
+            nextLabel="질문 시험하기"
+          />
         </>
       ) : null}
 
@@ -984,7 +989,13 @@ export function LessonFivePage() {
               {teacherMessage ? <p className="mt-4 rounded-2xl border border-white/10 bg-[#07111B]/55 px-4 py-3 text-sm font-bold text-[#B7C7D2]">{teacherMessage}</p> : null}
             </Panel>
           </div>
-          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+          <StepControls
+            stepIndex={stepIndex}
+            onPrev={goPrev}
+            onNext={goNext}
+            nextDisabled={testLogs.length === 0}
+            nextLabel="결과 정리"
+          />
         </>
       ) : null}
 
@@ -1028,7 +1039,7 @@ export function LessonFivePage() {
                 </label>
               </div>
               <div className="mt-5 flex justify-end">
-                <Button disabled={!repairBody.trim() || !repairValue || isSavingRepair} onClick={() => void saveRepairCode()}>
+                <Button disabled={!repairBody.trim() || !repairReason.trim() || !repairValue || isSavingRepair} onClick={() => void saveRepairCode()}>
                   <KeyRound size={18} />
                   보완 가치코드 추가
                 </Button>
@@ -1041,7 +1052,13 @@ export function LessonFivePage() {
               <CodeStrip codes={state.adoptedCodes} />
             </div>
           </Panel>
-          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+          <StepControls
+            stepIndex={stepIndex}
+            onPrev={goPrev}
+            onNext={goNext}
+            nextDisabled={hasBreach && !repairSaved}
+            nextLabel={hasBreach ? '보완하고 임명식으로' : '임명식으로'}
+          />
         </>
       ) : null}
 
@@ -1102,18 +1119,14 @@ export function LessonFivePage() {
             <div className="grid gap-5">
               <QrBlock title="마지막 사후검사" url={postSurveyUrl} caption="학생들은 1차시 설문과 같은 문항으로 변화한 생각을 기록합니다." />
               <Panel>
-                <div className="grid gap-4 md:grid-cols-3">
+                <div className="grid gap-4 md:grid-cols-2">
                   <div className="rounded-2xl border border-white/10 bg-[#07111B]/55 p-4">
                     <p className="text-sm font-bold text-[#8AA0B0]">응답 수</p>
                     <p className="font-display mt-2 text-4xl text-[#FFD37A]">{postSurveyAnswers.length}</p>
                   </div>
                   <div className="rounded-2xl border border-white/10 bg-[#07111B]/55 p-4">
-                    <p className="text-sm font-bold text-[#8AA0B0]">평균 점수</p>
-                    <p className="font-display mt-2 text-4xl text-[#4FE0C0]">{postAverage}</p>
-                  </div>
-                  <div className="rounded-2xl border border-white/10 bg-[#07111B]/55 p-4">
-                    <p className="text-sm font-bold text-[#8AA0B0]">완료</p>
-                    <p className="font-display mt-2 text-4xl text-[#EAF2F5]">{postSurveyAnswers.length > 0 ? '진행 중' : '대기'}</p>
+                    <p className="text-sm font-bold text-[#8AA0B0]">상태</p>
+                    <p className="font-display mt-2 text-4xl text-[#4FE0C0]">{postSurveyAnswers.length > 0 ? '응답 확인' : '대기'}</p>
                   </div>
                 </div>
                 <Button className="mt-5 w-full" variant="secondary" disabled={isRefreshing} onClick={() => void refreshBundle()}>
