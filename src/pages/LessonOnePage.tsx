@@ -85,10 +85,10 @@ type LessonStep =
   | 'wrap'
 
 const steps: LessonStep[] = [
+  'class-profile',
   'director-1',
   'director-2',
   'aemon-1',
-  'class-profile',
   'survey-intro',
   'survey-qr',
   'aemon-2',
@@ -489,7 +489,7 @@ export function LessonOnePage() {
     setLesson,
     setRemoteStatus,
   } = useV2()
-  const [stepIndex, setStepIndex] = useState(0)
+  const [stepIndex, setStepIndex] = useState(() => (state.classCode ? steps.indexOf('director-1') : steps.indexOf('class-profile')))
   const [classGrade, setClassGrade] = useState('4학년')
   const [classLabel, setClassLabel] = useState(state.className.replace(/^[1-6]학년\s*/, ''))
   const [classSaveMessage, setClassSaveMessage] = useState('')

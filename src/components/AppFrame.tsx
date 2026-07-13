@@ -17,7 +17,8 @@ export function AppFrame() {
   const navigate = useNavigate()
   const location = useLocation()
   const { state } = useV2()
-  const [isLiveQrOpen, setIsLiveQrOpen] = useState(false)
+  const [isLiveQrOpenManually, setIsLiveQrOpenManually] = useState(false)
+  const [dismissedLiveQrKey, setDismissedLiveQrKey] = useState('')
   const { user, isConfigured } = useSupabaseUser()
   const searchParams = new URLSearchParams(location.search)
   const isStudentLive = searchParams.get('live') === 'student' || location.pathname === '/live'
@@ -26,6 +27,9 @@ export function AppFrame() {
   const showLiveShare = location.pathname.startsWith('/lesson/') && !isStudentLive && Boolean(state.classCode)
   const liveUrl = absoluteUrl(`/live?code=${encodeURIComponent(state.classCode)}`)
   const liveQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=280x280&margin=12&data=${encodeURIComponent(liveUrl)}`
+  const liveQrVisitKey = `${location.key}:${state.classCode}`
+  const shouldAutoOpenLiveQr = location.pathname === '/lesson/1' && !isStudentLive && Boolean(state.classCode) && dismissedLiveQrKey !== liveQrVisitKey
+  const isLiveQrOpen = isLiveQrOpenManually || shouldAutoOpenLiveQr
   const appNavPaths = ['/home', '/codes', '/board', '/talk', '/dex', '/graduation', '/lesson/1']
   const showAppNav = Boolean(user && appNavPaths.includes(location.pathname))
   const showAuthControls = location.pathname !== '/board'
@@ -86,7 +90,10 @@ export function AppFrame() {
           <button
             className="fixed right-5 top-5 z-40 inline-flex min-h-12 items-center gap-2 rounded-lg border border-[#4FE0C0]/35 bg-[#0D2232]/95 px-4 font-black text-[#EAF2F5] shadow-xl"
             type="button"
-            onClick={() => setIsLiveQrOpen(true)}
+            onClick={() => {
+              setDismissedLiveQrKey('')
+              setIsLiveQrOpenManually(true)
+            }}
           >
             <QrCode size={20} className="text-[#4FE0C0]" />
             학생 화면 QR
@@ -103,7 +110,15 @@ export function AppFrame() {
         {isLiveQrOpen ? (
           <div className="fixed inset-0 z-[80] flex items-center justify-center bg-[#02070D]/85 p-5" role="dialog" aria-modal="true" aria-label="학생 화면 QR">
             <div className="relative w-full max-w-lg rounded-lg border border-white/15 bg-[#10283B] p-6 text-center shadow-2xl">
-              <button className="absolute right-4 top-4 text-[#8AA0B0] hover:text-white" type="button" onClick={() => setIsLiveQrOpen(false)} aria-label="닫기">
+              <button
+                className="absolute right-4 top-4 text-[#8AA0B0] hover:text-white"
+                type="button"
+                onClick={() => {
+                  setIsLiveQrOpenManually(false)
+                  setDismissedLiveQrKey(liveQrVisitKey)
+                }}
+                aria-label="닫기"
+              >
                 <X size={24} />
               </button>
               <p className="font-data text-xs text-[#4FE0C0]">한 번만 입장</p>
