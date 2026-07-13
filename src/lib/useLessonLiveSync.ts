@@ -83,12 +83,16 @@ export function useLessonLiveSync({
         latestRemoteRef.current = signature
         const target = studentTarget(remote, classCode)
         const current = `${location.pathname}${location.search}`
+
+        // Updating only the URL leaves the mounted lesson component on its old
+        // local step. Apply the teacher state before navigation so query-string
+        // changes cannot swallow the actual screen update.
+        setStepIndex(remote.stepIndex)
+        applyViewState?.(remote.viewState)
         if (!current.startsWith(target)) {
           navigate(target, { replace: true })
           return
         }
-        setStepIndex(remote.stepIndex)
-        applyViewState?.(remote.viewState)
       } catch (error) {
         if (!cancelled) setRemoteStatus({ ok: false, message: `교사 화면 연결 확인 중: ${(error as Error).message}` })
       }
