@@ -1,7 +1,13 @@
 import { useEffect, useMemo, useRef } from 'react'
 import type { Dispatch, SetStateAction } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
-import { fetchRemoteLiveLesson, fetchRemoteLiveLessonByClassId, isRemoteReady, publishRemoteLiveLesson } from './v2Remote'
+import {
+  fetchRemoteLiveLesson,
+  fetchRemoteLiveLessonByClassId,
+  isRemoteReady,
+  parseLiveLessonRealtimeRow,
+  publishRemoteLiveLesson,
+} from './v2Remote'
 import type { LiveBoardMode, LiveLessonState } from './v2Remote'
 import { supabase } from './supabase'
 import { useV2 } from '../state/V2Store'
@@ -30,6 +36,10 @@ function studentTarget(state: LiveLessonState, classCode: string) {
   return `/lesson/${state.lessonNo}?code=${code}&live=student&step=${state.stepIndex}`
 }
 
+function remoteSignature(remote: LiveLessonState) {
+  return `${remote.updatedAt}:${remote.lessonNo}:${remote.stepIndex}:${remote.boardMode ?? ''}:${remote.activityPath ?? ''}:${JSON.stringify(remote.viewState)}`
+}
+
 export function useLessonLiveSync({
   lessonNo,
   stepIndex,
@@ -48,7 +58,16 @@ export function useLessonLiveSync({
   const classCode = isStudentLive ? queryCode || state.studentSession?.classCode || state.classCode : state.classCode
   const lastPublishedRef = useRef('')
   const latestRemoteRef = useRef('')
+  const locationRef = useRef(location)
+  const setStepIndexRef = useRef(setStepIndex)
+  const applyViewStateRef = useRef(applyViewState)
   const serializedViewState = useMemo(() => JSON.stringify(viewState), [viewState])
+
+  useEffect(() => {
+    locationRef.current = location
+    setStepIndexRef.current = setStepIndex
+    applyViewStateRef.current = applyViewState
+  }, [applyViewState, location, setStepIndex])
 
   useEffect(() => {
     if (isStudentLive || !state.classId || !classCode || !isRemoteReady()) return
@@ -73,50 +92,72 @@ export function useLessonLiveSync({
   useEffect(() => {
     if (!isStudentLive || !classCode || !isRemoteReady()) return
     let cancelled = false
+    let realtimeConnected = false
+
+    const applyRemote = (remote: LiveLessonState) => {
+      if (cancelled) return
+      const signature = remoteSignature(remote)
+      if (signature === latestRemoteRef.current) return
+      latestRemoteRef.current = signature
+
+      const target = studentTarget(remote, classCode)
+      const currentLocation = locationRef.current
+      const current = `${currentLocation.pathname}${currentLocation.search}`
+
+      // Apply the mounted lesson state before navigation so a query-string
+      // update cannot leave the student on the teacher's previous step.
+      setStepIndexRef.current(remote.stepIndex)
+      applyViewStateRef.current?.(remote.viewState)
+      if (!current.startsWith(target)) navigate(target, { replace: true })
+    }
 
     async function sync() {
       try {
         const remote = state.classId ? await fetchRemoteLiveLessonByClassId(state.classId) : await fetchRemoteLiveLesson(classCode)
-        if (cancelled || !remote) return
-        const signature = `${remote.updatedAt}:${remote.lessonNo}:${remote.stepIndex}:${remote.boardMode ?? ''}:${remote.activityPath ?? ''}`
-        if (signature === latestRemoteRef.current) return
-        latestRemoteRef.current = signature
-        const target = studentTarget(remote, classCode)
-        const current = `${location.pathname}${location.search}`
-
-        // Updating only the URL leaves the mounted lesson component on its old
-        // local step. Apply the teacher state before navigation so query-string
-        // changes cannot swallow the actual screen update.
-        setStepIndex(remote.stepIndex)
-        applyViewState?.(remote.viewState)
-        if (!current.startsWith(target)) {
-          navigate(target, { replace: true })
-          return
-        }
+        if (remote) applyRemote(remote)
       } catch (error) {
         if (!cancelled) setRemoteStatus({ ok: false, message: `교사 화면 연결 확인 중: ${(error as Error).message}` })
       }
     }
 
     void sync()
-    const timer = window.setInterval(sync, 2000)
     const channel = state.classId && supabase
       ? supabase
           .channel(`live-lesson-${state.classId}`)
-          .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_logs', filter: `class_id=eq.${state.classId}` }, () => void sync())
-          .subscribe()
+          .on(
+            'postgres_changes',
+            { event: 'INSERT', schema: 'public', table: 'chat_logs', filter: `class_id=eq.${state.classId}` },
+            (payload) => {
+              const remote = parseLiveLessonRealtimeRow(payload.new)
+              if (remote) applyRemote(remote)
+            },
+          )
+          .subscribe((status) => {
+            realtimeConnected = status === 'SUBSCRIBED'
+            if (status === 'SUBSCRIBED') void sync()
+          })
       : null
+
+    // Realtime is primary. This interval only repairs a missing channel or a
+    // browser that slept through an event; it does not poll while subscribed.
+    const fallbackTimer = window.setInterval(() => {
+      if (!realtimeConnected) void sync()
+    }, 15000)
     const onVisible = () => {
       if (document.visibilityState === 'visible') void sync()
     }
+    const onOnline = () => void sync()
     document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('online', onOnline)
+
     return () => {
       cancelled = true
-      window.clearInterval(timer)
+      window.clearInterval(fallbackTimer)
       if (channel && supabase) void supabase.removeChannel(channel)
       document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('online', onOnline)
     }
-  }, [applyViewState, classCode, isStudentLive, location.pathname, location.search, navigate, setRemoteStatus, setStepIndex, state.classId])
+  }, [classCode, isStudentLive, navigate, setRemoteStatus, state.classId])
 
   return { isStudentLive, classCode }
 }
@@ -127,37 +168,74 @@ export function useBoardLiveSync(classCode: string) {
   const [searchParams] = useSearchParams()
   const { state, setRemoteStatus } = useV2()
   const isStudentLive = searchParams.get('live') === 'student'
+  const locationRef = useRef(location)
+  const latestRemoteRef = useRef('')
+
+  useEffect(() => {
+    locationRef.current = location
+  }, [location])
 
   useEffect(() => {
     if (!isStudentLive || !classCode || !isRemoteReady()) return
     let cancelled = false
+    let realtimeConnected = false
+
+    const applyRemote = (remote: LiveLessonState) => {
+      if (cancelled) return
+      const signature = remoteSignature(remote)
+      if (signature === latestRemoteRef.current) return
+      latestRemoteRef.current = signature
+      const target = studentTarget(remote, classCode)
+      const currentLocation = locationRef.current
+      const current = `${currentLocation.pathname}${currentLocation.search}`
+      if (!current.startsWith(target)) navigate(target, { replace: true })
+    }
 
     async function sync() {
       try {
         const remote = state.classId ? await fetchRemoteLiveLessonByClassId(state.classId) : await fetchRemoteLiveLesson(classCode)
-        if (cancelled || !remote) return
-        const target = studentTarget(remote, classCode)
-        const current = `${location.pathname}${location.search}`
-        if (!current.startsWith(target)) navigate(target, { replace: true })
+        if (remote) applyRemote(remote)
       } catch (error) {
         if (!cancelled) setRemoteStatus({ ok: false, message: `교사 화면 연결 확인 중: ${(error as Error).message}` })
       }
     }
 
     void sync()
-    const timer = window.setInterval(sync, 2000)
     const channel = state.classId && supabase
       ? supabase
           .channel(`live-board-${state.classId}`)
-          .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_logs', filter: `class_id=eq.${state.classId}` }, () => void sync())
-          .subscribe()
+          .on(
+            'postgres_changes',
+            { event: 'INSERT', schema: 'public', table: 'chat_logs', filter: `class_id=eq.${state.classId}` },
+            (payload) => {
+              const remote = parseLiveLessonRealtimeRow(payload.new)
+              if (remote) applyRemote(remote)
+            },
+          )
+          .subscribe((status) => {
+            realtimeConnected = status === 'SUBSCRIBED'
+            if (status === 'SUBSCRIBED') void sync()
+          })
       : null
+
+    const fallbackTimer = window.setInterval(() => {
+      if (!realtimeConnected) void sync()
+    }, 15000)
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void sync()
+    }
+    const onOnline = () => void sync()
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('online', onOnline)
+
     return () => {
       cancelled = true
-      window.clearInterval(timer)
+      window.clearInterval(fallbackTimer)
       if (channel && supabase) void supabase.removeChannel(channel)
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('online', onOnline)
     }
-  }, [classCode, isStudentLive, location.pathname, location.search, navigate, setRemoteStatus, state.classId])
+  }, [classCode, isStudentLive, navigate, setRemoteStatus, state.classId])
 
   return isStudentLive
 }

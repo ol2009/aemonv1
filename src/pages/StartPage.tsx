@@ -1,9 +1,9 @@
 import { useNavigate } from 'react-router-dom'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { BookOpen, CheckCircle2, KeyRound, Play, RotateCcw, Save, Search, X } from 'lucide-react'
+import { BookOpen, CheckCircle2, KeyRound, MonitorPlay, Play, RotateCcw, Search } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
+import { ApiConnectionModal } from '../components/ApiConnectionModal'
 import { Button, Panel } from '../components/ui'
-import type { AiProvider } from '../domain/types'
 import { findBestRecoverableClass, remoteClassHasSharedData, shouldAutoRestoreClass } from '../lib/classRecovery'
 import { fetchRemoteClassBundle, fetchRemoteTeacherClasses, isRemoteReady, type RemoteClassSummary } from '../lib/v2Remote'
 import { useSupabaseUser } from '../lib/useSupabaseUser'
@@ -15,9 +15,6 @@ export function StartPage() {
   const { user } = useSupabaseUser()
   const { state, mergeClass, resetDemo, setRemoteStatus, updateAiSettings } = useV2()
   const [isApiOpen, setIsApiOpen] = useState(false)
-  const [draftProvider, setDraftProvider] = useState<AiProvider>(state.aiProvider)
-  const [draftApiKey, setDraftApiKey] = useState(state.apiKey)
-  const [apiSaved, setApiSaved] = useState(false)
   const [restoreCode, setRestoreCode] = useState('')
   const [restoreMessage, setRestoreMessage] = useState('')
   const [isRestoring, setIsRestoring] = useState(false)
@@ -53,16 +50,11 @@ export function StartPage() {
   }, [setRemoteStatus, user?.id])
 
   const openApiModal = () => {
-    setDraftProvider(state.aiProvider)
-    setDraftApiKey(state.apiKey)
-    setApiSaved(false)
     setIsApiOpen(true)
   }
 
-  const saveApiSettings = () => {
-    updateAiSettings({ provider: draftProvider, apiKey: draftApiKey.trim() })
-    setApiSaved(true)
-    window.setTimeout(() => setApiSaved(false), 1800)
+  const saveApiSettings = (provider: typeof state.aiProvider, apiKey: string) => {
+    updateAiSettings({ provider, apiKey })
   }
 
   const restart = () => {
@@ -132,8 +124,15 @@ export function StartPage() {
           <p className="font-data text-sm text-[#4FE0C0]">AEMON PROJECT</p>
           <h1 className="font-display mt-4 text-6xl leading-tight text-[#EAF2F5]">에아몬을 깨울 시간</h1>
           <p className="mt-6 max-w-2xl text-xl leading-9 text-[#B7C7D2]">
-            프로젝트를 시작하면 오박사를 만나고, 수업 중 에아몬이 직접 우리 반이 누구인지 묻습니다.
+            처음이라면 새 학급을 만든 뒤 학급 홈의 교사 리허설로 수업 흐름을 먼저 시험해 보세요. 기존 학급은 아래 목록에서 불러오면 바로 이어서 진행할 수 있습니다.
           </p>
+
+          {!state.classCode ? (
+            <div className="mt-5 border-l-2 border-[#4FE0C0] pl-4">
+              <p className="flex items-center gap-2 font-black text-[#EAF2F5]"><MonitorPlay size={18} className="text-[#4FE0C0]" /> 처음 사용하는 교사 추천 순서</p>
+              <p className="mt-2 text-sm leading-6 text-[#8AA0B0]">프로젝트 시작하기 → 학급 정보 저장 → 교사 리허설 → 실제 1차시 시작</p>
+            </div>
+          ) : null}
 
           {state.classCode ? (
             <div className="mt-6 rounded-2xl border border-[#4FE0C0]/20 bg-[#4FE0C0]/8 p-4">
@@ -211,6 +210,7 @@ export function StartPage() {
               <KeyRound size={17} />
               {isApiConnected ? 'API 수정하기' : 'API 입력하기'}
             </Button>
+            <p className="basis-full px-1 text-sm leading-6 text-[#8AA0B0]">API를 연결하면 에아몬이 우리 반 말에 즉석으로 반응해 체험이 더 생동감 있어집니다. Google 계정으로 Gemini 무료 등급을 시작할 수 있습니다.</p>
           </div>
 
           <div className="mt-8 flex flex-wrap gap-3">
@@ -238,78 +238,12 @@ export function StartPage() {
       </section>
 
       {isApiOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4 backdrop-blur-sm">
-          <Panel className="w-full max-w-xl">
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="font-display text-3xl text-[#EAF2F5]">API 입력</h2>
-              <button
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-[#B7C7D2] transition hover:bg-white/10 hover:text-[#EAF2F5]"
-                onClick={() => setIsApiOpen(false)}
-                type="button"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <div className="mt-4 rounded-2xl border border-white/10 bg-[#07111B]/55 p-4">
-              <p className="font-data text-xs text-[#8AA0B0]">현재 상태</p>
-              <p className="mt-1 text-lg font-black text-[#EAF2F5]">
-                {state.apiKey ? `${providerLabel[state.aiProvider]} · 연결됨` : 'API 미연결'}
-              </p>
-            </div>
-
-            <div className="mt-5 grid gap-3 sm:grid-cols-3">
-              {(Object.keys(providerLabel) as AiProvider[]).map((provider) => (
-                <button
-                  key={provider}
-                  className={`rounded-xl border px-4 py-3 text-sm font-black transition ${
-                    draftProvider === provider
-                      ? 'border-[#4FE0C0] bg-[#4FE0C0]/10 text-[#EAF2F5]'
-                      : 'border-white/10 bg-[#07111B]/55 text-[#8AA0B0] hover:border-white/25'
-                  }`}
-                  onClick={() => setDraftProvider(provider)}
-                  type="button"
-                >
-                  {providerLabel[provider]}
-                </button>
-              ))}
-            </div>
-
-            <label className="mt-5 grid gap-2">
-              <span className="text-sm font-bold text-[#8AA0B0]">API 키</span>
-              <input
-                className="rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 font-data text-[#EAF2F5] outline-none transition focus:border-[#4FE0C0]/60"
-                placeholder="API 키 입력"
-                type="password"
-                value={draftApiKey}
-                onChange={(event) => setDraftApiKey(event.target.value)}
-              />
-            </label>
-
-            <div className="mt-4 rounded-2xl border border-[#4FE0C0]/20 bg-[#4FE0C0]/5 p-4">
-              <p className="font-data text-xs text-[#4FE0C0]">저장할 설정</p>
-              <p className="mt-1 text-base font-bold text-[#EAF2F5]">
-                {providerLabel[draftProvider]} · {draftApiKey.trim() ? '키 입력됨' : '키 없음'}
-              </p>
-            </div>
-
-            {apiSaved ? (
-              <p className="mt-4 rounded-2xl border border-[#FFD37A]/25 bg-[#FFD37A]/10 px-4 py-3 text-sm font-black text-[#FFD37A]">
-                저장완료
-              </p>
-            ) : null}
-
-            <div className="mt-5 flex justify-end gap-2">
-              <Button variant="secondary" onClick={() => setIsApiOpen(false)}>
-                취소
-              </Button>
-              <Button onClick={saveApiSettings}>
-                <Save size={18} />
-                {apiSaved ? '저장완료' : '저장'}
-              </Button>
-            </div>
-          </Panel>
-        </div>
+        <ApiConnectionModal
+          apiKey={state.apiKey}
+          provider={state.aiProvider}
+          onClose={() => setIsApiOpen(false)}
+          onSave={saveApiSettings}
+        />
       ) : null}
     </div>
   )

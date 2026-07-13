@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AlertTriangle, CheckCircle2, PlugZap, Send } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
+import { TypingIndicator } from '../components/TypingIndicator'
 import { Button, Panel } from '../components/ui'
 import { isFreeChatLog, markFreeChatPrompt } from '../lib/chatLogFilters'
 import { playDialogueTick, unlockDialogueSound } from '../lib/dialogueSound'
@@ -171,9 +172,9 @@ export function ConversationPage() {
                   <AemonAvatar stage={evolutionStage} alignment="none" size={52} />
                 </div>
                 <div className="grid gap-1">
-                  <p className="text-xs font-bold text-[#FFD37A]">{aemonName} 입력 중</p>
-                  <p className="rounded-2xl rounded-tl-md bg-[#FFD37A]/10 px-4 py-3 font-display text-3xl leading-7 text-[#FFE6AE]">
-                    ...
+                  <p className="text-xs font-bold text-[#FFD37A]">{aemonName}</p>
+                  <p className="rounded-2xl rounded-tl-md bg-[#FFD37A]/10 px-4 py-3 leading-7 text-[#FFE6AE]">
+                    <TypingIndicator label={`${aemonName}이 답장을 입력하고 있습니다`} />
                   </p>
                 </div>
               </div>
@@ -202,7 +203,7 @@ export function ConversationPage() {
           />
           <Button disabled={!question.trim() || isLoading} onClick={() => void ask()}>
             <Send size={18} />
-            {isLoading ? '응답 중' : '보내기'}
+            보내기
           </Button>
         </div>
       </Panel>

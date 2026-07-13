@@ -17,6 +17,7 @@ import { LoginPage } from './pages/LoginPage'
 import { LiveClassPage } from './pages/LiveClassPage'
 import { StartPage } from './pages/StartPage'
 import { TrainingPage } from './pages/TrainingPage'
+import { TeacherRehearsalPage } from './pages/TeacherRehearsalPage'
 import { ValueCodePage } from './pages/ValueCodePage'
 
 export default function App() {
@@ -39,6 +40,7 @@ export default function App() {
           <Route path="lesson/4" element={<LessonFourPage />} />
           <Route path="lesson/5" element={<LessonFivePage />} />
           <Route path="training" element={<TrainingPage />} />
+          <Route path="rehearsal" element={<TeacherRehearsalPage />} />
           <Route path="codes" element={<ValueCodePage />} />
           <Route path="board" element={<BoardPage />} />
           <Route path="talk" element={<ConversationPage />} />

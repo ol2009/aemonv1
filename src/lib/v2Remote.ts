@@ -258,6 +258,16 @@ function parseLiveLessonState(row: Pick<ChatLogRow, 'answer' | 'created_at'>): L
   }
 }
 
+export function parseLiveLessonRealtimeRow(value: unknown): LiveLessonState | null {
+  if (!value || typeof value !== 'object') return null
+  const row = value as Partial<Pick<ChatLogRow, 'question' | 'answer' | 'created_at'>>
+  if (row.question !== LIVE_LESSON_QUESTION || typeof row.answer !== 'string') return null
+  return parseLiveLessonState({
+    answer: row.answer,
+    created_at: typeof row.created_at === 'string' ? row.created_at : new Date().toISOString(),
+  })
+}
+
 export async function publishRemoteLiveLesson(args: {
   classId: string
   lessonNo: number
