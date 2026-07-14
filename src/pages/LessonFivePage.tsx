@@ -37,6 +37,7 @@ import { playDialogueTick, unlockDialogueSound } from '../lib/dialogueSound'
 import { absoluteUrl } from '../lib/siteUrl'
 import { useV2RemoteSync } from '../lib/useV2RemoteSync'
 import { isStudentLiveView, useLessonLiveSync } from '../lib/useLessonLiveSync'
+import { useLessonImagePreload } from '../lib/useLessonImagePreload'
 import { adoptRemoteCodeProposal, fetchRemoteClassBundle, isRemoteReady, updateRemoteLesson, upsertRemoteSurveyResponse } from '../lib/v2Remote'
 import { useV2, type AdoptedCode, type CodeProposal, type SurveyResponse } from '../state/V2Store'
 
@@ -506,6 +507,7 @@ function AttackCardGrid({ selected, onSelect }: { selected?: AttackCategoryId; o
 }
 
 export function LessonFivePage() {
+  useLessonImagePreload(5)
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const isStudentView = searchParams.get('role') === 'student'
@@ -1056,7 +1058,7 @@ export function LessonFivePage() {
                           </div>
                           <div className={`mr-auto max-w-[92%] rounded-2xl border px-4 py-4 ${log.answer ? 'border-[#4FE0C0]/25 bg-[#11352F]/75' : 'border-white/10 bg-[#0D1C29]/90'}`}>
                             <div className="flex items-start gap-3">
-                              <AemonAvatar stage={4} alignment="none" size={58} />
+                              <AemonAvatar stage={3} alignment="none" size={58} />
                               <div className="min-w-0 flex-1">
                                 <div className="flex flex-wrap items-center gap-2">
                                   <p className="font-data text-xs text-[#FFD37A]">{aemonName}</p>

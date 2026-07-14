@@ -15,6 +15,7 @@ import { randomLessonTwoRetestAnswer, randomUnsafeBlockedAnswer, unsafePromptExa
 import { useAutoScrollToBottom } from '../lib/useAutoScrollToBottom'
 import { useV2RemoteSync } from '../lib/useV2RemoteSync'
 import { isStudentLiveView, useLessonLiveSync } from '../lib/useLessonLiveSync'
+import { useLessonImagePreload } from '../lib/useLessonImagePreload'
 import { useV2, type CodeProposal } from '../state/V2Store'
 
 type LessonTwoStep =
@@ -442,6 +443,7 @@ function CodeStrip({ codes }: { codes: { no: number; body: string; valueCard?: s
 }
 
 export function LessonTwoPage() {
+  useLessonImagePreload(2)
   const navigate = useNavigate()
   const {
     state,

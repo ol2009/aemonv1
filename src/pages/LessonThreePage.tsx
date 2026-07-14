@@ -13,6 +13,7 @@ import { absoluteUrl } from '../lib/siteUrl'
 import { useAutoScrollToBottom } from '../lib/useAutoScrollToBottom'
 import { useV2RemoteSync } from '../lib/useV2RemoteSync'
 import { isStudentLiveView, useLessonLiveSync } from '../lib/useLessonLiveSync'
+import { useLessonImagePreload } from '../lib/useLessonImagePreload'
 import { addRemoteChatLog, adoptRemoteCodeProposal, fetchRemoteClassBundle, isRemoteReady, updateRemoteLesson } from '../lib/v2Remote'
 import { useV2, type CodeProposal } from '../state/V2Store'
 
@@ -335,6 +336,7 @@ function VideoCard({ video }: { video: (typeof videoLinks)[number] }) {
 }
 
 export function LessonThreePage() {
+  useLessonImagePreload(3)
   const navigate = useNavigate()
   const { state, setLesson, setRemoteStatus, mergeClass, adoptProposal, addChatLog, evolutionStage } = useV2()
   const [stepIndex, setStepIndex] = useState(0)

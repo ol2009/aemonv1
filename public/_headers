@@ -1,5 +1,74 @@
-/*
+/
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/start
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/login
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/auth/*
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/live
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/intro
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/guide
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/home
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/lesson
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/lesson/*
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/board
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/training
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/rehearsal
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/talk
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/codes
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/graduation
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/dex
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/settings
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/evolution
   Cache-Control: no-cache, no-store, must-revalidate
 
 /assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/v2/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/aemon/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/lesson-art/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/lesson-card-art/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/lesson-cards/*
   Cache-Control: public, max-age=31536000, immutable

@@ -32,6 +32,7 @@ import { useSupabaseUser } from '../lib/useSupabaseUser'
 import { useAutoScrollToBottom } from '../lib/useAutoScrollToBottom'
 import { useV2RemoteSync } from '../lib/useV2RemoteSync'
 import { isStudentLiveView, useLessonLiveSync } from '../lib/useLessonLiveSync'
+import { useLessonImagePreload } from '../lib/useLessonImagePreload'
 import { useV2, type SurveyResponse } from '../state/V2Store'
 
 type LessonStep =
@@ -476,6 +477,7 @@ function QrBlock({ title, url }: { title: string; url: string }) {
 }
 
 export function LessonOnePage() {
+  useLessonImagePreload(1)
   const navigate = useNavigate()
   const { user, isLoading: isUserLoading } = useSupabaseUser()
   const {
