@@ -46,10 +46,10 @@ export function HomePage() {
   const lessonNo = Math.min(TOTAL_V2_LESSONS, Math.max(1, state.currentLesson || 1))
   const currentLesson = findV2Lesson(lessonNo)
   const progressPercent = Math.round((lessonNo / TOTAL_V2_LESSONS) * 100)
-  const statusLines = getDashboardStatusLines(lessonNo)
-  const dashboardQuestions = getDashboardQuestions(lessonNo)
+  const statusLines = getDashboardStatusLines()
+  const dashboardQuestions = getDashboardQuestions()
   const dashboardLines = statusLines.flatMap((line, index) => [line, dashboardQuestions[index % dashboardQuestions.length]])
-  const statusLine = dashboardLines[(lessonNo + adoptedCodeCount + statusLineIndex) % dashboardLines.length]
+  const statusLine = dashboardLines[statusLineIndex % dashboardLines.length]
   const isDashboardQuestion = /[?？]\s*$/.test(statusLine.trim())
   const dashboardQuestion = isDashboardQuestion ? statusLine : ''
   const aemonName = state.aemonName.trim() || '에아몬'
@@ -182,8 +182,6 @@ export function HomePage() {
       const request = buildDashboardResponseRequest({
         aemonQuestion: dashboardQuestion,
         classAnswer: answer,
-        lessonNo,
-        lessonTitle: currentLesson.title,
       })
       const result = await runV2Chat({
         provider: state.aiProvider,
@@ -221,14 +219,6 @@ export function HomePage() {
 
   const saveLesson = async (nextLesson: number) => {
     const clamped = Math.min(TOTAL_V2_LESSONS, Math.max(1, nextLesson))
-    if (clamped !== lessonNo) {
-      setStatusLineIndex(0)
-      setIsDashboardAnswerOpen(false)
-      setClassAnswer('')
-      setSubmittedClassAnswer('')
-      setDashboardResponse('')
-      setDashboardError('')
-    }
     setLesson(clamped)
     if (canWriteRemote) {
       try {
