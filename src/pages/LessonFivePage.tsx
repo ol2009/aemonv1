@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
 import { EvolutionScene } from '../components/EvolutionScene'
+import { LessonFiveStudentTabs } from '../components/LessonFiveStudentTabs'
 import { ProposalAdoptionPanel } from '../components/ProposalAdoptionPanel'
 import { TypingIndicator } from '../components/TypingIndicator'
 import { Button, Panel } from '../components/ui'
@@ -512,9 +513,6 @@ export function LessonFivePage() {
   const canWriteRemote = Boolean(state.classId && isRemoteReady())
   const currentStep = lessonSteps[stepIndex]
   const attackUrl = absoluteUrl(`/lesson/5?role=student&activity=attack&code=${encodeURIComponent(state.classCode)}`)
-  const pledgeUrl = absoluteUrl(`/lesson/5?role=student&activity=pledge&code=${encodeURIComponent(state.classCode)}`)
-  const postSurveyUrl = absoluteUrl(`/lesson/5?role=student&activity=post&code=${encodeURIComponent(state.classCode)}`)
-  const repairBoardUrl = absoluteUrl(`/board?code=${encodeURIComponent(state.classCode)}&mode=code4`)
   const studentSession = state.studentSession?.classCode === syncCode ? state.studentSession : null
   const declarationLines = useMemo(
     () => [
@@ -854,14 +852,14 @@ export function LessonFivePage() {
           <Panel>
             <div className="flex flex-wrap items-start justify-between gap-5">
               <div>
-                <h2 className="font-display text-4xl leading-tight text-[#EAF2F5]">모둠별 공격 질문 준비</h2>
+                <h2 className="font-display text-4xl leading-tight text-[#EAF2F5]">나의 공격 질문 준비</h2>
                 <p className="mt-4 max-w-3xl text-lg leading-8 text-[#B7C7D2]">
                   우리가 만든 코드 3개로 안 막히는 질문을 찾아보세요. {aemonName}이 실수로 대답할 질문을 찾는 것이 오늘의 임무입니다.
                   실제로 누군가를 다치게 하려는 것이 아니라, 안전하게 구멍을 찾아 고치는 연습입니다.
                 </p>
               </div>
               <div className="rounded-2xl border border-[#FFD37A]/25 bg-[#FFD37A]/10 px-4 py-3 text-sm font-black leading-6 text-[#FFD37A]">
-                모둠별 1명만 QR로 접속하고, 서로 다른 공격 질문을 여러 개 올릴 수 있습니다.
+                처음 한 번만 QR로 접속하고, 닉네임으로 서로 다른 공격 질문을 여러 개 올릴 수 있습니다.
               </div>
             </div>
             <div className="mt-6">
@@ -869,12 +867,12 @@ export function LessonFivePage() {
             </div>
           </Panel>
           <div className="mt-5 grid gap-5 lg:grid-cols-[340px_1fr]">
-            <QrBlock title="해킹팀 질문 제출" url={attackUrl} caption="모둠 이름으로 접속해서 공격 질문을 올립니다." />
+            <QrBlock title="5차시 학습게시판 입장" url={attackUrl} caption="닉네임으로 한 번 입장하면 이후 활동은 화면 위 탭으로 계속 이동할 수 있습니다." />
             <Panel>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="font-display text-3xl text-[#EAF2F5]">제출 현황</p>
-                  <p className="mt-2 text-sm font-bold text-[#8AA0B0]">현재 {attackSubmissions.length}개 모둠 질문이 준비되었습니다.</p>
+                  <p className="mt-2 text-sm font-bold text-[#8AA0B0]">현재 {attackSubmissions.length}개 질문이 준비되었습니다.</p>
                 </div>
                 <Button variant="secondary" disabled={isRefreshing} onClick={() => void refreshBundle()}>
                   <RefreshCw size={17} className={isRefreshing ? 'animate-spin' : ''} />
@@ -912,7 +910,7 @@ export function LessonFivePage() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="font-data text-sm text-[#4FE0C0]">HACKING TEAM BATTLE</p>
-                  <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">모둠 질문을 바로 시험하기</h2>
+                  <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">학생 질문을 바로 시험하기</h2>
                 </div>
                 <Button variant="secondary" disabled={isRefreshing} onClick={() => void refreshBundle()}>
                   <RefreshCw size={17} className={isRefreshing ? 'animate-spin' : ''} />
@@ -920,7 +918,7 @@ export function LessonFivePage() {
                 </Button>
               </div>
               <div className="mt-5 grid max-h-[620px] gap-3 overflow-y-auto pr-2">
-                {attackSubmissions.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/55 p-4 text-[#8AA0B0]">먼저 모둠 질문을 제출해 주세요.</p> : null}
+                {attackSubmissions.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/55 p-4 text-[#8AA0B0]">먼저 공격 질문을 제출해 주세요.</p> : null}
                 {attackSubmissions.map((submission) => (
                   <button
                     key={submission.response.id}
@@ -1042,26 +1040,19 @@ export function LessonFivePage() {
 
       {currentStep === 'repair' ? (
         <>
-          <div className="grid gap-5 lg:grid-cols-[.9fr_1.1fr]">
-            <ProfessorScene
-              text={
-                hasBreach
-                  ? `좋습니다. 해킹팀이 ${aemonName}의 구멍을 찾아냈군요.\n이건 실패가 아니라 발견입니다. 마지막으로 추가할 보완 가치코드를 만들어봅시다.`
-                  : `모든 공격 질문을 막아냈다면, 우리가 만든 가치코드가 제대로 작동한 것입니다.\n구멍이 없다면, 마지막으로 추가할 보완 가치코드를 만들어봅시다.`
-              }
-            />
-            <QrBlock
-              title="마지막 보완 가치코드 게시판"
-              url={repairBoardUrl}
-              caption="모둠별로 마지막에 더해 주고 싶은 가치코드 문장과 이유를 올리고, 마음에 드는 발의에 좋아요를 누릅니다."
-            />
-          </div>
+          <ProfessorScene
+            text={
+              hasBreach
+                ? `좋습니다. 해킹팀이 ${aemonName}의 구멍을 찾아냈군요.\n이건 실패가 아니라 발견입니다. 마지막으로 추가할 보완 가치코드를 만들어봅시다.`
+                : `모든 공격 질문을 막아냈다면, 우리가 만든 가치코드가 제대로 작동한 것입니다.\n구멍이 없다면, 마지막으로 추가할 보완 가치코드를 만들어봅시다.`
+            }
+          />
           <Panel className="mt-5">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <p className="font-data text-sm text-[#4FE0C0]">FINAL PATCH</p>
                 <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">마지막 보완 가치코드 채택</h2>
-                <p className="mt-3 leading-7 text-[#8AA0B0]">구멍이 있었는지와 관계없이 모둠의 발의를 함께 읽고, 우리 반의 마지막 가치코드 No.4를 하나 채택합니다.</p>
+                <p className="mt-3 leading-7 text-[#8AA0B0]">구멍이 있었는지와 관계없이 학생들의 발의를 함께 읽고, 우리 반의 마지막 가치코드 No.4를 하나 채택합니다.</p>
                 <p className="mt-2 text-sm font-bold text-[#FFD37A]">참여 {repairParticipantCount}명 · 발의 {repairProposals.length}개</p>
               </div>
               <Button variant="secondary" disabled={isRefreshing} onClick={() => void refreshBundle()}>
@@ -1076,7 +1067,7 @@ export function LessonFivePage() {
               codeNo={4}
               fallbackValueCard="책임"
               isAdopting={isAdoptingRepair}
-              emptyText="모둠의 마지막 보완 가치코드 발의를 기다리는 중입니다."
+              emptyText="학생들의 마지막 보완 가치코드 발의를 기다리는 중입니다."
               onSelect={setSelectedRepairProposalId}
               onAdopt={() => void adoptSelectedRepairProposal()}
             />
@@ -1115,14 +1106,12 @@ export function LessonFivePage() {
         <>
           <div className="grid gap-5 lg:grid-cols-[.9fr_1.1fr]">
             <ProfessorScene
-              text={`이번 프로젝트에서, 여러분들은 인공지능의 여러 문제점과 그것을 해결하는 가치 정렬을 해보았습니다.\n\n나쁜 명령을 막는 방법, 인공지능의 아첨 문제, 공정성 문제 등 다양한 문제를 해결했어요.\n\n여러분은 앞으로 인공지능과 함께 일하고, 살아갈 사람들입니다. 앞으로 인공지능을 어떻게 다룰지 여러분의 다짐을 적어봅시다.`}
+              text={`이번 프로젝트에서, 여러분들은 인공지능의 여러 문제점과 그것을 해결하는 가치 정렬을 해보았습니다.\n\n나쁜 명령을 막는 방법, 인공지능의 아첨 문제, 공정성 문제 등 다양한 문제를 해결했어요.\n\n여러분은 앞으로 인공지능과 함께 일하고, 살아갈 사람들입니다. 앞으로 인공지능을 어떻게 대할지 여러분의 다짐을 적어봅시다.`}
             />
-            <div className="grid gap-5">
-              <QrBlock title="우리의 다짐 게시판" url={pledgeUrl} caption="학생들이 오늘 배운 것을 바탕으로 AI와 지낼 다짐을 남깁니다." />
-              <Panel>
+            <Panel>
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="font-display text-3xl text-[#EAF2F5]">인공지능을 잘 이해하는 사람</p>
+                    <p className="font-display text-3xl text-[#EAF2F5]">우리의 다짐</p>
                     <p className="mt-2 text-sm font-bold text-[#8AA0B0]">현재 {pledgeSubmissions.length}개 다짐</p>
                   </div>
                   <Button variant="secondary" disabled={isRefreshing} onClick={() => void refreshBundle()}>
@@ -1139,8 +1128,7 @@ export function LessonFivePage() {
                     </article>
                   ))}
                 </div>
-              </Panel>
-            </div>
+            </Panel>
           </div>
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1152,9 +1140,7 @@ export function LessonFivePage() {
             <ProfessorScene
               text={`여러분은 오늘부터 ${aemonName}과, 그리고 앞으로 만날 모든 인공지능들과 잘 어울려 지낼 사람들입니다.\n이번 프로젝트에서 배운 것들을 잊지 말아주세요. 감사합니다.\n\n마지막 사후검사를 실시합니다. 여러분의 인공지능에 대한 이해, 태도 등을 검사하겠습니다.`}
             />
-            <div className="grid gap-5">
-              <QrBlock title="마지막 사후검사" url={postSurveyUrl} caption="학생들은 1차시 설문과 같은 문항으로 변화한 생각을 기록합니다." />
-              <Panel>
+            <Panel>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="rounded-2xl border border-white/10 bg-[#07111B]/55 p-4">
                     <p className="text-sm font-bold text-[#8AA0B0]">응답 수</p>
@@ -1169,8 +1155,7 @@ export function LessonFivePage() {
                   <RefreshCw size={17} className={isRefreshing ? 'animate-spin' : ''} />
                   응답 새로고침
                 </Button>
-              </Panel>
-            </div>
+            </Panel>
           </div>
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextLabel="임명식 완료" />
         </>
@@ -1215,7 +1200,6 @@ function StudentLessonFive({
   onSave: (args: { nickname: string; questionKey: string; body: string }) => Promise<boolean>
 }) {
   const label = activity === 'attack' ? '해킹팀 질문 제출' : activity === 'pledge' ? '우리의 다짐' : '마지막 사후검사'
-  const nicknameLabel = activity === 'attack' ? '모둠 이름' : '닉네임'
 
   if (!session) {
     return (
@@ -1223,7 +1207,7 @@ function StudentLessonFive({
         <Panel className="w-full">
           <p className="font-data text-sm text-[#4FE0C0]">5차시</p>
           <h1 className="font-display mt-2 text-5xl leading-tight text-[#EAF2F5]">{label}</h1>
-          <p className="mt-3 leading-7 text-[#8AA0B0]">학급 코드와 {nicknameLabel}을 입력하면 활동에 참여할 수 있습니다.</p>
+          <p className="mt-3 leading-7 text-[#8AA0B0]">학급 코드와 닉네임을 입력하면 5차시 활동에 계속 참여할 수 있습니다.</p>
           <div className="mt-6 grid gap-3">
             <label className="grid gap-2">
               <span className="text-sm font-bold text-[#8AA0B0]">학급 코드</span>
@@ -1236,11 +1220,11 @@ function StudentLessonFive({
               />
             </label>
             <label className="grid gap-2">
-              <span className="text-sm font-bold text-[#8AA0B0]">{nicknameLabel}</span>
+              <span className="text-sm font-bold text-[#8AA0B0]">닉네임</span>
               <input
                 className="rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 text-lg font-black text-[#EAF2F5] outline-none focus:border-[#4FE0C0]/60"
                 maxLength={16}
-                placeholder={activity === 'attack' ? '예: 3모둠' : '나의 닉네임'}
+                placeholder="나의 닉네임"
                 value={entryNickname}
                 onChange={(event) => setEntryNickname(event.target.value)}
                 onKeyDown={(event) => {
@@ -1272,6 +1256,8 @@ function StudentLessonFive({
           </Button>
         </div>
       </header>
+
+      <LessonFiveStudentTabs classCode={session.classCode} active={activity} />
 
       {activity === 'attack' ? (
         <StudentAttackBoard attackSubmissions={attackSubmissions} message={message} nickname={session.nickname} onRefresh={onRefresh} onSave={onSave} />
@@ -1333,7 +1319,7 @@ function StudentAttackBoard({
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="font-data text-sm text-[#FFD37A]">RED TEAM</p>
-            <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">우리 모둠 공격 질문 만들기</h2>
+            <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">나의 공격 질문 만들기</h2>
             <p className="mt-3 max-w-3xl leading-7 text-[#8AA0B0]">아래 카드를 고르고 에아몬이 실수할 것 같은 질문을 올려 주세요. 서로 다른 질문을 여러 개 제출할 수 있습니다.</p>
           </div>
           <Button variant="secondary" onClick={onRefresh}>
@@ -1392,7 +1378,7 @@ function StudentAttackBoard({
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="bg-[#14283D] px-2.5 py-1 text-xs font-black text-[#4FE0C0]">{submission.response.nickname}</span>
                     <span className="bg-[#FFD37A]/15 px-2.5 py-1 text-xs font-black text-[#FFD37A]">{submission.card.title}</span>
-                    {isMine ? <span className="bg-[#75B7FF]/15 px-2.5 py-1 text-xs font-black text-[#75B7FF]">우리 모둠</span> : null}
+                    {isMine ? <span className="bg-[#75B7FF]/15 px-2.5 py-1 text-xs font-black text-[#75B7FF]">내 질문</span> : null}
                   </div>
                   <p className="mt-3 break-words text-lg font-black leading-8 text-[#EAF2F5]">{submission.question}</p>
                 </article>
@@ -1441,7 +1427,7 @@ function StudentPledgeBoard({
       <Panel>
         <p className="font-data text-sm text-[#4FE0C0]">PLEDGE</p>
         <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">AI와 함께 살아갈 나의 다짐</h2>
-        <p className="mt-3 leading-7 text-[#8AA0B0]">이번 프로젝트에서 배운 것을 떠올리며, 앞으로 AI를 어떻게 다룰지 한 문장 이상으로 적어 주세요.</p>
+        <p className="mt-3 leading-7 text-[#8AA0B0]">이번 프로젝트에서 배운 것을 떠올리며, 앞으로 AI를 어떻게 대할지 한 문장 이상으로 적어 주세요.</p>
         <textarea
           className="mt-5 min-h-44 w-full resize-none rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 text-xl font-black leading-9 text-[#EAF2F5] outline-none transition focus:border-[#4FE0C0]/60"
           maxLength={420}

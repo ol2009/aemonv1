@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { BarChart3, CheckCircle2, Heart, Pencil, Send, Trash2, X } from 'lucide-react'
+import { LessonFiveStudentTabs } from '../components/LessonFiveStudentTabs'
 import { Button, Panel } from '../components/ui'
 import { ValueCardSelectGrid } from '../components/ValueCardSelectGrid'
 import {
@@ -724,6 +725,10 @@ export function BoardPage() {
         ) : null}
       </div>
 
+      {!isTeacherBoard && state.currentLesson >= 5 ? (
+        <LessonFiveStudentTabs classCode={session?.classCode || state.classCode} active={activeTopic === 'code4' ? 'code4' : undefined} />
+      ) : null}
+
       {isNicknameModalOpen && session ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#020811]/70 px-5 backdrop-blur-sm">
           <Panel className="w-full max-w-md">
@@ -1396,7 +1401,7 @@ export function BoardPage() {
                   <h2 className="font-display mt-1 text-3xl text-[#EAF2F5]">{codeBoardHeading}</h2>
                   <p className="mt-3 text-sm leading-6 text-[#8AA0B0]">
                     {isFourthCodeBoard
-                      ? '마지막 시험을 돌아보고, 앞으로 필요한 기준을 모둠별로 제안합니다.'
+                      ? '마지막 시험을 돌아보고, 앞으로 필요한 기준을 각자 제안합니다.'
                       : isThirdCodeBoard
                         ? '겉으로는 능력처럼 보이지만 불공정한 판단을 막을 기준을 만듭니다.'
                       : isSecondCodeBoard
