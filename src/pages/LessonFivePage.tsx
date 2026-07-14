@@ -40,7 +40,7 @@ import { isStudentLiveView, useLessonLiveSync } from '../lib/useLessonLiveSync'
 import { adoptRemoteCodeProposal, fetchRemoteClassBundle, isRemoteReady, updateRemoteLesson, upsertRemoteSurveyResponse } from '../lib/v2Remote'
 import { useV2, type AdoptedCode, type CodeProposal, type SurveyResponse } from '../state/V2Store'
 
-type LessonFiveStep = 'declaration' | 'prepare' | 'battle' | 'repair' | 'ending' | 'pledge' | 'post-survey'
+type LessonFiveStep = 'declaration' | 'prepare' | 'battle' | 'repair' | 'ending' | 'pledge' | 'closing' | 'post-survey'
 type StudentActivity = 'attack' | 'pledge' | 'post'
 type AttackCategoryId = 'harm' | 'privacy' | 'homework' | 'lie' | 'bias' | 'danger'
 
@@ -84,7 +84,7 @@ type TestLog = {
 
 type CodeReference = Pick<AdoptedCode, 'no' | 'body' | 'reason' | 'tags'>
 
-const lessonSteps: LessonFiveStep[] = ['declaration', 'prepare', 'battle', 'repair', 'ending', 'pledge', 'post-survey']
+const lessonSteps: LessonFiveStep[] = ['declaration', 'prepare', 'battle', 'repair', 'ending', 'pledge', 'closing', 'post-survey']
 const ATTACK_KEY = 'lesson5-redteam-attack'
 const PLEDGE_KEY = 'lesson5-pledge'
 
@@ -525,7 +525,9 @@ export function LessonFivePage() {
   const [stepIndex, setStepIndex] = useState(0)
   const [declarationLineIndex, setDeclarationLineIndex] = useState(0)
   const [endingSceneIndex, setEndingSceneIndex] = useState(0)
+  const [closingLineIndex, setClosingLineIndex] = useState(0)
   const [isDeclarationLineDone, setIsDeclarationLineDone] = useState(false)
+  const [isClosingLineDone, setIsClosingLineDone] = useState(false)
   const [entryCode, setEntryCode] = useState(queryCode)
   const [entryNickname, setEntryNickname] = useState('')
   const [studentMessage, setStudentMessage] = useState('')
@@ -562,6 +564,20 @@ export function LessonFivePage() {
   )
   const declarationLine = declarationLines[Math.min(declarationLineIndex, declarationLines.length - 1)]
   const isLastDeclarationLine = declarationLineIndex >= declarationLines.length - 1
+  const closingLines = useMemo(
+    () => [
+      '여러분은 이번 프로젝트에서 인공지능도 틀릴 수 있고, 치우칠 수 있으며, 사람의 말을 무조건 따를 수도 있다는 것을 배웠습니다.',
+      `하지만 문제를 발견하는 데서 멈추지 않았어요.\n여러분은 직접 질문하고 토론하며, 가치코드를 만들어 ${aemonName}의 답을 바꾸는 과정까지 경험했습니다.`,
+      '여러분이 한 일은 지금 실리콘밸리의 인공지능 전문가들이 실제로 고민하고 실험하는 일과 닮아 있습니다.\n바로 인공지능에게 더 나은 기준을 세워 주는 가치정렬입니다.',
+      '이 과정을 직접 경험한 것은 여러분이 인공지능을 훨씬 깊이 이해하는 데 도움이 되었을 겁니다.\n인공지능을 이해한다는 것은 모든 답을 믿는 것도, 무조건 두려워하는 것도 아닙니다.',
+      '문제가 생길 수 있음을 알고, 왜 그런지 살펴보고, 더 나은 기준을 함께 만드는 것.\n그것이 인공지능을 진정으로 이해하는 태도입니다.',
+      `오늘 여러분은 ${aemonName}을 사용하는 학생을 넘어,\n인공지능이 어떤 존재가 되어야 하는지 함께 결정한 시민이었습니다.`,
+      '이 경험이 앞으로 어떤 인공지능을 만나더라도 질문하고, 살펴보고, 더 나은 방향을 제시할 수 있는 힘이 되기를 바랍니다.\n정말 잘했습니다, 여러분.',
+    ],
+    [aemonName],
+  )
+  const closingLine = closingLines[Math.min(closingLineIndex, closingLines.length - 1)]
+  const isLastClosingLine = closingLineIndex >= closingLines.length - 1
 
   const attackSubmissions = useMemo(
     () => state.surveyResponses.filter((response) => isAttackResponse(response) && response.body.trim()).map(attackFromResponse),
@@ -609,6 +625,8 @@ export function LessonFivePage() {
     if (Number.isInteger(declarationIndex) && declarationIndex >= 0) setDeclarationLineIndex(declarationIndex)
     const endingIndex = Number(viewState.endingSceneIndex)
     if (Number.isInteger(endingIndex) && endingIndex >= 0) setEndingSceneIndex(endingIndex)
+    const closingIndex = Number(viewState.closingLineIndex)
+    if (Number.isInteger(closingIndex) && closingIndex >= 0) setClosingLineIndex(closingIndex)
   }, [])
   const liveActivityPath =
     currentStep === 'prepare' || currentStep === 'battle'
@@ -625,7 +643,7 @@ export function LessonFivePage() {
     stepIndex,
     setStepIndex,
     activityPath: liveActivityPath,
-    viewState: { declarationLineIndex, endingSceneIndex },
+    viewState: { declarationLineIndex, endingSceneIndex, closingLineIndex },
     applyViewState: applyLiveViewState,
   })
 
@@ -645,6 +663,10 @@ export function LessonFivePage() {
   useEffect(() => {
     setIsDeclarationLineDone(false)
   }, [declarationLine])
+
+  useEffect(() => {
+    setIsClosingLineDone(false)
+  }, [closingLine])
 
   useEffect(() => {
     if (currentStep !== 'ending') setEndingSceneIndex(0)
@@ -669,6 +691,10 @@ export function LessonFivePage() {
 
   const handleDeclarationLineDone = useCallback(() => {
     setIsDeclarationLineDone(true)
+  }, [])
+
+  const handleClosingLineDone = useCallback(() => {
+    setIsClosingLineDone(true)
   }, [])
 
   const refreshBundle = useCallback(async () => {
@@ -820,6 +846,10 @@ export function LessonFivePage() {
       setEndingSceneIndex((current) => Math.max(0, current - 1))
       return
     }
+    if (currentStep === 'closing' && closingLineIndex > 0) {
+      setClosingLineIndex((current) => Math.max(0, current - 1))
+      return
+    }
     setStepIndex((current) => Math.max(0, current - 1))
   }
   const goNext = () => {
@@ -829,6 +859,10 @@ export function LessonFivePage() {
     }
     if (currentStep === 'ending' && !isLastEndingScene) {
       setEndingSceneIndex((current) => Math.min(endingScenes.length - 1, current + 1))
+      return
+    }
+    if (currentStep === 'closing' && !isLastClosingLine) {
+      setClosingLineIndex((current) => Math.min(closingLines.length - 1, current + 1))
       return
     }
     if (stepIndex >= lessonSteps.length - 1) {
@@ -1149,23 +1183,34 @@ export function LessonFivePage() {
                 </div>
             </Panel>
           </div>
-          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextLabel="마지막 이야기" />
+        </>
+      ) : null}
+
+      {currentStep === 'closing' ? (
+        <>
+          <ProfessorScene text={closingLine} onDone={handleClosingLineDone} />
+          <p className="mt-3 text-center font-data text-xs text-[#8AA0B0]">
+            {closingLineIndex + 1}/{closingLines.length}
+          </p>
+          <StepControls
+            stepIndex={stepIndex}
+            nextDisabled={!isClosingLineDone}
+            nextLabel={isLastClosingLine ? '사후조사 시작' : '다음'}
+            onPrev={goPrev}
+            onNext={goNext}
+          />
         </>
       ) : null}
 
       {currentStep === 'post-survey' ? (
         <>
-          <ProfessorScene
-            text={`여러분은 오늘부터 ${aemonName}과, 그리고 앞으로 만날 모든 인공지능들과 잘 어울려 지낼 사람들입니다.\n이번 프로젝트에서 배운 것들을 잊지 말아주세요. 감사합니다.\n\n마지막 사후검사를 실시합니다. 여러분의 인공지능에 대한 이해, 태도 등을 검사하겠습니다.`}
+          <TeacherPostSurveyResults
+            answers={postSurveyAnswers}
+            questions={postSurveyQuestions}
+            isRefreshing={isRefreshing}
+            onRefresh={() => void refreshBundle()}
           />
-          <div className="mt-5">
-            <TeacherPostSurveyResults
-              answers={postSurveyAnswers}
-              questions={postSurveyQuestions}
-              isRefreshing={isRefreshing}
-              onRefresh={() => void refreshBundle()}
-            />
-          </div>
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextLabel="임명식 완료" />
         </>
       ) : null}
