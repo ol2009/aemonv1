@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   AlertTriangle,
+  BarChart3,
   BookOpenCheck,
   CheckCircle2,
   ClipboardList,
@@ -30,6 +31,7 @@ import {
   POST_SURVEY_OPEN_QUESTIONS,
   emptySurveyAnswer,
   parseSurveyAnswer,
+  postSurveyOpenQuestions,
   serializeSurveyAnswer,
   type AiSurveyAnswer,
 } from '../data/survey'
@@ -580,6 +582,7 @@ export function LessonFivePage() {
         .filter((item): item is { response: SurveyResponse; answer: AiSurveyAnswer } => Boolean(item.answer)),
     [state.surveyResponses],
   )
+  const postSurveyQuestions = useMemo(() => postSurveyOpenQuestions(aemonName), [aemonName])
   const endingScenes = useMemo<EndingScene[]>(() => {
     return [
       { kind: 'aemon', text: '내가 해냈어! 고마워 애들아.' },
@@ -725,7 +728,7 @@ export function LessonFivePage() {
   )
 
   useEffect(() => {
-    if (isStudentView || isStudentLive || currentStep !== 'pledge' || !syncCode || !isRemoteReady()) return
+    if (isStudentView || isStudentLive || (currentStep !== 'pledge' && currentStep !== 'post-survey') || !syncCode || !isRemoteReady()) return
 
     let cancelled = false
     const syncPledges = async () => {
@@ -871,6 +874,7 @@ export function LessonFivePage() {
         message={studentMessage}
         attackSubmissions={attackSubmissions}
         postSurveyAnswers={postSurveyAnswers}
+        postSurveyQuestions={postSurveyQuestions}
         queryCode={queryCode}
         session={studentSession}
         pledgeSubmissions={pledgeSubmissions}
@@ -1209,31 +1213,134 @@ export function LessonFivePage() {
 
       {currentStep === 'post-survey' ? (
         <>
-          <div className="grid gap-5 lg:grid-cols-[.95fr_1.05fr]">
-            <ProfessorScene
-              text={`여러분은 오늘부터 ${aemonName}과, 그리고 앞으로 만날 모든 인공지능들과 잘 어울려 지낼 사람들입니다.\n이번 프로젝트에서 배운 것들을 잊지 말아주세요. 감사합니다.\n\n마지막 사후검사를 실시합니다. 여러분의 인공지능에 대한 이해, 태도 등을 검사하겠습니다.`}
+          <ProfessorScene
+            text={`여러분은 오늘부터 ${aemonName}과, 그리고 앞으로 만날 모든 인공지능들과 잘 어울려 지낼 사람들입니다.\n이번 프로젝트에서 배운 것들을 잊지 말아주세요. 감사합니다.\n\n마지막 사후검사를 실시합니다. 여러분의 인공지능에 대한 이해, 태도 등을 검사하겠습니다.`}
+          />
+          <div className="mt-5">
+            <TeacherPostSurveyResults
+              answers={postSurveyAnswers}
+              questions={postSurveyQuestions}
+              isRefreshing={isRefreshing}
+              onRefresh={() => void refreshBundle()}
             />
-            <Panel>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="rounded-2xl border border-white/10 bg-[#07111B]/55 p-4">
-                    <p className="text-sm font-bold text-[#8AA0B0]">응답 수</p>
-                    <p className="font-display mt-2 text-4xl text-[#FFD37A]">{postSurveyAnswers.length}</p>
-                  </div>
-                  <div className="rounded-2xl border border-white/10 bg-[#07111B]/55 p-4">
-                    <p className="text-sm font-bold text-[#8AA0B0]">상태</p>
-                    <p className="font-display mt-2 text-4xl text-[#4FE0C0]">{postSurveyAnswers.length > 0 ? '응답 확인' : '대기'}</p>
-                  </div>
-                </div>
-                <Button className="mt-5 w-full" variant="secondary" disabled={isRefreshing} onClick={() => void refreshBundle()}>
-                  <RefreshCw size={17} className={isRefreshing ? 'animate-spin' : ''} />
-                  응답 새로고침
-                </Button>
-            </Panel>
           </div>
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextLabel="임명식 완료" />
         </>
       ) : null}
     </StepShell>
+  )
+}
+
+function TeacherPostSurveyResults({
+  answers,
+  questions,
+  isRefreshing,
+  onRefresh,
+}: {
+  answers: { response: SurveyResponse; answer: AiSurveyAnswer }[]
+  questions: string[]
+  isRefreshing: boolean
+  onRefresh: () => void
+}) {
+  const openGroups = questions.map((question, questionIndex) => ({
+    question,
+    answers: answers
+      .map(({ response, answer }, answerIndex) => ({
+        id: `${response.id}-${questionIndex}`,
+        label: `답변 ${answerIndex + 1}`,
+        text: answer.o[questionIndex]?.trim() ?? '',
+      }))
+      .filter((item) => item.text),
+  }))
+  const openAnswerCount = openGroups.reduce((sum, group) => sum + group.answers.length, 0)
+
+  return (
+    <div className="grid gap-5">
+      <Panel>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="font-data text-xs text-[#6AD8FF]">RESULT</p>
+            <h2 className="font-display mt-1 text-4xl text-[#EAF2F5]">사후검사 결과</h2>
+            <p className="mt-2 leading-7 text-[#8AA0B0]">학생 응답이 들어오면 선택 분포와 서술형 답변이 이 화면에 자동으로 반영됩니다.</p>
+          </div>
+          <Button variant="secondary" disabled={isRefreshing} onClick={onRefresh}>
+            <RefreshCw size={17} className={isRefreshing ? 'animate-spin' : ''} />
+            새로고침
+          </Button>
+        </div>
+
+        <div className="mt-5 grid gap-3 sm:grid-cols-3">
+          <div className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
+            <p className="text-sm text-[#8AA0B0]">응답 수</p>
+            <p className="font-display mt-1 text-4xl text-[#EAF2F5]">{answers.length}</p>
+          </div>
+          <div className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
+            <p className="text-sm text-[#8AA0B0]">선택형 문항</p>
+            <p className="font-display mt-1 text-4xl text-[#6AD8FF]">{AI_SURVEY_ITEMS.length}</p>
+          </div>
+          <div className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
+            <p className="text-sm text-[#8AA0B0]">서술형 답변</p>
+            <p className="font-display mt-1 text-4xl text-[#FFD37A]">{openAnswerCount}</p>
+          </div>
+        </div>
+
+        <div className="mt-5 grid gap-4">
+          {answers.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0]">아직 사후검사 응답이 없습니다.</p> : null}
+          {AI_SURVEY_ITEMS.map((item, index) => (
+            <article key={item.no} className="rounded-[18px] border border-white/10 bg-[#07111B]/45 p-4">
+              <div className="flex items-start gap-3">
+                <BarChart3 className="mt-1 shrink-0 text-[#6AD8FF]" size={20} />
+                <div className="min-w-0 flex-1">
+                  <p className="font-black leading-7 text-[#EAF2F5]">{item.no}. {item.text}</p>
+                  <div className="mt-3 grid gap-2">
+                    {AI_SURVEY_OPTIONS.map((option) => {
+                      const count = answers.filter((entry) => entry.answer.s[index] === option.value).length
+                      const percent = answers.length ? Math.round((count / answers.length) * 100) : 0
+                      return (
+                        <div key={option.value} className="grid grid-cols-[88px_1fr_44px] items-center gap-3 text-sm">
+                          <span className="font-bold text-[#B7C7D2]">{option.label}</span>
+                          <div className="h-2 overflow-hidden rounded-full bg-white/10">
+                            <div className="h-full rounded-full bg-[#6AD8FF]" style={{ width: `${percent}%` }} />
+                          </div>
+                          <span className="text-right font-data text-[#8AA0B0]">{count}</span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      </Panel>
+
+      <Panel>
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="font-display text-3xl text-[#EAF2F5]">서술형 답변 모음</h2>
+          <span className="rounded-full bg-[#07111B]/70 px-3 py-1 text-sm text-[#8AA0B0]">{openAnswerCount}개</span>
+        </div>
+        <div className="mt-4 max-h-[620px] overflow-y-auto pr-2">
+          {openAnswerCount === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0]">아직 서술형 답변이 없습니다.</p> : null}
+          <div className="grid gap-5">
+            {openGroups.map((group, groupIndex) => (
+              <section key={group.question} className="grid gap-3">
+                <div className="sticky top-0 z-10 rounded-2xl border border-[#6AD8FF]/20 bg-[#0B1A29]/95 p-4 backdrop-blur">
+                  <p className="font-data text-xs text-[#6AD8FF]">서술형 {groupIndex + 1}</p>
+                  <h3 className="mt-1 text-lg font-black leading-7 text-[#EAF2F5]">{group.question}</h3>
+                </div>
+                {group.answers.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0]">아직 이 질문의 답변이 없습니다.</p> : null}
+                {group.answers.map((answer) => (
+                  <article key={answer.id} className="rounded-[18px] border border-white/10 bg-[#07111B]/55 p-4">
+                    <p className="font-data text-xs text-[#8AA0B0]">{answer.label}</p>
+                    <p className="mt-2 text-lg font-bold leading-8 text-[#EAF2F5]">{answer.text}</p>
+                  </article>
+                ))}
+              </section>
+            ))}
+          </div>
+        </div>
+      </Panel>
+    </div>
   )
 }
 
@@ -1245,6 +1352,7 @@ function StudentLessonFive({
   isJoining,
   message,
   postSurveyAnswers,
+  postSurveyQuestions,
   queryCode,
   session,
   pledgeSubmissions,
@@ -1262,6 +1370,7 @@ function StudentLessonFive({
   isJoining: boolean
   message: string
   postSurveyAnswers: { response: SurveyResponse; answer: AiSurveyAnswer }[]
+  postSurveyQuestions: string[]
   queryCode: string
   session: { classCode: string; nickname: string } | null
   pledgeSubmissions: ReturnType<typeof pledgeFromResponse>[]
@@ -1339,7 +1448,14 @@ function StudentLessonFive({
         <StudentPledgeBoard message={message} nickname={session.nickname} pledgeSubmissions={pledgeSubmissions} onRefresh={onRefresh} onSave={onSave} />
       ) : null}
       {activity === 'post' ? (
-        <StudentPostSurveyBoard message={message} nickname={session.nickname} postSurveyAnswers={postSurveyAnswers} onRefresh={onRefresh} onSave={onSave} />
+        <StudentPostSurveyBoard
+          message={message}
+          nickname={session.nickname}
+          postSurveyAnswers={postSurveyAnswers}
+          questions={postSurveyQuestions}
+          onRefresh={onRefresh}
+          onSave={onSave}
+        />
       ) : null}
     </div>
   )
@@ -1550,20 +1666,22 @@ function StudentPostSurveyBoard({
   message,
   nickname,
   postSurveyAnswers,
+  questions,
   onRefresh,
   onSave,
 }: {
   message: string
   nickname: string
   postSurveyAnswers: { response: SurveyResponse; answer: AiSurveyAnswer }[]
+  questions: string[]
   onRefresh: () => void
   onSave: (args: { nickname: string; questionKey: string; body: string }) => Promise<boolean>
 }) {
   const existing = postSurveyAnswers.find((item) => item.response.nickname === nickname)?.answer
-  const [answer, setAnswer] = useState<AiSurveyAnswer>(existing ?? emptySurveyAnswer(POST_SURVEY_OPEN_QUESTIONS.length))
+  const [answer, setAnswer] = useState<AiSurveyAnswer>(existing ?? emptySurveyAnswer(questions.length))
   const [saved, setSaved] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const complete = answer.s.every(Boolean) && POST_SURVEY_OPEN_QUESTIONS.every((_, index) => answer.o[index]?.trim())
+  const complete = answer.s.every(Boolean) && questions.every((_, index) => answer.o[index]?.trim())
 
   const choose = (index: number, value: number) => {
     setAnswer((current) => ({ ...current, s: current.s.map((item, itemIndex) => (itemIndex === index ? value : item)) }))
@@ -1572,7 +1690,7 @@ function StudentPostSurveyBoard({
   const submit = async () => {
     if (!complete || isSaving) return
     setIsSaving(true)
-    const ok = await onSave({ nickname, questionKey: POST_SURVEY_KEY, body: serializeSurveyAnswer(answer, POST_SURVEY_OPEN_QUESTIONS.length) })
+    const ok = await onSave({ nickname, questionKey: POST_SURVEY_KEY, body: serializeSurveyAnswer(answer, questions.length) })
     setSaved(ok)
     setIsSaving(false)
   }
@@ -1617,7 +1735,7 @@ function StudentPostSurveyBoard({
         ))}
       </div>
       <div className="mt-5 grid gap-3">
-        {POST_SURVEY_OPEN_QUESTIONS.map((question, index) => (
+        {questions.map((question, index) => (
           <label key={question} className="grid gap-2">
             <span className="text-sm font-bold leading-6 text-[#8AA0B0]">{question}</span>
             <textarea

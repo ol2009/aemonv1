@@ -33,6 +33,11 @@ export const POST_SURVEY_OPEN_QUESTIONS = [
   '앞으로 인공지능을 사용할 때 내가 조심해야 할 점이나 지키고 싶은 약속은 무엇인가요?',
 ] as const
 
+export function postSurveyOpenQuestions(aemonName: string) {
+  const name = aemonName.trim() || '에아몬'
+  return POST_SURVEY_OPEN_QUESTIONS.map((question) => question.replace('OO이', name))
+}
+
 export type AiSurveyAnswer = {
   s: number[]
   o: string[]
