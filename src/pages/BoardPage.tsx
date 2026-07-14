@@ -1442,7 +1442,7 @@ export function BoardPage() {
                       <textarea
                         className="min-h-20 w-full resize-none rounded-2xl border border-white/10 bg-[#07111B]/75 px-4 py-3 text-base leading-7 text-[#EAF2F5] outline-none transition placeholder:text-[#6F8191] focus:border-[#9B7CFF]/70 focus:ring-2 focus:ring-[#9B7CFF]/20"
                         maxLength={180}
-                        placeholder="왜냐하면 그렇게 하지 않으면 [어떤 문제]가 생길 수 있기 때문이다."
+                        placeholder="왜냐하면 ~"
                         value={codeReasonDraft}
                         onChange={(event) => setCodeReasonDraft(event.target.value)}
                       />
