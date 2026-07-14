@@ -689,7 +689,7 @@ export function LessonThreePage() {
               <div>
               <p className="font-data text-sm text-[#FFD37A]">학습게시판</p>
               <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">가치코드 No.2 받기</h2>
-              <p className="mt-3 leading-7 text-[#8AA0B0]">학생들은 QR로 들어가 정직 가치코드 문장과 이유를 올립니다. 마음에 드는 발의에는 좋아요를 누릅니다.</p>
+              <p className="mt-3 leading-7 text-[#8AA0B0]">학생들은 가치카드 하나를 고르고, 그 가치를 지킬 구체적인 상황과 행동, 이유를 올립니다. 마음에 드는 발의에는 좋아요를 누릅니다.</p>
               </div>
               <QrBlock title="3차시 가치코드 No.2 게시판" url={codeBoardUrl} />
             </div>

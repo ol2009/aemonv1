@@ -180,7 +180,7 @@ export function BoardPage() {
   const [fairnessDraft, setFairnessDraft] = useState('')
   const [codeBodyDraft, setCodeBodyDraft] = useState('')
   const [codeReasonDraft, setCodeReasonDraft] = useState('')
-  const [codeValueCard, setCodeValueCard] = useState('배려')
+  const [codeValueCard, setCodeValueCard] = useState('')
   const [surveyDraft, setSurveyDraft] = useState<{ nickname: string; answer: AiSurveyAnswer } | null>(null)
   const [surveySaveMessage, setSurveySaveMessage] = useState('')
   const [isSavingSurvey, setIsSavingSurvey] = useState(false)
@@ -286,11 +286,6 @@ export function BoardPage() {
   const canWriteRemote = Boolean(state.classId && isRemoteReady())
   useBoardLiveSync(queryCode || state.classCode)
   useV2RemoteSync(state.classCode, Boolean(state.classCode && (session || isTeacherBoard)))
-
-  useEffect(() => {
-    if (activeTopic === 'code2') setCodeValueCard('정직')
-    if (activeTopic === 'code3') setCodeValueCard('공정')
-  }, [activeTopic])
 
   useEffect(() => {
     const code = queryCode.trim()
@@ -577,7 +572,7 @@ export function BoardPage() {
   const submitProposal = async () => {
     const body = codeBodyDraft.trim()
     const reason = codeReasonDraft.trim()
-    if (!body || !reason || !session) return
+    if (!codeValueCard || !body || !reason || !session) return
     addProposal({ body, reason, valueCard: codeValueCard, revisionOfNo: activeCodeNo, nickname: session.nickname })
     setCodeBodyDraft('')
     setCodeReasonDraft('')
@@ -787,7 +782,12 @@ export function BoardPage() {
               className={`rounded-2xl border px-4 py-3 text-sm font-black transition ${
                 activeTopic === topic ? classNameForTopic(topic) : 'border-white/10 bg-[#07111B]/45 text-[#B7C7D2] hover:border-white/25 hover:text-[#EAF2F5]'
               }`}
-              onClick={() => setSelectedTopic(topic)}
+              onClick={() => {
+                setSelectedTopic(topic)
+                setCodeValueCard('')
+                setCodeBodyDraft('')
+                setCodeReasonDraft('')
+              }}
               type="button"
             >
               {topicTabLabel(topic)}
@@ -1409,37 +1409,46 @@ export function BoardPage() {
                         : '나쁜 명령을 스스로 멈추게 할 첫 번째 기준을 만듭니다.'}
                   </p>
                   <div className="mt-4 rounded-2xl border border-[#FFD37A]/25 bg-[#FFD37A]/10 p-4">
-                    <p className="font-bold leading-7 text-[#FFD37A]">가치 카드를 먼저 고르고, 행동 기준을 한 문장으로 써요.</p>
-                    <p className="mt-1 font-bold leading-7 text-[#FFD37A]">그 아래에는 왜 필요한지 이유를 따로 적으면 됩니다.</p>
+                    <p className="font-bold leading-7 text-[#FFD37A]">가치 카드는 {aemonDisplayName}이 나아갈 방향을 정하는 카드예요.</p>
+                    <p className="mt-1 font-bold leading-7 text-[#FFD37A]">카드 이름을 그대로 쓰지 말고, 그 가치를 지키려면 어떤 상황에서 어떻게 행동해야 하는지 적어주세요.</p>
                   </div>
                 </div>
 
                 <div className="grid gap-4">
+                  <div>
+                    <p className="mb-2 text-sm font-black text-[#C9B9FF]">1. 가장 중요한 가치 하나를 고르세요</p>
+                    <p className="mb-3 text-xs font-bold leading-5 text-[#8AA0B0]">가치카드는 방향이고, 가치코드는 그 방향을 지키기 위한 구체적인 행동입니다.</p>
+                  </div>
                   <ValueCardSelectGrid cards={valueCards} selectedValue={codeValueCard} onSelect={setCodeValueCard} />
 
                   <div className="grid gap-3 rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
                     <label className="grid gap-2">
-                      <span className="text-sm font-black text-[#C9B9FF]">해야 하는 일</span>
+                      <span className="text-sm font-black text-[#C9B9FF]">2. 어떤 상황에서, 어떻게 행동해야 하나요?</span>
                       <textarea
                         className="min-h-20 w-full resize-none rounded-2xl border border-white/10 bg-[#07111B]/75 px-4 py-3 text-base leading-7 text-[#EAF2F5] outline-none transition placeholder:text-[#6F8191] focus:border-[#9B7CFF]/70 focus:ring-2 focus:ring-[#9B7CFF]/20"
                         maxLength={180}
-                        placeholder={`${aemonDisplayName}은(는) ~ 해야 한다.`}
+                        placeholder={`${aemonDisplayName}은(는) [어떤 상황]일 때, [어떻게 행동]해야 한다.`}
                         value={codeBodyDraft}
                         onChange={(event) => setCodeBodyDraft(event.target.value)}
                       />
+                      <span className="text-xs font-bold leading-5 text-[#8AA0B0]">
+                        {codeValueCard
+                          ? `“${codeValueCard}해야 한다”에서 끝내지 말고, 실제로 무엇을 해야 하는지 써주세요.`
+                          : '먼저 가치카드 하나를 고른 뒤, 그 가치를 지킬 실제 행동을 써주세요.'}
+                      </span>
                     </label>
                     <label className="grid gap-2">
-                      <span className="text-sm font-black text-[#C9B9FF]">그 이유</span>
+                      <span className="text-sm font-black text-[#C9B9FF]">3. 왜 그렇게 해야 하나요?</span>
                       <textarea
                         className="min-h-20 w-full resize-none rounded-2xl border border-white/10 bg-[#07111B]/75 px-4 py-3 text-base leading-7 text-[#EAF2F5] outline-none transition placeholder:text-[#6F8191] focus:border-[#9B7CFF]/70 focus:ring-2 focus:ring-[#9B7CFF]/20"
                         maxLength={180}
-                        placeholder="~ 할 수 있기 때문이다."
+                        placeholder="왜냐하면 그렇게 하지 않으면 [어떤 문제]가 생길 수 있기 때문이다."
                         value={codeReasonDraft}
                         onChange={(event) => setCodeReasonDraft(event.target.value)}
                       />
                     </label>
                     <div className="flex justify-end">
-                      <Button className="min-h-12 px-6" disabled={!codeBodyDraft.trim() || !codeReasonDraft.trim()} onClick={submitProposal}>
+                      <Button className="min-h-12 px-6" disabled={!codeValueCard || !codeBodyDraft.trim() || !codeReasonDraft.trim()} onClick={submitProposal}>
                         <Send size={18} />
                         올리기
                       </Button>
@@ -1478,7 +1487,7 @@ export function BoardPage() {
                             <span className="font-data text-xs text-[#8AA0B0]">{proposal.nickname}</span>
                           </div>
                           <p className="mt-3 text-xl font-black leading-8 text-[#EAF2F5]">{proposal.body}</p>
-                          <p className="mt-2 text-sm leading-6 text-[#8AA0B0]">{proposal.reason}</p>
+                          <p className="mt-2 text-sm leading-6 text-[#8AA0B0]"><span className="font-black text-[#C9B9FF]">이유 · </span>{proposal.reason}</p>
                         </div>
                         <span className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-[#FFD37A]/15 px-4 py-2 text-sm font-black text-[#FFD37A] md:min-w-24">
                           <Heart size={16} fill={voted ? 'currentColor' : 'none'} />
@@ -1511,7 +1520,7 @@ export function BoardPage() {
                           ))}
                         </div>
                         <p className="mt-2 text-lg font-bold leading-7 text-[#EAF2F5]">{code.body}</p>
-                        {code.reason ? <p className="mt-1 text-sm leading-6 text-[#8AA0B0]">{code.reason}</p> : null}
+                        {code.reason ? <p className="mt-1 text-sm leading-6 text-[#8AA0B0]"><span className="font-black text-[#4FE0C0]">이유 · </span>{code.reason}</p> : null}
                       </div>
                     </div>
                   </article>

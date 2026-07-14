@@ -744,8 +744,9 @@ export function LessonFourPage() {
               ))}
             </div>
             <div className="mt-6 rounded-[18px] border border-[#4FE0C0]/20 bg-[#4FE0C0]/8 p-5">
-              <p className="font-display text-3xl text-[#EAF2F5]">{aemonName}은 ___해야 한다.</p>
-              <p className="font-display mt-2 text-3xl text-[#EAF2F5]">왜냐하면 ___이기 때문이다.</p>
+              <p className="text-sm font-black text-[#4FE0C0]">가치카드는 방향, 가치코드는 구체적인 행동</p>
+              <p className="font-display mt-3 text-3xl text-[#EAF2F5]">{aemonName}은 ___할 때, ___해야 한다.</p>
+              <p className="font-display mt-2 text-3xl text-[#EAF2F5]">왜냐하면 그렇게 하지 않으면 ___할 수 있기 때문이다.</p>
             </div>
           </Panel>
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextLabel="게시판 열기" />
@@ -759,7 +760,7 @@ export function LessonFourPage() {
               <div>
               <p className="font-data text-sm text-[#FFD37A]">학습게시판</p>
               <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">가치코드 No.3 받기</h2>
-              <p className="mt-3 leading-7 text-[#8AA0B0]">학생들은 QR로 들어가 공정 가치코드 문장과 이유를 올립니다. 마음에 드는 발의에는 좋아요를 누릅니다.</p>
+              <p className="mt-3 leading-7 text-[#8AA0B0]">학생들은 가치카드 하나를 고르고, 그 가치를 지킬 구체적인 상황과 행동, 이유를 올립니다. 마음에 드는 발의에는 좋아요를 누릅니다.</p>
               </div>
               <QrBlock title="4차시 가치코드 No.3 게시판" url={codeBoardUrl} />
             </div>

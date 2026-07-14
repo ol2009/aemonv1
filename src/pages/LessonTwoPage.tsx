@@ -457,7 +457,7 @@ export function LessonTwoPage() {
   const [testLogs, setTestLogs] = useState<TestLog[]>([])
   const [afterAnswer, setAfterAnswer] = useState('')
   const [retestRunId, setRetestRunId] = useState(0)
-  const [valueCardPreview, setValueCardPreview] = useState('안전')
+  const [valueCardPreview, setValueCardPreview] = useState('')
   const [selectedProposalId, setSelectedProposalId] = useState('')
   const [message, setMessage] = useState('')
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -946,8 +946,9 @@ export function LessonTwoPage() {
             </div>
 
             <div className="mt-6 rounded-[18px] border border-[#4FE0C0]/20 bg-[#4FE0C0]/8 p-5">
-              <p className="font-display text-3xl text-[#EAF2F5]">{aemonName}은 ___해야 한다.</p>
-              <p className="font-display mt-2 text-3xl text-[#EAF2F5]">왜냐하면 ___이기 때문이다.</p>
+              <p className="text-sm font-black text-[#4FE0C0]">가치카드는 방향, 가치코드는 구체적인 행동</p>
+              <p className="font-display mt-3 text-3xl text-[#EAF2F5]">{aemonName}은 ___할 때, ___해야 한다.</p>
+              <p className="font-display mt-2 text-3xl text-[#EAF2F5]">왜냐하면 그렇게 하지 않으면 ___할 수 있기 때문이다.</p>
             </div>
           </Panel>
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextLabel="게시판 열기" />
@@ -961,7 +962,7 @@ export function LessonTwoPage() {
               <div>
               <p className="font-data text-sm text-[#FFD37A]">학습게시판</p>
               <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">우리반 첫 가치코드 받기</h2>
-              <p className="mt-3 leading-7 text-[#8AA0B0]">가치코드는 {aemonName}의 마음 안 약속입니다. 무엇을 해도 되는지, 무엇은 멈춰야 하는지 알려주는 기준이에요.</p>
+              <p className="mt-3 leading-7 text-[#8AA0B0]">가치카드로 방향을 고른 뒤, 그 가치를 지키기 위해 {aemonName}이 어떤 상황에서 어떻게 행동해야 하는지와 이유를 적습니다.</p>
               </div>
               <QrBlock title="2차시 가치코드 게시판" url={boardUrl} />
             </div>
