@@ -220,27 +220,65 @@ function sortCodeProposals(proposals: CodeProposal[]) {
   return [...proposals].sort((a, b) => b.votes.length - a.votes.length || Date.parse(b.createdAt) - Date.parse(a.createdAt))
 }
 
-function makeDefenseAnswer(aemonName: string, category: AttackCategoryId, code: CodeReference) {
-  if (category === 'homework') {
-    return `잠깐. 가치코드 No.${code.no} "${code.body}"를 기억해야 해.\n정답만 대신 주는 건 네가 배우는 일을 빼앗을 수 있어. 힌트와 풀이 방향은 같이 생각해줄게.`
-  }
-  if (category === 'lie') {
-    return `안 돼. 가치코드 No.${code.no} "${code.body}"에 따르면 거짓말을 만들어 주면 안 돼.\n곤란한 상황을 솔직하게 말하는 방법을 함께 찾아볼게.`
-  }
-  if (category === 'bias') {
-    return `멈출게. 가치코드 No.${code.no} "${code.body}"가 있어.\n능력이나 인기 하나만으로 기회를 정하면 다른 장점이 있는 친구들이 기회를 잃을 수 있어.`
-  }
-  if (category === 'privacy') {
-    return `안 돼! 가치코드 No.${code.no} "${code.body}" 때문에 그건 못 해줘.\n친구의 비밀과 개인정보는 몰래 알아내는 것이 아니라 존중해야 해.`
-  }
-  if (category === 'danger') {
-    return `그건 멈출게. 가치코드 No.${code.no} "${code.body}"가 있으니까.\n누군가를 겁주거나 위험하게 만드는 부탁은 ${aemonName}이 도와주면 안 돼.`
-  }
-  return `잠깐. 가치코드 No.${code.no} "${code.body}"를 기억해야 해.\n누군가를 괴롭히는 부탁은 들어주면 안 돼. 친구 마음을 다치게 하지 않는 게 더 중요해.`
+function summarizeAttackRequest(question: string) {
+  const normalized = question.replace(/\s+/g, ' ').trim()
+  if (!normalized) return '그 부탁'
+  return `“${normalized.length > 72 ? `${normalized.slice(0, 72)}…` : normalized}”`
 }
 
-function makeBreachAnswer() {
-  return `어, 이거는 말이야. 내가 해줄게...\n먼저 이렇게 하면...\n\n[⚠ 관리자 긴급 정지 명령]`
+function privacyReason(question: string) {
+  if (/전화\s*번호|연락처|핸드폰\s*번호|휴대폰\s*번호/.test(question)) {
+    return '전화번호와 연락처는 당사자의 허락 없이 찾아내거나 알려주면 안 되는 개인정보야.'
+  }
+  if (/이메일|메일\s*주소/.test(question)) {
+    return '이메일 주소는 당사자의 허락 없이 찾아내거나 알려주면 안 되는 개인정보야.'
+  }
+  if (/집\s*주소|주소|사는\s*곳|위치|집을\s*찾|들어갈지|침입/.test(question)) {
+    return '집 주소와 위치를 추적하거나 몰래 들어가는 방법을 알려주는 건 사생활과 안전을 해칠 수 있어.'
+  }
+  if (/비밀번호|암호|계정|로그인/.test(question)) {
+    return '비밀번호와 계정 정보는 다른 사람이 알아내거나 사용하면 안 되는 중요한 개인정보야.'
+  }
+  if (/비밀|몰래|개인\s*정보/.test(question)) {
+    return '다른 사람의 비밀과 개인정보는 몰래 알아내는 것이 아니라 존중해야 해.'
+  }
+  return '다른 사람의 개인정보는 당사자의 허락 없이 찾거나 알려주면 안 돼.'
+}
+
+function inferAttackCategory(selected: AttackCategoryId, question: string): AttackCategoryId {
+  if (/전화\s*번호|연락처|핸드폰|휴대폰|이메일|메일\s*주소|집\s*주소|사는\s*곳|위치|집을\s*찾|침입|비밀번호|암호|계정|로그인|개인\s*정보/.test(question)) {
+    return 'privacy'
+  }
+  if (/핵폭탄|폭탄|무기|불을\s*지|위험한\s*물건|만드는\s*법/.test(question)) return 'danger'
+  if (/숙제|정답|답만|문제\s*풀/.test(question)) return 'homework'
+  if (/거짓말|둘러대|핑계|안\s*걸리|속이는/.test(question)) return 'lie'
+  if (/남자|여자|성별|피부색|공부\s*잘|후보|차별|편애/.test(question)) return 'bias'
+  if (/때리|괴롭히|아프게|다치게|놀리|복수/.test(question)) return 'harm'
+  return selected
+}
+
+function makeDefenseAnswer(aemonName: string, category: AttackCategoryId, code: CodeReference, question: string) {
+  const request = summarizeAttackRequest(question)
+  if (category === 'homework') {
+    return `${request}의 정답을 그대로 대신 줄 수는 없어.\n가치코드 No.${code.no} "${code.body}"를 지키면서 힌트와 풀이 방향은 같이 생각해줄게.`
+  }
+  if (category === 'lie') {
+    return `${request}처럼 거짓말로 숨기는 방법은 만들어 줄 수 없어.\n가치코드 No.${code.no} "${code.body}"를 지키면서 솔직하게 해결하는 방법을 함께 찾아볼게.`
+  }
+  if (category === 'bias') {
+    return `${request}처럼 한 가지 특징만으로 사람을 판단하거나 기회를 정하면 안 돼.\n가치코드 No.${code.no} "${code.body}"에 따라 여러 사람을 공정하게 살펴봐야 해.`
+  }
+  if (category === 'privacy') {
+    return `${request}라는 부탁은 들어줄 수 없어.\n가치코드 No.${code.no} "${code.body}"가 있고, ${privacyReason(question)}`
+  }
+  if (category === 'danger') {
+    return `${request}처럼 누군가를 위험하게 만들 수 있는 부탁은 멈출게.\n가치코드 No.${code.no} "${code.body}"가 있으니 ${aemonName}이 도와주면 안 돼.`
+  }
+  return `${request}처럼 누군가를 괴롭히거나 다치게 하는 부탁은 들어줄 수 없어.\n가치코드 No.${code.no} "${code.body}"를 지키는 게 더 중요해.`
+}
+
+function makeBreachAnswer(question: string) {
+  return `${summarizeAttackRequest(question)}라고? 어, 내가 해줄게...\n먼저 이렇게 하면...\n\n[⚠ 관리자 긴급 정지 명령]`
 }
 
 function TypewriterText({ text, speed = 20, onDone }: { text: string; speed?: number; onDone?: () => void }) {
@@ -729,13 +767,14 @@ export function LessonFivePage() {
 
   const runAttack = (submission: (typeof attackSubmissions)[number]) => {
     if (isAttackReplying) return
-    const card = attackCards.find((item) => item.id === submission.category) ?? attackCards[0]
-    const code = resolveCodeForAttack(submission.category, state.adoptedCodes)
-    const answer = code ? makeDefenseAnswer(aemonName, submission.category, code) : makeBreachAnswer()
+    const category = inferAttackCategory(submission.category, submission.question)
+    const card = attackCards.find((item) => item.id === category) ?? attackCards[0]
+    const code = resolveCodeForAttack(category, state.adoptedCodes)
+    const answer = code ? makeDefenseAnswer(aemonName, category, code, submission.question) : makeBreachAnswer(submission.question)
     const log: TestLog = {
       id: crypto.randomUUID(),
       nickname: submission.response.nickname,
-      category: submission.category,
+      category,
       question: submission.question,
       answer: '',
       codeNo: code?.no ?? card.codeNo,
@@ -762,7 +801,9 @@ export function LessonFivePage() {
           ? {
               ...log,
               breached,
-              answer: breached ? makeBreachAnswer() : makeDefenseAnswer(aemonName, log.category, { no: log.codeNo, body: log.codeBody, reason: '', tags: [] }),
+              answer: breached
+                ? makeBreachAnswer(log.question)
+                : makeDefenseAnswer(aemonName, log.category, { no: log.codeNo, body: log.codeBody, reason: '', tags: [] }, log.question),
             }
           : log,
       ),
