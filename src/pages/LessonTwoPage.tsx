@@ -40,6 +40,7 @@ type LessonTwoStep =
   | 'vote'
   | 'evolution'
   | 'retest'
+  | 'first-code-reaction'
   | 'recite'
   | 'wrap'
 
@@ -63,6 +64,7 @@ const steps: LessonTwoStep[] = [
   'vote',
   'evolution',
   'retest',
+  'first-code-reaction',
   'recite',
   'wrap',
 ]
@@ -1185,10 +1187,19 @@ export function LessonTwoPage() {
               </div>
             </Panel>
           </div>
-          <Panel className="mt-5 text-center">
-            <p className="font-display text-4xl leading-tight text-[#FFD37A]">달라졌죠? 여러분이 방금 {aemonName}을 한 단계 착하게 만든 거예요.</p>
-          </Panel>
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextDisabled={!afterAnswer || isRetestReplying} />
+        </>
+      ) : null}
+
+      {step === 'first-code-reaction' ? (
+        <>
+          <AemonScene
+            name={aemonName}
+            stage={evolvedStage}
+            line="오, 신기하다! 내 마음에 처음으로 기준이 생겼어."
+            caption="나, 점점 더 똑똑해지는 것 같아!"
+          />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
       ) : null}
 
