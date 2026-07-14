@@ -4,14 +4,14 @@ import { Button, Kicker } from '../components/ui'
 
 const ethicsLayers = [
   {
-    label: 'AI 사용 예절',
-    title: 'AI를 어떻게 조심해서 사용할까?',
-    copy: '개인정보를 입력하지 않기, 딥페이크를 만들지 않기, 저작권을 지키기. 꼭 필요하지만 AI 윤리교육의 출발점입니다.',
+    label: '사용 수칙 교육이 아닙니다',
+    title: 'AI를 조심해서 쓰는 법에 머물지 않습니다',
+    copy: '개인정보를 입력하지 않기, 딥페이크를 만들지 않기, 저작권을 지키기 같은 사용 수칙은 중요하지만 에아몬 프로젝트의 핵심 내용은 아닙니다.',
   },
   {
-    label: 'AI 가치정렬',
-    title: 'AI는 무엇을 옳다고 판단해야 할까?',
-    copy: 'AI가 어떤 목표와 데이터를 따르는지, 무엇을 멈춰야 하는지, 그 판단 기준을 누가 정해야 하는지까지 묻습니다.',
+    label: '우리가 가르치는 AI 윤리',
+    title: 'AI가 따를 가치를 함께 결정합니다',
+    copy: 'AI가 어떤 목표와 데이터를 따르는지, 무엇을 옳다고 판단하고 언제 멈춰야 하는지, 그 기준을 누가 정해야 하는지 토론하고 직접 검증합니다. 이것이 인공지능 가치정렬입니다.',
   },
 ]
 
@@ -80,11 +80,11 @@ export function LandingPage() {
       <section className="border-b border-white/10">
         <div className="mx-auto max-w-7xl px-5 py-16 sm:py-20">
           <div className="max-w-4xl">
-            <Kicker>BEYOND AI ETIQUETTE</Kicker>
-            <h2 className="font-display mt-4 break-keep text-4xl leading-tight text-[#EAF2F5] sm:text-5xl">AI 윤리의 더 깊은 질문으로 들어갑니다</h2>
+            <Kicker>VALUE ALIGNMENT EDUCATION</Kicker>
+            <h2 className="font-display mt-4 break-keep text-4xl leading-tight text-[#EAF2F5] sm:text-5xl">AI 사용 예절이 아니라, AI 윤리를 가르칩니다</h2>
             <p className="mt-5 max-w-3xl text-lg leading-9 text-[#B7C7D2]">
-              안전한 사용법은 중요합니다. 그러나 아이들이 AI와 함께 살아갈 시민이 되려면,
-              기술을 조심하는 데서 멈추지 않고 그 기술이 따를 가치와 결정 과정까지 이해해야 합니다.
+              에아몬 프로젝트가 다루는 AI 윤리는 가치정렬입니다. 아이들은 완성된 사용 규칙을 외우는 대신,
+              AI가 따를 기준을 직접 제안하고 토론하고 투표하며 그 기준이 실제 행동을 바꾸는지 확인합니다.
             </p>
           </div>
 
