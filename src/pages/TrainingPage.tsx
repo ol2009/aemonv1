@@ -249,12 +249,17 @@ export function TrainingPage() {
         </div>
       </div>
 
-      <section className="relative min-h-[430px] overflow-hidden border-y border-white/10">
-        <img className="absolute inset-0 h-full w-full object-cover" src="/v2/lesson-1/director-cases.png" alt="" />
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(7,17,27,.97)_0%,rgba(7,17,27,.84)_48%,rgba(7,17,27,.28)_100%),linear-gradient(180deg,rgba(7,17,27,.12),rgba(7,17,27,.82))]" />
+      <section className="relative min-h-[430px] overflow-hidden border-y border-white/10 bg-[#071A29]">
+        <img
+          className="absolute right-[-18%] top-1/2 w-[min(88vw,620px)] -translate-y-1/2 object-contain opacity-45 sm:right-[-5%] sm:w-[min(58vw,620px)] sm:opacity-80 lg:right-[3%] lg:opacity-100"
+          src="/aemon/v3/stage-0-egg.gif?hero=20260714"
+          alt="진화 전 알 단계 에아몬"
+          style={{ filter: 'drop-shadow(0 0 56px rgba(79,224,192,.42))', imageRendering: 'pixelated' }}
+        />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(4,12,20,.98)_0%,rgba(4,12,20,.92)_48%,rgba(4,12,20,.12)_78%,rgba(4,12,20,.03)_100%),linear-gradient(180deg,rgba(4,12,20,.04),rgba(4,12,20,.72))]" />
         <div className="relative flex min-h-[430px] max-w-4xl flex-col justify-end px-6 py-10 sm:px-10">
           <p className="font-data text-sm text-[#4FE0C0]">AEMON TEACHER TRAINING</p>
-          <h1 className="font-display mt-4 break-keep text-4xl leading-tight text-[#EAF2F5] sm:text-6xl">인류 천재 연구자들이 매달리는 문제, 인공지능 가치정렬.</h1>
+          <h1 className="font-display mt-4 break-keep text-4xl leading-tight text-[#EAF2F5] sm:text-6xl">진정한 인공지능 윤리 교육, 인공지능 가치정렬.</h1>
           <p className="font-display mt-4 break-keep text-3xl leading-tight text-[#FFD37A] sm:text-4xl">이제 우리 반 아이들이 직접 경험합니다.</p>
         </div>
       </section>

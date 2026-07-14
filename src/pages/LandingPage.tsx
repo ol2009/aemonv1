@@ -43,13 +43,14 @@ export function LandingPage() {
 
   return (
     <div className="pb-16">
-      <section className="relative min-h-[72svh] overflow-hidden border-y border-white/10">
+      <section className="relative min-h-[72svh] overflow-hidden border-y border-white/10 bg-[#071A29]">
         <img
-          className="absolute inset-0 h-full w-full object-cover object-center"
-          src="/aemon/aemon-egg.png"
-          alt="빛나는 유리 캡슐 안에서 웃고 있는 알 단계 에아몬"
+          className="absolute right-[-18%] top-1/2 w-[min(88vw,620px)] -translate-y-1/2 object-contain opacity-45 sm:right-[-5%] sm:w-[min(58vw,620px)] sm:opacity-80 lg:right-[3%] lg:opacity-100"
+          src="/aemon/v3/stage-0-egg.gif?hero=20260714"
+          alt="진화 전 알 단계 에아몬"
+          style={{ filter: 'drop-shadow(0 0 56px rgba(79,224,192,.42))', imageRendering: 'pixelated' }}
         />
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(4,12,20,.98)_0%,rgba(4,12,20,.9)_43%,rgba(4,12,20,.18)_72%,rgba(4,12,20,.08)_100%),linear-gradient(180deg,rgba(4,12,20,.08),rgba(4,12,20,.82))]" />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(4,12,20,.98)_0%,rgba(4,12,20,.92)_48%,rgba(4,12,20,.12)_78%,rgba(4,12,20,.03)_100%),linear-gradient(180deg,rgba(4,12,20,.04),rgba(4,12,20,.72))]" />
         <div className="relative mx-auto flex min-h-[72svh] max-w-7xl items-end px-5 py-10 sm:py-14">
           <div className="max-w-4xl">
             <Kicker>AI VALUE ALIGNMENT IN THE CLASSROOM</Kicker>
@@ -59,7 +60,7 @@ export function LandingPage() {
               <br />AI가 따를 기준을 만드는 수업.
             </p>
             <p className="mt-6 max-w-3xl break-keep text-base leading-8 text-[#D5E0E6] sm:text-lg">
-              인류의 연구자들이 매달리는 인공지능 가치정렬을 우리 반 아이들이 직접 경험합니다.
+              진정한 인공지능 윤리 교육, 인공지능 가치정렬. 이제 우리 반 아이들이 직접 경험합니다.
               무엇이 옳은지, 누가 그 기준을 정할지 토론하고 AI의 행동을 실제로 바꾸는 5차시 학급 프로젝트입니다.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
