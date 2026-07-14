@@ -9,6 +9,7 @@ type ProposalAdoptionPanelProps = {
   codeNo: number
   fallbackValueCard: string
   isAdopting: boolean
+  emptyText?: string
   onSelect: (proposalId: string) => void
   onAdopt: () => void
 }
@@ -20,6 +21,7 @@ export function ProposalAdoptionPanel({
   codeNo,
   fallbackValueCard,
   isAdopting,
+  emptyText,
   onSelect,
   onAdopt,
 }: ProposalAdoptionPanelProps) {
@@ -32,7 +34,9 @@ export function ProposalAdoptionPanel({
         </div>
         <div className="grid max-h-[62vh] gap-3 overflow-y-auto pr-2 [scrollbar-color:#35516A_#0B1825]">
           {proposals.length === 0 ? (
-            <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0]">아직 발의가 없습니다. 테스트 중이면 다음으로 넘어갈 수 있습니다.</p>
+            <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0]">
+              {emptyText ?? '아직 발의가 없습니다. 테스트 중이면 다음으로 넘어갈 수 있습니다.'}
+            </p>
           ) : null}
           {proposals.map((proposal, index) => {
             const isAdopted = adoptedCode?.sourceProposalId === proposal.id

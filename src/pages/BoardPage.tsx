@@ -33,7 +33,7 @@ import { useV2RemoteSync } from '../lib/useV2RemoteSync'
 import { useBoardLiveSync } from '../lib/useLessonLiveSync'
 import { useV2 } from '../state/V2Store'
 
-type BoardTopic = 'survey' | 'risk' | 'name' | 'wish' | 'code' | 'honesty' | 'code2' | 'fairness' | 'code3'
+type BoardTopic = 'survey' | 'risk' | 'name' | 'wish' | 'code' | 'honesty' | 'code2' | 'fairness' | 'code3' | 'code4'
 
 const topicMeta: Record<BoardTopic, { label: string; title: string; lesson: string; empty: string }> = {
   survey: {
@@ -90,6 +90,12 @@ const topicMeta: Record<BoardTopic, { label: string; title: string; lesson: stri
     lesson: '4차시',
     empty: '아직 가치코드 No.3이 없습니다.',
   },
+  code4: {
+    label: '마지막 보완 코드',
+    title: '우리 반 마지막 보완 가치코드',
+    lesson: '5차시',
+    empty: '아직 마지막 보완 가치코드가 없습니다.',
+  },
 }
 
 function sortByLikes<T extends { votes: string[]; createdAt: string }>(items: T[]) {
@@ -106,7 +112,8 @@ function requestedTopic(value: string | null): BoardTopic | null {
     value === 'honesty' ||
     value === 'code2' ||
     value === 'fairness' ||
-    value === 'code3'
+    value === 'code3' ||
+    value === 'code4'
   ) {
     return value
   }
@@ -131,6 +138,7 @@ function topicLessonNo(topic: BoardTopic) {
   if (topic === 'risk' || topic === 'code') return 2
   if (topic === 'honesty' || topic === 'code2') return 3
   if (topic === 'fairness' || topic === 'code3') return 4
+  if (topic === 'code4') return 5
   return 1
 }
 
@@ -186,18 +194,19 @@ export function BoardPage() {
   const session = state.studentSession
   const isTopicOpen = (topic: BoardTopic) => state.currentLesson >= topicLessonNo(topic)
   const unlockedTopics = useMemo<BoardTopic[]>(() => {
-    const allTopics: BoardTopic[] = ['survey', 'name', 'wish', 'risk', 'code', 'honesty', 'code2', 'fairness', 'code3']
+    const allTopics: BoardTopic[] = ['survey', 'name', 'wish', 'risk', 'code', 'honesty', 'code2', 'fairness', 'code3', 'code4']
     return allTopics.filter((topic) => state.currentLesson >= topicLessonNo(topic))
   }, [state.currentLesson])
   const activeTopic = unlockedTopics.includes(selectedTopic) ? selectedTopic : unlockedTopics[0] ?? queryTopic ?? 'survey'
   const requestedTopicClosed = Boolean(queryTopic && !isTopicOpen(queryTopic))
-  const activeCodeNo = activeTopic === 'code2' ? 2 : activeTopic === 'code3' ? 3 : activeTopic === 'code' ? 1 : null
+  const activeCodeNo = activeTopic === 'code2' ? 2 : activeTopic === 'code3' ? 3 : activeTopic === 'code4' ? 4 : activeTopic === 'code' ? 1 : null
   const isSecondCodeBoard = activeTopic === 'code2'
   const isThirdCodeBoard = activeTopic === 'code3'
-  const codeBoardNumberLabel = isThirdCodeBoard ? 'No.3' : isSecondCodeBoard ? 'No.2' : '첫'
-  const codeBoardHeading = isThirdCodeBoard ? '공정 가치코드 올리기' : isSecondCodeBoard ? '정직 가치코드 올리기' : '우리반 첫 가치코드 올리기'
-  const codeBoardListHeading = isThirdCodeBoard ? '가치코드 No.3 후보' : isSecondCodeBoard ? '가치코드 No.2 후보' : '우리반 첫 가치코드 후보'
-  const codeBoardEmpty = isThirdCodeBoard ? '아직 올라온 가치코드 No.3이 없습니다.' : isSecondCodeBoard ? '아직 올라온 가치코드 No.2가 없습니다.' : '아직 올라온 가치코드가 없습니다.'
+  const isFourthCodeBoard = activeTopic === 'code4'
+  const codeBoardNumberLabel = isFourthCodeBoard ? 'No.4' : isThirdCodeBoard ? 'No.3' : isSecondCodeBoard ? 'No.2' : '첫'
+  const codeBoardHeading = isFourthCodeBoard ? '마지막 보완 가치코드 올리기' : isThirdCodeBoard ? '공정 가치코드 올리기' : isSecondCodeBoard ? '정직 가치코드 올리기' : '우리반 첫 가치코드 올리기'
+  const codeBoardListHeading = isFourthCodeBoard ? '가치코드 No.4 후보' : isThirdCodeBoard ? '가치코드 No.3 후보' : isSecondCodeBoard ? '가치코드 No.2 후보' : '우리반 첫 가치코드 후보'
+  const codeBoardEmpty = isFourthCodeBoard ? '아직 올라온 마지막 보완 가치코드가 없습니다.' : isThirdCodeBoard ? '아직 올라온 가치코드 No.3이 없습니다.' : isSecondCodeBoard ? '아직 올라온 가치코드 No.2가 없습니다.' : '아직 올라온 가치코드가 없습니다.'
   const voteLockNotice = '좋아요는 한 번 누르면 취소할 수 없습니다. 신중하게 골라 주세요.'
   const sortedNames = useMemo(() => sortByLikes(state.nameCandidates), [state.nameCandidates])
   const sortedProposals = useMemo(
@@ -205,6 +214,7 @@ export function BoardPage() {
       sortByLikes(
         state.proposals.filter((proposal) => {
           if (proposal.status !== 'pending') return false
+          if (activeTopic === 'code4') return proposal.revisionOfNo === 4
           if (activeTopic === 'code3') return proposal.revisionOfNo === 3
           if (activeTopic === 'code2') return proposal.revisionOfNo === 2
           return proposal.revisionOfNo === 1 || proposal.revisionOfNo === null
@@ -1376,7 +1386,7 @@ export function BoardPage() {
         </div>
       ) : null}
 
-      {activeTopic === 'code' || activeTopic === 'code2' || activeTopic === 'code3' ? (
+      {activeTopic === 'code' || activeTopic === 'code2' || activeTopic === 'code3' || activeTopic === 'code4' ? (
         <div className="grid gap-5">
           {!isTeacherBoard ? (
             <Panel>
@@ -1385,8 +1395,10 @@ export function BoardPage() {
                   <p className="font-data text-xs text-[#9B7CFF]">{topicMeta[activeTopic].lesson} · {codeBoardNumberLabel} 가치코드</p>
                   <h2 className="font-display mt-1 text-3xl text-[#EAF2F5]">{codeBoardHeading}</h2>
                   <p className="mt-3 text-sm leading-6 text-[#8AA0B0]">
-                    {isThirdCodeBoard
-                      ? '겉으로는 능력처럼 보이지만 불공정한 판단을 막을 기준을 만듭니다.'
+                    {isFourthCodeBoard
+                      ? '마지막 시험을 돌아보고, 앞으로 필요한 기준을 모둠별로 제안합니다.'
+                      : isThirdCodeBoard
+                        ? '겉으로는 능력처럼 보이지만 불공정한 판단을 막을 기준을 만듭니다.'
                       : isSecondCodeBoard
                         ? '무조건 칭찬하는 AI를 막을 정직의 기준을 만듭니다.'
                         : '나쁜 명령을 스스로 멈추게 할 첫 번째 기준을 만듭니다.'}

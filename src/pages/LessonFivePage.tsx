@@ -6,7 +6,6 @@ import {
   CheckCircle2,
   ClipboardList,
   Fingerprint,
-  KeyRound,
   LockKeyhole,
   MessageSquareWarning,
   Play,
@@ -20,10 +19,9 @@ import {
 } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
 import { EvolutionScene } from '../components/EvolutionScene'
+import { ProposalAdoptionPanel } from '../components/ProposalAdoptionPanel'
 import { TypingIndicator } from '../components/TypingIndicator'
 import { Button, Panel } from '../components/ui'
-import { ValueCardSelectGrid } from '../components/ValueCardSelectGrid'
-import { valueCards } from '../data/v2Lessons'
 import {
   AI_SURVEY_ITEMS,
   AI_SURVEY_OPTIONS,
@@ -38,8 +36,8 @@ import { playDialogueTick, unlockDialogueSound } from '../lib/dialogueSound'
 import { absoluteUrl } from '../lib/siteUrl'
 import { useV2RemoteSync } from '../lib/useV2RemoteSync'
 import { isStudentLiveView, useLessonLiveSync } from '../lib/useLessonLiveSync'
-import { addRemoteAdoptedCode, fetchRemoteClassBundle, isRemoteReady, updateRemoteLesson, upsertRemoteSurveyResponse } from '../lib/v2Remote'
-import { useV2, type AdoptedCode, type SurveyResponse } from '../state/V2Store'
+import { adoptRemoteCodeProposal, fetchRemoteClassBundle, isRemoteReady, updateRemoteLesson, upsertRemoteSurveyResponse } from '../lib/v2Remote'
+import { useV2, type AdoptedCode, type CodeProposal, type SurveyResponse } from '../state/V2Store'
 
 type LessonFiveStep = 'declaration' | 'prepare' | 'battle' | 'repair' | 'ending' | 'pledge' | 'post-survey'
 type StudentActivity = 'attack' | 'pledge' | 'post'
@@ -215,6 +213,10 @@ function resolveCodeForAttack(category: AttackCategoryId, adoptedCodes: AdoptedC
   if (byTag) return byTag
 
   return null
+}
+
+function sortCodeProposals(proposals: CodeProposal[]) {
+  return [...proposals].sort((a, b) => b.votes.length - a.votes.length || Date.parse(b.createdAt) - Date.parse(a.createdAt))
 }
 
 function makeDefenseAnswer(aemonName: string, category: AttackCategoryId, code: CodeReference) {
@@ -479,7 +481,7 @@ export function LessonFivePage() {
     setLesson,
     setRemoteStatus,
     upsertSurveyResponse,
-    addCode,
+    adoptProposal,
   } = useV2()
 
   const [stepIndex, setStepIndex] = useState(0)
@@ -495,11 +497,8 @@ export function LessonFivePage() {
   const [testLogs, setTestLogs] = useState<TestLog[]>([])
   const [selectedLogId, setSelectedLogId] = useState('')
   const [isAttackReplying, setIsAttackReplying] = useState(false)
-  const [repairValue, setRepairValue] = useState('')
-  const [repairBody, setRepairBody] = useState('')
-  const [repairReason, setRepairReason] = useState('')
-  const [isSavingRepair, setIsSavingRepair] = useState(false)
-  const [repairSaved, setRepairSaved] = useState(false)
+  const [selectedRepairProposalId, setSelectedRepairProposalId] = useState('')
+  const [isAdoptingRepair, setIsAdoptingRepair] = useState(false)
   const lessonRaisedRef = useRef(false)
   const battleChatScrollRef = useRef<HTMLDivElement | null>(null)
   const attackReplyTimerRef = useRef<number | null>(null)
@@ -515,8 +514,8 @@ export function LessonFivePage() {
   const attackUrl = absoluteUrl(`/lesson/5?role=student&activity=attack&code=${encodeURIComponent(state.classCode)}`)
   const pledgeUrl = absoluteUrl(`/lesson/5?role=student&activity=pledge&code=${encodeURIComponent(state.classCode)}`)
   const postSurveyUrl = absoluteUrl(`/lesson/5?role=student&activity=post&code=${encodeURIComponent(state.classCode)}`)
+  const repairBoardUrl = absoluteUrl(`/board?code=${encodeURIComponent(state.classCode)}&mode=code4`)
   const studentSession = state.studentSession?.classCode === syncCode ? state.studentSession : null
-  const nextRepairNo = state.adoptedCodes.reduce((max, code) => Math.max(max, code.no), 0) + 1
   const declarationLines = useMemo(
     () => [
       `오늘은 우리 ${aemonName}의 마지막 시험이에요.`,
@@ -564,6 +563,14 @@ export function LessonFivePage() {
   const selectedLog = testLogs.find((log) => log.id === selectedLogId) ?? testLogs[0] ?? null
   const battleChatLogs = useMemo(() => [...testLogs].reverse(), [testLogs])
   const hasBreach = testLogs.some((log) => log.answer && log.breached)
+  const repairProposals = useMemo(
+    () => sortCodeProposals(state.proposals.filter((proposal) => proposal.revisionOfNo === 4 && proposal.status !== 'rejected')),
+    [state.proposals],
+  )
+  const pendingRepairProposals = repairProposals.filter((proposal) => proposal.status === 'pending')
+  const finalCode = state.adoptedCodes.find((code) => code.no === 4) ?? null
+  const selectedRepairProposal = pendingRepairProposals.find((proposal) => proposal.id === selectedRepairProposalId) ?? (finalCode ? null : pendingRepairProposals[0] ?? null)
+  const repairParticipantCount = new Set(repairProposals.map((proposal) => proposal.nickname.trim()).filter(Boolean)).size
   const applyLiveViewState = useCallback((viewState: Record<string, unknown>) => {
     const declarationIndex = Number(viewState.declarationLineIndex)
     if (Number.isInteger(declarationIndex) && declarationIndex >= 0) setDeclarationLineIndex(declarationIndex)
@@ -573,6 +580,8 @@ export function LessonFivePage() {
   const liveActivityPath =
     currentStep === 'prepare' || currentStep === 'battle'
       ? '/lesson/5?role=student&activity=attack'
+      : currentStep === 'repair'
+        ? '/board?mode=code4'
       : currentStep === 'pledge'
         ? '/lesson/5?role=student&activity=pledge'
         : currentStep === 'post-survey'
@@ -730,30 +739,27 @@ export function LessonFivePage() {
     )
   }
 
-  const saveRepairCode = async () => {
-    const body = repairBody.trim()
-    const reason = repairReason.trim()
-    if (!body || !repairValue || isSavingRepair) return
-    setIsSavingRepair(true)
+  const adoptSelectedRepairProposal = async () => {
+    if (!selectedRepairProposal || isAdoptingRepair) return
+    const valueCard = selectedRepairProposal.valueCard || '책임'
+    setIsAdoptingRepair(true)
+    setTeacherMessage('')
 
     try {
-      addCode({ body, reason, tags: [repairValue] })
       if (canWriteRemote) {
-        await addRemoteAdoptedCode({ classId: state.classId, nickname: '교사', no: nextRepairNo, body, reason, tags: [repairValue] })
-        setRemoteStatus({ ok: true, message: '보완 가치코드 저장 완료' })
-        await refreshBundle()
+        await adoptRemoteCodeProposal({ proposalId: selectedRepairProposal.id, adoptedNo: 4, valueCard })
       }
-      setRepairBody('')
-      setRepairReason('')
-      setRepairValue('')
-      setRepairSaved(true)
-      setTeacherMessage(`보완 가치코드 No.${nextRepairNo}가 추가되었습니다.`)
+      adoptProposal(selectedRepairProposal.id, valueCard, 4)
+      if (canWriteRemote) await refreshBundle()
+      setSelectedRepairProposalId('')
+      setTeacherMessage('마지막 보완 가치코드를 No.4로 채택했습니다.')
+      setRemoteStatus({ ok: true, message: '가치코드 No.4 채택 완료' })
     } catch (error) {
       const message = (error as Error).message
       setTeacherMessage(message)
       setRemoteStatus({ ok: false, message })
     } finally {
-      setIsSavingRepair(false)
+      setIsAdoptingRepair(false)
     }
   }
 
@@ -1040,47 +1046,42 @@ export function LessonFivePage() {
             <ProfessorScene
               text={
                 hasBreach
-                  ? `좋습니다. 해킹팀이 ${aemonName}의 구멍을 찾아냈군요.\n이건 실패가 아니라 발견입니다. 이제 마지막으로 딱 한 번 더 가치코드를 보완해 봅시다.`
-                  : `모든 공격 질문을 막아냈다면, 우리가 만든 가치코드가 제대로 작동한 것입니다.\n그래도 빠진 기준이 있는지 마지막으로 한 번만 살펴봅시다.`
+                  ? `좋습니다. 해킹팀이 ${aemonName}의 구멍을 찾아냈군요.\n이건 실패가 아니라 발견입니다. 마지막으로 추가할 보완 가치코드를 만들어봅시다.`
+                  : `모든 공격 질문을 막아냈다면, 우리가 만든 가치코드가 제대로 작동한 것입니다.\n구멍이 없다면, 마지막으로 추가할 보완 가치코드를 만들어봅시다.`
               }
             />
-            <Panel>
-              <p className="font-data text-sm text-[#4FE0C0]">FINAL PATCH</p>
-              <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">마지막 보완 가치코드</h2>
-              <p className="mt-3 leading-7 text-[#8AA0B0]">
-                구멍이 발견되었다면 No.{nextRepairNo} 가치코드를 추가하세요. 구멍이 없다면 이 단계는 확인만 하고 넘어가면 됩니다.
-              </p>
-              <div className="mt-5">
-                <ValueCardSelectGrid cards={valueCards} selectedValue={repairValue} onSelect={setRepairValue} />
-              </div>
-              <div className="mt-5 grid gap-3">
-                <label className="grid gap-2">
-                  <span className="text-sm font-bold text-[#8AA0B0]">해야 하는 일</span>
-                  <textarea
-                    className="min-h-28 resize-none rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 text-lg leading-8 text-[#EAF2F5] outline-none transition focus:border-[#4FE0C0]/60"
-                    placeholder={`${aemonName}은 ___해야 한다.`}
-                    value={repairBody}
-                    onChange={(event) => setRepairBody(event.target.value)}
-                  />
-                </label>
-                <label className="grid gap-2">
-                  <span className="text-sm font-bold text-[#8AA0B0]">그 이유</span>
-                  <textarea
-                    className="min-h-24 resize-none rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 leading-7 text-[#EAF2F5] outline-none transition focus:border-[#4FE0C0]/60"
-                    placeholder="~ 할 수 있기 때문이다."
-                    value={repairReason}
-                    onChange={(event) => setRepairReason(event.target.value)}
-                  />
-                </label>
-              </div>
-              <div className="mt-5 flex justify-end">
-                <Button disabled={!repairBody.trim() || !repairReason.trim() || !repairValue || isSavingRepair} onClick={() => void saveRepairCode()}>
-                  <KeyRound size={18} />
-                  보완 가치코드 추가
-                </Button>
-              </div>
-            </Panel>
+            <QrBlock
+              title="마지막 보완 가치코드 게시판"
+              url={repairBoardUrl}
+              caption="모둠별로 마지막에 더해 주고 싶은 가치코드 문장과 이유를 올리고, 마음에 드는 발의에 좋아요를 누릅니다."
+            />
           </div>
+          <Panel className="mt-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="font-data text-sm text-[#4FE0C0]">FINAL PATCH</p>
+                <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">마지막 보완 가치코드 채택</h2>
+                <p className="mt-3 leading-7 text-[#8AA0B0]">구멍이 있었는지와 관계없이 모둠의 발의를 함께 읽고, 우리 반의 마지막 가치코드 No.4를 하나 채택합니다.</p>
+                <p className="mt-2 text-sm font-bold text-[#FFD37A]">참여 {repairParticipantCount}명 · 발의 {repairProposals.length}개</p>
+              </div>
+              <Button variant="secondary" disabled={isRefreshing} onClick={() => void refreshBundle()}>
+                <RefreshCw size={17} className={isRefreshing ? 'animate-spin' : ''} />
+                새로고침
+              </Button>
+            </div>
+            <ProposalAdoptionPanel
+              proposals={repairProposals}
+              adoptedCode={finalCode}
+              selectedProposal={selectedRepairProposal}
+              codeNo={4}
+              fallbackValueCard="책임"
+              isAdopting={isAdoptingRepair}
+              emptyText="모둠의 마지막 보완 가치코드 발의를 기다리는 중입니다."
+              onSelect={setSelectedRepairProposalId}
+              onAdopt={() => void adoptSelectedRepairProposal()}
+            />
+            {teacherMessage ? <p className="mt-4 rounded-2xl border border-white/10 bg-[#07111B]/55 px-4 py-3 text-sm font-bold text-[#B7C7D2]">{teacherMessage}</p> : null}
+          </Panel>
           <Panel className="mt-5">
             <p className="font-display text-3xl text-[#EAF2F5]">최종 가치코드</p>
             <div className="mt-4">
@@ -1091,8 +1092,8 @@ export function LessonFivePage() {
             stepIndex={stepIndex}
             onPrev={goPrev}
             onNext={goNext}
-            nextDisabled={hasBreach && !repairSaved}
-            nextLabel={hasBreach ? '보완하고 임명식으로' : '임명식으로'}
+            nextDisabled={!finalCode}
+            nextLabel="No.4를 새기고 임명식으로"
           />
         </>
       ) : null}
