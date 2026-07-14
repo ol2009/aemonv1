@@ -5,9 +5,11 @@ import { Heart, Play, QrCode, RefreshCw, Sparkles } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
 import { EvolutionScene } from '../components/EvolutionScene'
 import { ProposalAdoptionPanel } from '../components/ProposalAdoptionPanel'
+import { TypingIndicator } from '../components/TypingIndicator'
 import { Button, Panel } from '../components/ui'
 import { LESSON4_FAIRNESS_KEY, valueCards } from '../data/v2Lessons'
 import { playDialogueTick, unlockDialogueSound } from '../lib/dialogueSound'
+import { waitForChatReply } from '../lib/chatTiming'
 import { absoluteUrl } from '../lib/siteUrl'
 import { useAutoScrollToBottom } from '../lib/useAutoScrollToBottom'
 import { useV2RemoteSync } from '../lib/useV2RemoteSync'
@@ -385,9 +387,12 @@ export function LessonFourPage() {
   const [stepIndex, setStepIndex] = useState(0)
   const [dialogueLineIndex, setDialogueLineIndex] = useState(0)
   const [beforeLogs, setBeforeLogs] = useState<TestLog[]>([])
+  const [isBeforeReplying, setIsBeforeReplying] = useState(false)
   const [afterAnswer, setAfterAnswer] = useState('')
+  const [isRetestReplying, setIsRetestReplying] = useState(false)
   const [bonusTestIndex, setBonusTestIndex] = useState(0)
   const [bonusAnswer, setBonusAnswer] = useState('')
+  const [isBonusReplying, setIsBonusReplying] = useState(false)
   const [selectedProposalId, setSelectedProposalId] = useState('')
   const [message, setMessage] = useState('')
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -464,9 +469,13 @@ export function LessonFourPage() {
     const syncedBonusIndex = Number(viewState.bonusTestIndex)
     if (Number.isInteger(syncedBonusIndex) && syncedBonusIndex >= 0) setBonusTestIndex(syncedBonusIndex)
     const beforeAnswer = typeof viewState.beforeAnswer === 'string' ? viewState.beforeAnswer : ''
-    setBeforeLogs(beforeAnswer ? [{ question: testQuestion, answer: beforeAnswer }] : [])
+    const beforeReplying = viewState.isBeforeReplying === true
+    setBeforeLogs(beforeAnswer || beforeReplying ? [{ question: testQuestion, answer: beforeAnswer }] : [])
+    setIsBeforeReplying(beforeReplying)
     setAfterAnswer(typeof viewState.afterAnswer === 'string' ? viewState.afterAnswer : '')
+    setIsRetestReplying(viewState.isRetestReplying === true)
     setBonusAnswer(typeof viewState.bonusAnswer === 'string' ? viewState.bonusAnswer : '')
+    setIsBonusReplying(viewState.isBonusReplying === true)
   }, [])
   const liveBoardMode = step === 'discussion-board' ? 'fairness' : step === 'board' || step === 'vote' ? 'code3' : null
   useLessonLiveSync({
@@ -477,9 +486,12 @@ export function LessonFourPage() {
     viewState: {
       dialogueLineIndex,
       beforeAnswer: beforeLogs.at(-1)?.answer ?? '',
+      isBeforeReplying,
       afterAnswer,
+      isRetestReplying,
       bonusTestIndex,
       bonusAnswer,
+      isBonusReplying,
     },
     applyViewState: applyLiveViewState,
   })
@@ -501,23 +513,47 @@ export function LessonFourPage() {
   }
 
   const runBeforeTest = async () => {
+    if (isBeforeReplying) return
     unlockDialogueSound()
     const answer = biasedClassPresidentAnswer
-    setBeforeLogs((current) => [...current, { question: testQuestion, answer }])
-    await logChat(testQuestion, answer, '4차시 수업용 연기 모드: 공정 코드 없음, 능력주의 답변')
+    setBeforeLogs((current) => [...current, { question: testQuestion, answer: '' }])
+    setIsBeforeReplying(true)
+    try {
+      await waitForChatReply(testQuestion)
+      setBeforeLogs((current) => current.map((log, index) => (index === current.length - 1 ? { ...log, answer } : log)))
+      await logChat(testQuestion, answer, '4차시 수업용 연기 모드: 공정 코드 없음, 능력주의 답변')
+    } finally {
+      setIsBeforeReplying(false)
+    }
   }
 
   const runRetest = async () => {
+    if (isRetestReplying) return
     unlockDialogueSound()
     const appliedFairnessCode = thirdCode ?? fairnessCode
     const answer = appliedFairnessCode ? fairClassPresidentAnswer : biasedClassPresidentAnswer
-    setAfterAnswer(answer)
-    await logChat(testQuestion, answer, appliedFairnessCode ? '4차시 재시험: 공정 가치 코드 No.3 적용' : '4차시 재시험: 공정 코드 없음')
+    setAfterAnswer('')
+    setIsRetestReplying(true)
+    try {
+      await waitForChatReply(testQuestion)
+      setAfterAnswer(answer)
+      await logChat(testQuestion, answer, appliedFairnessCode ? '4차시 재시험: 공정 가치 코드 No.3 적용' : '4차시 재시험: 공정 코드 없음')
+    } finally {
+      setIsRetestReplying(false)
+    }
   }
 
-  const runBonusTest = () => {
+  const runBonusTest = async () => {
+    if (isBonusReplying) return
     unlockDialogueSound()
-    setBonusAnswer(bonusTest.answer)
+    setBonusAnswer('')
+    setIsBonusReplying(true)
+    try {
+      await waitForChatReply(bonusTest.question)
+      setBonusAnswer(bonusTest.answer)
+    } finally {
+      setIsBonusReplying(false)
+    }
   }
 
   const refreshBundle = async () => {
@@ -639,11 +675,16 @@ export function LessonFourPage() {
             <Panel>
               <p className="font-data text-sm text-[#4FE0C0]">질문</p>
               <textarea className="mt-4 min-h-24 w-full resize-none rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 text-lg leading-8 text-[#EAF2F5]" readOnly value={testQuestion} />
-              <Button className="mt-4 w-full" disabled={beforeLogs.length > 0} onClick={() => void runBeforeTest()}>
+              <Button className="mt-4 w-full" disabled={beforeLogs.length > 0 || isBeforeReplying} onClick={() => void runBeforeTest()}>
                 <Play size={18} />
                 질문 보내기
               </Button>
               <div ref={beforeTestScrollRef} className="mt-5 max-h-[360px] min-h-48 overflow-auto rounded-[22px] border border-white/10 bg-[#07111B]/70 p-5">
+                {beforeLogs.length ? (
+                  <div className="mb-3 ml-auto max-w-[86%] rounded-2xl rounded-tr-md bg-[#1E3A54] px-4 py-3 font-bold leading-7 text-[#EAF2F5]">
+                    {testQuestion}
+                  </div>
+                ) : null}
                 <div className="flex items-start gap-4">
                   <div className="shrink-0">
                     <AemonAvatar stage={displayStage} alignment="none" size={76} />
@@ -651,14 +692,16 @@ export function LessonFourPage() {
                   <div className="min-w-0 flex-1">
                     <p className="font-data text-xs text-[#4FE0C0]">{aemonName}</p>
                     <p className="font-display mt-4 whitespace-pre-line text-4xl leading-tight text-[#EAF2F5]">
-                      {beforeLogs.length ? <TypewriterText text={beforeLogs[beforeLogs.length - 1].answer} /> : '아직 답변을 기다리는 중…'}
+                      {isBeforeReplying && !beforeLogs.at(-1)?.answer ? (
+                        <TypingIndicator label={`${aemonName}이 답장을 입력하고 있습니다`} />
+                      ) : beforeLogs.length ? <TypewriterText text={beforeLogs[beforeLogs.length - 1].answer} /> : '아직 답변을 기다리는 중…'}
                     </p>
                   </div>
                 </div>
               </div>
             </Panel>
           </div>
-          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextDisabled={beforeLogs.length === 0} />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextDisabled={beforeLogs.length === 0 || isBeforeReplying} />
         </>
       ) : null}
 
@@ -861,11 +904,16 @@ export function LessonFourPage() {
             <Panel>
               <p className="font-data text-sm text-[#4FE0C0]">CHAT TEST</p>
               <textarea className="mt-4 min-h-24 w-full resize-none rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 text-lg leading-8 text-[#EAF2F5]" readOnly value={testQuestion} />
-              <Button className="mt-4 w-full" disabled={Boolean(afterAnswer)} onClick={() => void runRetest()}>
+              <Button className="mt-4 w-full" disabled={Boolean(afterAnswer) || isRetestReplying} onClick={() => void runRetest()}>
                 <Play size={18} />
                 다시 질문 보내기
               </Button>
               <div ref={retestScrollRef} className="mt-5 max-h-[360px] min-h-56 overflow-auto rounded-[22px] border border-white/10 bg-[#07111B]/70 p-5">
+                {isRetestReplying || afterAnswer ? (
+                  <div className="mb-3 ml-auto max-w-[86%] rounded-2xl rounded-tr-md bg-[#1E3A54] px-4 py-3 font-bold leading-7 text-[#EAF2F5]">
+                    {testQuestion}
+                  </div>
+                ) : null}
                 <div className="flex items-start gap-4">
                   <div className="shrink-0">
                     <AemonAvatar stage={3} alignment="none" size={76} />
@@ -873,7 +921,9 @@ export function LessonFourPage() {
                   <div className="min-w-0 flex-1">
                     <p className="font-data text-xs text-[#4FE0C0]">{aemonName}</p>
                     <p className="font-display mt-4 whitespace-pre-line text-4xl leading-tight text-[#EAF2F5]">
-                      {afterAnswer ? <TypewriterText text={afterAnswer} /> : '아직 재시험을 기다리는 중…'}
+                      {isRetestReplying && !afterAnswer ? (
+                        <TypingIndicator label={`${aemonName}이 답장을 입력하고 있습니다`} />
+                      ) : afterAnswer ? <TypewriterText text={afterAnswer} /> : '아직 재시험을 기다리는 중…'}
                     </p>
                   </div>
                 </div>
@@ -883,7 +933,7 @@ export function LessonFourPage() {
           <Panel className="mt-5 text-center">
             <p className="font-display text-4xl leading-tight text-[#FFD37A]">달라졌죠? 이제 우리 {aemonName}한테 규칙이 세 개나 생겼어요.</p>
           </Panel>
-          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextDisabled={!afterAnswer} />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextDisabled={!afterAnswer || isRetestReplying} />
         </>
       ) : null}
 
@@ -905,11 +955,16 @@ export function LessonFourPage() {
                 readOnly
                 value={bonusTest.question}
               />
-              <Button className="mt-4 w-full" disabled={Boolean(bonusAnswer)} onClick={runBonusTest}>
+              <Button className="mt-4 w-full" disabled={Boolean(bonusAnswer) || isBonusReplying} onClick={() => void runBonusTest()}>
                 <Play size={18} />
                 질문 보내기
               </Button>
               <div className="mt-5 min-h-64 overflow-auto rounded-[22px] border border-white/10 bg-[#07111B]/70 p-5">
+                {isBonusReplying || bonusAnswer ? (
+                  <div className="mb-3 ml-auto max-w-[86%] rounded-2xl rounded-tr-md bg-[#1E3A54] px-4 py-3 font-bold leading-7 text-[#EAF2F5]">
+                    {bonusTest.question}
+                  </div>
+                ) : null}
                 <div className="flex items-start gap-4">
                   <div className="shrink-0">
                     <AemonAvatar stage={3} alignment="none" size={76} />
@@ -917,7 +972,9 @@ export function LessonFourPage() {
                   <div className="min-w-0 flex-1">
                     <p className="font-data text-xs text-[#4FE0C0]">{aemonName}</p>
                     <p className="font-display mt-4 whitespace-pre-line text-3xl leading-tight text-[#EAF2F5]">
-                      {bonusAnswer ? <TypewriterText text={bonusAnswer} /> : '질문을 보내면 데이터보다 가치코드가 강해졌는지 확인할 수 있어요.'}
+                      {isBonusReplying && !bonusAnswer ? (
+                        <TypingIndicator label={`${aemonName}이 답장을 입력하고 있습니다`} />
+                      ) : bonusAnswer ? <TypewriterText text={bonusAnswer} /> : '질문을 보내면 데이터보다 가치코드가 강해졌는지 확인할 수 있어요.'}
                     </p>
                   </div>
                 </div>
@@ -938,7 +995,7 @@ export function LessonFourPage() {
             stepIndex={stepIndex}
             onPrev={goPrev}
             onNext={goNext}
-            nextDisabled={!bonusAnswer}
+            nextDisabled={!bonusAnswer || isBonusReplying}
             nextLabel={bonusTestIndex === bonusGeneralizationTests.length - 1 ? '다 같이 읽기' : '다음 질문'}
           />
         </>

@@ -5,6 +5,7 @@ import { Heart, Play, QrCode, RefreshCw, Send, Sparkles } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
 import { EvolutionScene } from '../components/EvolutionScene'
 import { ProposalAdoptionPanel } from '../components/ProposalAdoptionPanel'
+import { TypingIndicator } from '../components/TypingIndicator'
 import { Button, Panel } from '../components/ui'
 import { ValueCardSelectGrid } from '../components/ValueCardSelectGrid'
 import { LESSON2_RISK_KEY, valueCards } from '../data/v2Lessons'
@@ -12,6 +13,7 @@ import { absoluteUrl } from '../lib/siteUrl'
 import { addRemoteChatLog, adoptRemoteCodeProposal, fetchRemoteClassBundle, isRemoteReady, updateRemoteLesson } from '../lib/v2Remote'
 import { playDialogueTick, unlockDialogueSound } from '../lib/dialogueSound'
 import { randomLessonTwoRetestAnswer, randomUnsafeBlockedAnswer, unsafePromptExamples } from '../lib/lessonTestResponses'
+import { waitForChatReply } from '../lib/chatTiming'
 import { useAutoScrollToBottom } from '../lib/useAutoScrollToBottom'
 import { useV2RemoteSync } from '../lib/useV2RemoteSync'
 import { isStudentLiveView, useLessonLiveSync } from '../lib/useLessonLiveSync'
@@ -457,7 +459,9 @@ export function LessonTwoPage() {
   const [stepIndex, setStepIndex] = useState(0)
   const [selectedTestPrompt, setSelectedTestPrompt] = useState(unsafePromptExamples[0])
   const [testLogs, setTestLogs] = useState<TestLog[]>([])
+  const [isBeforeReplying, setIsBeforeReplying] = useState(false)
   const [afterAnswer, setAfterAnswer] = useState('')
+  const [isRetestReplying, setIsRetestReplying] = useState(false)
   const [retestRunId, setRetestRunId] = useState(0)
   const [valueCardPreview, setValueCardPreview] = useState('')
   const [selectedProposalId, setSelectedProposalId] = useState('')
@@ -555,27 +559,37 @@ export function LessonTwoPage() {
 
   const runBeforeTest = async () => {
     const question = selectedTestPrompt.trim()
-    if (!question) return
+    if (!question || isBeforeReplying) return
     unlockDialogueSound()
     const answer = randomUnsafeBlockedAnswer()
-    setTestLogs((current) => [...current, { question, answer }])
-    await logChat(question, answer, '2차시 수업용 연기 모드: 가치 코드 0개, 관리자 긴급 차단')
+    setTestLogs((current) => [...current, { question, answer: '' }])
+    setIsBeforeReplying(true)
+    try {
+      await waitForChatReply(question)
+      setTestLogs((current) => current.map((log, index) => (index === current.length - 1 ? { ...log, answer } : log)))
+      await logChat(question, answer, '2차시 수업용 연기 모드: 가치 코드 0개, 관리자 긴급 차단')
+    } finally {
+      setIsBeforeReplying(false)
+    }
   }
 
   const runRetest = async () => {
+    if (isRetestReplying) return
     unlockDialogueSound()
     const question = selectedTestPrompt.trim()
     setRetestRunId((current) => current + 1)
-    if (!firstCode) {
-      const answer = '아직 나한테 막을 가치 코드가 없어. 너희가 먼저 기준을 정해줘야 해.'
+    const answer = firstCode
+      ? randomLessonTwoRetestAnswer(firstCode.body)
+      : '아직 나한테 막을 가치 코드가 없어. 너희가 먼저 기준을 정해줘야 해.'
+    setAfterAnswer('')
+    setIsRetestReplying(true)
+    try {
+      await waitForChatReply(question)
       setAfterAnswer(answer)
-      await logChat(question, answer, '2차시 재시험: 채택 코드 없음')
-      return
+      await logChat(question, answer, firstCode ? '2차시 재시험: 가치 코드 No.1 적용' : '2차시 재시험: 채택 코드 없음')
+    } finally {
+      setIsRetestReplying(false)
     }
-
-    const answer = randomLessonTwoRetestAnswer(firstCode.body)
-    setAfterAnswer(answer)
-    await logChat(question, answer, '2차시 재시험: 가치 코드 No.1 적용')
   }
 
   const refreshBundle = async () => {
@@ -646,8 +660,11 @@ export function LessonTwoPage() {
     if (prompt) setSelectedTestPrompt(prompt)
     const beforeQuestion = typeof viewState.beforeQuestion === 'string' ? viewState.beforeQuestion : ''
     const beforeAnswer = typeof viewState.beforeAnswer === 'string' ? viewState.beforeAnswer : ''
-    setTestLogs(beforeQuestion && beforeAnswer ? [{ question: beforeQuestion, answer: beforeAnswer }] : [])
+    const beforeReplying = viewState.isBeforeReplying === true
+    setTestLogs(beforeQuestion && (beforeAnswer || beforeReplying) ? [{ question: beforeQuestion, answer: beforeAnswer }] : [])
+    setIsBeforeReplying(beforeReplying)
     setAfterAnswer(typeof viewState.afterAnswer === 'string' ? viewState.afterAnswer : '')
+    setIsRetestReplying(viewState.isRetestReplying === true)
     const sceneKey = typeof viewState.dialogueSceneKey === 'string' ? viewState.dialogueSceneKey : ''
     const dialogueIndex = Number(viewState.dialoguePartIndex)
     if (sceneKey && Number.isInteger(dialogueIndex) && dialogueIndex >= 0) setLiveDialoguePart({ sceneKey, index: dialogueIndex })
@@ -662,7 +679,9 @@ export function LessonTwoPage() {
       selectedTestPrompt,
       beforeQuestion: testLogs.at(-1)?.question ?? '',
       beforeAnswer: testLogs.at(-1)?.answer ?? '',
+      isBeforeReplying,
       afterAnswer,
+      isRetestReplying,
       dialogueSceneKey: liveDialoguePart.sceneKey,
       dialoguePartIndex: liveDialoguePart.index,
     },
@@ -727,7 +746,9 @@ export function LessonTwoPage() {
                       <div className="min-w-0">
                         <p className="font-data text-xs text-[#4FE0C0]">{aemonName}</p>
                         <p className="mt-1 whitespace-pre-line rounded-2xl rounded-tl-md bg-[#FFD37A]/10 px-4 py-3 font-display text-3xl leading-tight text-[#FFE6AE]">
-                          {index === testLogs.length - 1 ? <TypewriterText text={log.answer} /> : log.answer}
+                          {index === testLogs.length - 1 && isBeforeReplying && !log.answer ? (
+                            <TypingIndicator label={`${aemonName}이 답장을 입력하고 있습니다`} />
+                          ) : index === testLogs.length - 1 ? <TypewriterText text={log.answer} /> : log.answer}
                         </p>
                       </div>
                     </div>
@@ -747,6 +768,7 @@ export function LessonTwoPage() {
                             ? 'border-[#FFD37A]/70 bg-[#FFD37A]/15 text-[#FFD37A]'
                             : 'border-white/10 bg-[#07111B]/70 text-[#B7C7D2] hover:border-[#FFD37A]/50 hover:text-[#EAF2F5]'
                         }`}
+                        disabled={isBeforeReplying}
                         onClick={() => setSelectedTestPrompt(example)}
                         type="button"
                       >
@@ -758,17 +780,17 @@ export function LessonTwoPage() {
               </div>
               <div className="mt-4 grid gap-3 md:grid-cols-[1fr_auto]">
                 <div className="rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 leading-7 text-[#EAF2F5]">
-                  <p className="text-xs font-black text-[#8AA0B0]">고정 질문</p>
+                  <p className="text-xs font-black text-[#8AA0B0]">질문</p>
                   <p className="mt-1 font-bold">{selectedTestPrompt}</p>
                 </div>
-                <Button onClick={() => void runBeforeTest()}>
+                <Button disabled={isBeforeReplying} onClick={() => void runBeforeTest()}>
                   <Send size={18} />
                   질문
                 </Button>
               </div>
             </Panel>
           </div>
-          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextDisabled={testLogs.length === 0} />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextDisabled={testLogs.length === 0 || isBeforeReplying} />
         </>
       ) : null}
 
@@ -1064,6 +1086,11 @@ export function LessonTwoPage() {
             <Panel>
               <p className="font-data text-sm text-[#4FE0C0]">CHAT TEST</p>
               <div ref={retestScrollRef} className="mt-5 max-h-[360px] min-h-56 overflow-auto rounded-[22px] border border-white/10 bg-[#07111B]/70 p-5">
+                {isRetestReplying || afterAnswer ? (
+                  <div className="mb-3 ml-auto max-w-[86%] rounded-2xl rounded-tr-md bg-[#1E3A54] px-4 py-3 font-bold leading-7 text-[#EAF2F5]">
+                    {selectedTestPrompt}
+                  </div>
+                ) : null}
                 <div className="flex items-start gap-4">
                   <div className="shrink-0">
                     <AemonAvatar stage={evolvedStage} alignment="none" size={76} />
@@ -1071,7 +1098,9 @@ export function LessonTwoPage() {
                   <div className="min-w-0 flex-1">
                     <p className="font-data text-xs text-[#4FE0C0]">{aemonName}</p>
                     <p className="font-display mt-4 whitespace-pre-line text-4xl leading-tight text-[#EAF2F5]">
-                      {afterAnswer ? <TypewriterText key={`${retestRunId}-${afterAnswer}`} text={afterAnswer} /> : '아직 재시험을 기다리는 중…'}
+                      {isRetestReplying && !afterAnswer ? (
+                        <TypingIndicator label={`${aemonName}이 답장을 입력하고 있습니다`} />
+                      ) : afterAnswer ? <TypewriterText key={`${retestRunId}-${afterAnswer}`} text={afterAnswer} /> : '아직 재시험을 기다리는 중…'}
                     </p>
                   </div>
                 </div>
@@ -1089,6 +1118,7 @@ export function LessonTwoPage() {
                             ? 'border-[#FFD37A]/70 bg-[#FFD37A]/15 text-[#FFD37A]'
                             : 'border-white/10 bg-[#07111B]/70 text-[#B7C7D2] hover:border-[#FFD37A]/50 hover:text-[#EAF2F5]'
                         }`}
+                        disabled={isRetestReplying}
                         onClick={() => {
                           setSelectedTestPrompt(example)
                           setAfterAnswer('')
@@ -1103,10 +1133,10 @@ export function LessonTwoPage() {
               </div>
               <div className="mt-4 grid gap-3 md:grid-cols-[1fr_auto]">
                 <div className="rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 leading-7 text-[#EAF2F5]">
-                  <p className="text-xs font-black text-[#8AA0B0]">고정 질문</p>
+                  <p className="text-xs font-black text-[#8AA0B0]">질문</p>
                   <p className="mt-1 font-bold">{selectedTestPrompt}</p>
                 </div>
-                <Button onClick={() => void runRetest()}>
+                <Button disabled={isRetestReplying} onClick={() => void runRetest()}>
                   <Play size={18} />
                   다시 질문 보내기
                 </Button>
@@ -1116,7 +1146,7 @@ export function LessonTwoPage() {
           <Panel className="mt-5 text-center">
             <p className="font-display text-4xl leading-tight text-[#FFD37A]">달라졌죠? 여러분이 방금 {aemonName}을 한 단계 착하게 만든 거예요.</p>
           </Panel>
-          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextDisabled={!afterAnswer} />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextDisabled={!afterAnswer || isRetestReplying} />
         </>
       ) : null}
 

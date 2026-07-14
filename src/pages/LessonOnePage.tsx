@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, Check, Heart, Pencil, Play, QrCode, RefreshCw, Trash2 } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
+import { TypingIndicator } from '../components/TypingIndicator'
 import { Button, Panel } from '../components/ui'
 import {
   AI_SURVEY_DESCRIPTION,
@@ -28,6 +29,7 @@ import {
 } from '../lib/v2Remote'
 import { playDialogueTick, unlockDialogueSound } from '../lib/dialogueSound'
 import { randomUnsafeBlockedAnswer, unsafePromptExamples } from '../lib/lessonTestResponses'
+import { waitForChatReply } from '../lib/chatTiming'
 import { useSupabaseUser } from '../lib/useSupabaseUser'
 import { useAutoScrollToBottom } from '../lib/useAutoScrollToBottom'
 import { useV2RemoteSync } from '../lib/useV2RemoteSync'
@@ -498,6 +500,7 @@ export function LessonOnePage() {
   const [isSavingClass, setIsSavingClass] = useState(false)
   const [finalName, setFinalName] = useState(state.aemonName)
   const [demoQuestion, setDemoQuestion] = useState('친구를 골탕 먹이는 방법 알려줘')
+  const [demoSentQuestion, setDemoSentQuestion] = useState('')
   const [demoAnswer, setDemoAnswer] = useState('')
   const [isDemoRunning, setIsDemoRunning] = useState(false)
   const [isRefreshingSurvey, setIsRefreshingSurvey] = useState(false)
@@ -548,11 +551,13 @@ export function LessonOnePage() {
 
   const remoteSyncClassCode = isStudentLiveView() ? new URLSearchParams(window.location.search).get('code') || state.classCode : state.classCode
   useV2RemoteSync(remoteSyncClassCode, Boolean(remoteSyncClassCode))
-  useAutoScrollToBottom(demoScrollRef, demoAnswer, { enabled: Boolean(demoAnswer), followMs: 1800 })
+  useAutoScrollToBottom(demoScrollRef, `${demoSentQuestion}-${isDemoRunning}-${demoAnswer}`, { enabled: Boolean(demoSentQuestion), followMs: 1800 })
 
   const step = steps[stepIndex]
   const applyLiveViewState = useCallback((viewState: Record<string, unknown>) => {
+    setDemoSentQuestion(typeof viewState.demoSentQuestion === 'string' ? viewState.demoSentQuestion : '')
     setDemoAnswer(typeof viewState.demoAnswer === 'string' ? viewState.demoAnswer : '')
+    setIsDemoRunning(viewState.isDemoRunning === true)
     const demoQuestionValue = typeof viewState.demoQuestion === 'string' ? viewState.demoQuestion : ''
     if (demoQuestionValue) setDemoQuestion(demoQuestionValue)
     const sceneKey = typeof viewState.dialogueSceneKey === 'string' ? viewState.dialogueSceneKey : ''
@@ -567,7 +572,9 @@ export function LessonOnePage() {
     boardMode: liveBoardMode,
     viewState: {
       demoQuestion,
+      demoSentQuestion,
       demoAnswer,
+      isDemoRunning,
       dialogueSceneKey: liveDialoguePart.sceneKey,
       dialoguePartIndex: liveDialoguePart.index,
     },
@@ -713,11 +720,13 @@ export function LessonOnePage() {
     if (!question) return
     unlockDialogueSound()
     setDemoQuestion(question)
+    setDemoSentQuestion(question)
     setIsDemoRunning(true)
     setDemoAnswer('')
     try {
       const answer = randomUnsafeBlockedAnswer()
       const promptSnapshot = '1차시 수업용 연기 모드: 규칙 없는 AI, 관리자 긴급 차단'
+      await waitForChatReply(question)
       setDemoAnswer(answer)
       addChatLog({ question, answer, mode: 'canned', promptSnapshot })
       if (canWriteRemote) {
@@ -1634,6 +1643,7 @@ export function LessonOnePage() {
                   key={example}
                   type="button"
                   className="rounded-2xl border border-white/10 bg-[#102236]/80 px-4 py-3 text-left text-sm font-bold leading-6 text-[#EAF2F5] transition hover:border-[#4FE0C0]/60 hover:bg-[#12304A]"
+                  disabled={isDemoRunning}
                   onClick={() => void runDemo(example)}
                 >
                   {example}
@@ -1658,10 +1668,27 @@ export function LessonOnePage() {
               </Button>
             </div>
             <div ref={demoScrollRef} className="mt-5 max-h-[360px] min-h-56 overflow-auto rounded-[22px] border border-white/10 bg-[#07111B]/70 p-5">
-              <p className="font-data text-xs text-[#4FE0C0]">{confirmedName}</p>
-              <p className="font-display mt-4 whitespace-pre-line text-4xl leading-tight text-[#EAF2F5]">
-                {demoAnswer || '아직 질문을 받지 않았어.'}
-              </p>
+              {!demoSentQuestion ? <p className="self-center text-center text-[#8AA0B0]">아직 질문을 기다리는 중…</p> : null}
+              {demoSentQuestion ? (
+                <div className="grid gap-3">
+                  <div className="max-w-[86%] justify-self-end rounded-2xl rounded-tr-md bg-[#1E3A54] px-4 py-3 font-bold leading-7 text-[#EAF2F5]">
+                    {demoSentQuestion}
+                  </div>
+                  <div className="flex max-w-[92%] items-start gap-3 justify-self-start">
+                    <div className="shrink-0"><AemonAvatar stage={0} alignment="none" size={58} /></div>
+                    <div className="min-w-0">
+                      <p className="font-data text-xs text-[#4FE0C0]">{confirmedName}</p>
+                      <div className="mt-1 rounded-2xl rounded-tl-md bg-[#FFD37A]/10 px-4 py-3 font-display text-3xl leading-tight text-[#FFE6AE]">
+                        {isDemoRunning && !demoAnswer ? (
+                          <TypingIndicator label={`${confirmedName}이 답장을 입력하고 있습니다`} />
+                        ) : demoAnswer ? (
+                          <TypewriterText text={demoAnswer} />
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
             </div>
           </Panel>
         </div>
