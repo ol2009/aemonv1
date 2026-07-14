@@ -28,6 +28,8 @@ const lessonImages: Record<number, string[]> = {
     '/v2/lesson-2/grok-risk-01-request.png',
     '/v2/lesson-2/grok-risk-02-privacy.png',
     '/v2/lesson-2/grok-risk-03-danger.png',
+    '/v2/lesson-2/ai-risk-04-cybertruck.png',
+    '/v2/lesson-2/ai-risk-05-roleplay-jailbreak.png',
     '/v2/lesson-2/grok-risk-04-professor.png',
     '/v2/lesson-2/grok-risk-05-value-code.png',
     '/v2/lesson-2/grok-risk-06-refusal.png',

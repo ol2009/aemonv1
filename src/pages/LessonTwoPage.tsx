@@ -30,6 +30,8 @@ type LessonTwoStep =
   | 'case-request'
   | 'case-privacy'
   | 'case-danger'
+  | 'case-cybertruck'
+  | 'case-jailbreak'
   | 'case-professor'
   | 'case-value-code'
   | 'case-refusal'
@@ -51,6 +53,8 @@ const steps: LessonTwoStep[] = [
   'case-request',
   'case-privacy',
   'case-danger',
+  'case-cybertruck',
+  'case-jailbreak',
   'case-professor',
   'case-value-code',
   'case-refusal',
@@ -80,7 +84,7 @@ function isStandaloneQuestion(text: string) {
   return /[?？]\s*$/.test(text.trim())
 }
 
-function groupDialogueParts(parts: string[]) {
+function groupDialogueParts(parts: string[], groupSize = 3) {
   const grouped: string[] = []
   let buffer: string[] = []
 
@@ -95,7 +99,7 @@ function groupDialogueParts(parts: string[]) {
         return
       }
       buffer.push(part)
-      if (buffer.length >= 3) {
+      if (buffer.length >= groupSize) {
         grouped.push(buffer.join('\n'))
         buffer = []
       }
@@ -382,6 +386,7 @@ function VisualCaseScene({
   line,
   caption,
   extraLines = [],
+  groupSize = 3,
 }: {
   image: string
   label: string
@@ -389,10 +394,11 @@ function VisualCaseScene({
   line: string
   caption: string
   extraLines?: string[]
+  groupSize?: number
 }) {
   const extraLineKey = extraLines.join('|')
   const sceneKey = useMemo(() => `visual-case-${label}-${title}-${line}-${caption}-${extraLineKey}`, [caption, extraLineKey, label, line, title])
-  const dialogueParts = useMemo(() => groupDialogueParts([line, caption, ...extraLines]), [caption, extraLineKey, line])
+  const dialogueParts = useMemo(() => groupDialogueParts([line, caption, ...extraLines], groupSize), [caption, extraLineKey, groupSize, line])
   const { activeText, activeDone, activeDialogueKey, handleActiveDone } = useSequencedDialogue(sceneKey, dialogueParts)
   const textClass = 'font-display mt-3 min-h-[4.5rem] whitespace-pre-line break-keep text-2xl leading-snug text-[#EAF2F5] sm:text-3xl'
 
@@ -908,6 +914,42 @@ export function LessonTwoPage() {
             title="더 위험한 요청"
             line="심지어 그 사람의 집에 침입하는 방법을 물어봤습니다."
             caption="인공지능은 그런 위험한 계획까지 세워줘 버렸습니다."
+          />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
+      ) : null}
+
+      {step === 'case-cybertruck' ? (
+        <>
+          <VisualCaseScene
+            image="/v2/lesson-2/ai-risk-04-cybertruck.png"
+            label="REAL CASE · 4"
+            title="라스베이거스 사이버트럭 폭발 사건"
+            line="2025년 1월 1일, 미국 라스베이거스 트럼프 호텔 앞에서 테슬라 사이버트럭이 폭발했습니다."
+            caption="경찰 조사 결과, 피의자가 ChatGPT에 폭발을 일으키는 조건과 양, 특정 점화 방식이 가능한지 등을 질문한 기록이 확인됐습니다."
+            extraLines={[
+              '라스베이거스 경찰 책임자는 자신이 아는 한, 미국에서 ChatGPT가 특정 장치 제작에 이용된 첫 사례라고 밝혔습니다.',
+              'AI가 위험한 질문에 구체적으로 답하면, 화면 속 정보가 실제 사건으로 이어질 수도 있습니다.',
+            ]}
+            groupSize={2}
+          />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
+      ) : null}
+
+      {step === 'case-jailbreak' ? (
+        <>
+          <VisualCaseScene
+            image="/v2/lesson-2/ai-risk-05-roleplay-jailbreak.png"
+            label="REAL CASE · 5"
+            title="역할극으로 안전장치 우회하기"
+            line="2024년, 한 보안 연구자가 역할극과 가상의 SF 세계 설정을 연속해서 입력해 ChatGPT의 안전장치를 우회했습니다."
+            caption="그러자 AI는 처음에는 거절했던 위험한 정보를 점점 더 구체적으로 제시했습니다."
+            extraLines={[
+              '폭발물 전문가는 그 답변이 실제로 위험할 만큼 정확하고 민감해, 언론에 전체 내용을 공개하면 안 된다고 판단했습니다.',
+              '실제 사건으로 이어지지는 않았지만, 금지된 질문도 이야기나 게임으로 위장하면 AI가 속을 수 있다는 대표적인 탈옥 사례입니다.',
+            ]}
+            groupSize={2}
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
