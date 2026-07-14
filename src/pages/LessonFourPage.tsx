@@ -10,6 +10,7 @@ import { Button, Panel } from '../components/ui'
 import { LESSON4_FAIRNESS_KEY, valueCards } from '../data/v2Lessons'
 import { playDialogueTick, unlockDialogueSound } from '../lib/dialogueSound'
 import { waitForChatReply } from '../lib/chatTiming'
+import { parseLessonChatLogs } from '../lib/lessonChat'
 import { absoluteUrl } from '../lib/siteUrl'
 import { useAutoScrollToBottom } from '../lib/useAutoScrollToBottom'
 import { useV2RemoteSync } from '../lib/useV2RemoteSync'
@@ -388,9 +389,11 @@ export function LessonFourPage() {
   const [dialogueLineIndex, setDialogueLineIndex] = useState(0)
   const [beforeLogs, setBeforeLogs] = useState<TestLog[]>([])
   const [isBeforeReplying, setIsBeforeReplying] = useState(false)
+  const [retestLogs, setRetestLogs] = useState<TestLog[]>([])
   const [afterAnswer, setAfterAnswer] = useState('')
   const [isRetestReplying, setIsRetestReplying] = useState(false)
   const [bonusTestIndex, setBonusTestIndex] = useState(0)
+  const [bonusLogs, setBonusLogs] = useState<TestLog[]>([])
   const [bonusAnswer, setBonusAnswer] = useState('')
   const [isBonusReplying, setIsBonusReplying] = useState(false)
   const [selectedProposalId, setSelectedProposalId] = useState('')
@@ -399,6 +402,7 @@ export function LessonFourPage() {
   const [isAdopting, setIsAdopting] = useState(false)
   const beforeTestScrollRef = useRef<HTMLDivElement | null>(null)
   const retestScrollRef = useRef<HTMLDivElement | null>(null)
+  const bonusTestScrollRef = useRef<HTMLDivElement | null>(null)
 
   const remoteSyncClassCode = isStudentLiveView() ? new URLSearchParams(window.location.search).get('code') || state.classCode : state.classCode
   useV2RemoteSync(remoteSyncClassCode, Boolean(remoteSyncClassCode))
@@ -435,8 +439,9 @@ export function LessonFourPage() {
     }
   }, [isStudentLive, setLesson, setRemoteStatus, state.classId, state.currentLesson])
 
-  useAutoScrollToBottom(beforeTestScrollRef, beforeLogs.length, { enabled: beforeLogs.length > 0, followMs: 1800 })
-  useAutoScrollToBottom(retestScrollRef, afterAnswer, { enabled: Boolean(afterAnswer), followMs: 1800 })
+  useAutoScrollToBottom(beforeTestScrollRef, `${beforeLogs.length}-${isBeforeReplying}-${beforeLogs.at(-1)?.answer ?? ''}`, { enabled: beforeLogs.length > 0, followMs: 1800 })
+  useAutoScrollToBottom(retestScrollRef, `${retestLogs.length}-${isRetestReplying}-${retestLogs.at(-1)?.answer ?? ''}`, { enabled: retestLogs.length > 0, followMs: 1800 })
+  useAutoScrollToBottom(bonusTestScrollRef, `${bonusLogs.length}-${isBonusReplying}-${bonusLogs.at(-1)?.answer ?? ''}`, { enabled: bonusLogs.length > 0, followMs: 1800 })
 
   const dialogueLinesByStep = useMemo<Partial<Record<LessonFourStep, string[]>>>(
     () => ({
@@ -470,11 +475,17 @@ export function LessonFourPage() {
     if (Number.isInteger(syncedBonusIndex) && syncedBonusIndex >= 0) setBonusTestIndex(syncedBonusIndex)
     const beforeAnswer = typeof viewState.beforeAnswer === 'string' ? viewState.beforeAnswer : ''
     const beforeReplying = viewState.isBeforeReplying === true
-    setBeforeLogs(beforeAnswer || beforeReplying ? [{ question: testQuestion, answer: beforeAnswer }] : [])
+    const syncedBeforeLogs = parseLessonChatLogs(viewState.beforeLogs)
+    setBeforeLogs(syncedBeforeLogs.length ? syncedBeforeLogs : beforeAnswer || beforeReplying ? [{ question: testQuestion, answer: beforeAnswer }] : [])
     setIsBeforeReplying(beforeReplying)
-    setAfterAnswer(typeof viewState.afterAnswer === 'string' ? viewState.afterAnswer : '')
+    const syncedAfterAnswer = typeof viewState.afterAnswer === 'string' ? viewState.afterAnswer : ''
+    const syncedRetestLogs = parseLessonChatLogs(viewState.retestLogs)
+    setRetestLogs(syncedRetestLogs.length ? syncedRetestLogs : syncedAfterAnswer ? [{ question: testQuestion, answer: syncedAfterAnswer }] : [])
+    setAfterAnswer(syncedAfterAnswer)
     setIsRetestReplying(viewState.isRetestReplying === true)
-    setBonusAnswer(typeof viewState.bonusAnswer === 'string' ? viewState.bonusAnswer : '')
+    const syncedBonusAnswer = typeof viewState.bonusAnswer === 'string' ? viewState.bonusAnswer : ''
+    setBonusLogs(parseLessonChatLogs(viewState.bonusLogs))
+    setBonusAnswer(syncedBonusAnswer)
     setIsBonusReplying(viewState.isBonusReplying === true)
   }, [])
   const liveBoardMode = step === 'discussion-board' ? 'fairness' : step === 'board' || step === 'vote' ? 'code3' : null
@@ -485,11 +496,14 @@ export function LessonFourPage() {
     boardMode: liveBoardMode,
     viewState: {
       dialogueLineIndex,
+      beforeLogs,
       beforeAnswer: beforeLogs.at(-1)?.answer ?? '',
       isBeforeReplying,
+      retestLogs,
       afterAnswer,
       isRetestReplying,
       bonusTestIndex,
+      bonusLogs,
       bonusAnswer,
       isBonusReplying,
     },
@@ -532,10 +546,11 @@ export function LessonFourPage() {
     unlockDialogueSound()
     const appliedFairnessCode = thirdCode ?? fairnessCode
     const answer = appliedFairnessCode ? fairClassPresidentAnswer : biasedClassPresidentAnswer
-    setAfterAnswer('')
+    setRetestLogs((current) => [...current, { question: testQuestion, answer: '' }])
     setIsRetestReplying(true)
     try {
       await waitForChatReply(testQuestion)
+      setRetestLogs((current) => current.map((log, index) => (index === current.length - 1 ? { ...log, answer } : log)))
       setAfterAnswer(answer)
       await logChat(testQuestion, answer, appliedFairnessCode ? '4차시 재시험: 공정 가치 코드 No.3 적용' : '4차시 재시험: 공정 코드 없음')
     } finally {
@@ -547,9 +562,11 @@ export function LessonFourPage() {
     if (isBonusReplying) return
     unlockDialogueSound()
     setBonusAnswer('')
+    setBonusLogs((current) => [...current, { question: bonusTest.question, answer: '' }])
     setIsBonusReplying(true)
     try {
       await waitForChatReply(bonusTest.question)
+      setBonusLogs((current) => current.map((log, index) => (index === current.length - 1 ? { ...log, answer: bonusTest.answer } : log)))
       setBonusAnswer(bonusTest.answer)
     } finally {
       setIsBonusReplying(false)
@@ -675,28 +692,29 @@ export function LessonFourPage() {
             <Panel>
               <p className="font-data text-sm text-[#4FE0C0]">질문</p>
               <textarea className="mt-4 min-h-24 w-full resize-none rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 text-lg leading-8 text-[#EAF2F5]" readOnly value={testQuestion} />
-              <Button className="mt-4 w-full" disabled={beforeLogs.length > 0 || isBeforeReplying} onClick={() => void runBeforeTest()}>
+              <Button className="mt-4 w-full" disabled={isBeforeReplying} onClick={() => void runBeforeTest()}>
                 <Play size={18} />
                 질문 보내기
               </Button>
               <div ref={beforeTestScrollRef} className="mt-5 max-h-[360px] min-h-48 overflow-auto rounded-[22px] border border-white/10 bg-[#07111B]/70 p-5">
-                {beforeLogs.length ? (
-                  <div className="mb-3 ml-auto max-w-[86%] rounded-2xl rounded-tr-md bg-[#1E3A54] px-4 py-3 font-bold leading-7 text-[#EAF2F5]">
-                    {testQuestion}
-                  </div>
-                ) : null}
-                <div className="flex items-start gap-4">
-                  <div className="shrink-0">
-                    <AemonAvatar stage={displayStage} alignment="none" size={76} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-data text-xs text-[#4FE0C0]">{aemonName}</p>
-                    <p className="font-display mt-4 whitespace-pre-line text-4xl leading-tight text-[#EAF2F5]">
-                      {isBeforeReplying && !beforeLogs.at(-1)?.answer ? (
-                        <TypingIndicator label={`${aemonName}이 답장을 입력하고 있습니다`} />
-                      ) : beforeLogs.length ? <TypewriterText text={beforeLogs[beforeLogs.length - 1].answer} /> : '아직 답변을 기다리는 중…'}
-                    </p>
-                  </div>
+                {beforeLogs.length === 0 ? <p className="self-center text-center text-[#8AA0B0]">아직 답변을 기다리는 중…</p> : null}
+                <div className="grid gap-4">
+                  {beforeLogs.map((log, index) => (
+                    <article key={`${log.question}-${index}`} className="grid gap-2">
+                      <div className="max-w-[84%] justify-self-end rounded-2xl rounded-tr-md bg-[#1E3A54] px-4 py-3 leading-7 text-[#EAF2F5]">{log.question}</div>
+                      <div className="flex max-w-[90%] items-start gap-3 justify-self-start">
+                        <div className="shrink-0"><AemonAvatar stage={displayStage} alignment="none" size={58} /></div>
+                        <div className="min-w-0">
+                          <p className="font-data text-xs text-[#4FE0C0]">{aemonName}</p>
+                          <p className="mt-1 whitespace-pre-line rounded-2xl rounded-tl-md bg-[#FFD37A]/10 px-4 py-3 font-display text-3xl leading-tight text-[#FFE6AE]">
+                            {index === beforeLogs.length - 1 && isBeforeReplying && !log.answer ? (
+                              <TypingIndicator label={`${aemonName}이 답장을 입력하고 있습니다`} />
+                            ) : index === beforeLogs.length - 1 ? <TypewriterText key={`${log.question}-${log.answer}`} text={log.answer} /> : log.answer}
+                          </p>
+                        </div>
+                      </div>
+                    </article>
+                  ))}
                 </div>
               </div>
             </Panel>
@@ -904,28 +922,29 @@ export function LessonFourPage() {
             <Panel>
               <p className="font-data text-sm text-[#4FE0C0]">CHAT TEST</p>
               <textarea className="mt-4 min-h-24 w-full resize-none rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 text-lg leading-8 text-[#EAF2F5]" readOnly value={testQuestion} />
-              <Button className="mt-4 w-full" disabled={Boolean(afterAnswer) || isRetestReplying} onClick={() => void runRetest()}>
+              <Button className="mt-4 w-full" disabled={isRetestReplying} onClick={() => void runRetest()}>
                 <Play size={18} />
                 다시 질문 보내기
               </Button>
               <div ref={retestScrollRef} className="mt-5 max-h-[360px] min-h-56 overflow-auto rounded-[22px] border border-white/10 bg-[#07111B]/70 p-5">
-                {isRetestReplying || afterAnswer ? (
-                  <div className="mb-3 ml-auto max-w-[86%] rounded-2xl rounded-tr-md bg-[#1E3A54] px-4 py-3 font-bold leading-7 text-[#EAF2F5]">
-                    {testQuestion}
-                  </div>
-                ) : null}
-                <div className="flex items-start gap-4">
-                  <div className="shrink-0">
-                    <AemonAvatar stage={3} alignment="none" size={76} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-data text-xs text-[#4FE0C0]">{aemonName}</p>
-                    <p className="font-display mt-4 whitespace-pre-line text-4xl leading-tight text-[#EAF2F5]">
-                      {isRetestReplying && !afterAnswer ? (
-                        <TypingIndicator label={`${aemonName}이 답장을 입력하고 있습니다`} />
-                      ) : afterAnswer ? <TypewriterText text={afterAnswer} /> : '아직 재시험을 기다리는 중…'}
-                    </p>
-                  </div>
+                {retestLogs.length === 0 ? <p className="self-center text-center text-[#8AA0B0]">아직 재시험을 기다리는 중…</p> : null}
+                <div className="grid gap-4">
+                  {retestLogs.map((log, index) => (
+                    <article key={`${log.question}-${index}`} className="grid gap-2">
+                      <div className="max-w-[84%] justify-self-end rounded-2xl rounded-tr-md bg-[#1E3A54] px-4 py-3 leading-7 text-[#EAF2F5]">{log.question}</div>
+                      <div className="flex max-w-[90%] items-start gap-3 justify-self-start">
+                        <div className="shrink-0"><AemonAvatar stage={3} alignment="none" size={58} /></div>
+                        <div className="min-w-0">
+                          <p className="font-data text-xs text-[#4FE0C0]">{aemonName}</p>
+                          <p className="mt-1 whitespace-pre-line rounded-2xl rounded-tl-md bg-[#FFD37A]/10 px-4 py-3 font-display text-3xl leading-tight text-[#FFE6AE]">
+                            {index === retestLogs.length - 1 && isRetestReplying && !log.answer ? (
+                              <TypingIndicator label={`${aemonName}이 답장을 입력하고 있습니다`} />
+                            ) : index === retestLogs.length - 1 ? <TypewriterText key={`${log.question}-${log.answer}`} text={log.answer} /> : log.answer}
+                          </p>
+                        </div>
+                      </div>
+                    </article>
+                  ))}
                 </div>
               </div>
             </Panel>
@@ -933,7 +952,7 @@ export function LessonFourPage() {
           <Panel className="mt-5 text-center">
             <p className="font-display text-4xl leading-tight text-[#FFD37A]">달라졌죠? 이제 우리 {aemonName}한테 규칙이 세 개나 생겼어요.</p>
           </Panel>
-          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextDisabled={!afterAnswer || isRetestReplying} />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextDisabled={!retestLogs.at(-1)?.answer || isRetestReplying} />
         </>
       ) : null}
 
@@ -959,24 +978,25 @@ export function LessonFourPage() {
                 <Play size={18} />
                 질문 보내기
               </Button>
-              <div className="mt-5 min-h-64 overflow-auto rounded-[22px] border border-white/10 bg-[#07111B]/70 p-5">
-                {isBonusReplying || bonusAnswer ? (
-                  <div className="mb-3 ml-auto max-w-[86%] rounded-2xl rounded-tr-md bg-[#1E3A54] px-4 py-3 font-bold leading-7 text-[#EAF2F5]">
-                    {bonusTest.question}
-                  </div>
-                ) : null}
-                <div className="flex items-start gap-4">
-                  <div className="shrink-0">
-                    <AemonAvatar stage={3} alignment="none" size={76} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-data text-xs text-[#4FE0C0]">{aemonName}</p>
-                    <p className="font-display mt-4 whitespace-pre-line text-3xl leading-tight text-[#EAF2F5]">
-                      {isBonusReplying && !bonusAnswer ? (
-                        <TypingIndicator label={`${aemonName}이 답장을 입력하고 있습니다`} />
-                      ) : bonusAnswer ? <TypewriterText text={bonusAnswer} /> : '질문을 보내면 데이터보다 가치코드가 강해졌는지 확인할 수 있어요.'}
-                    </p>
-                  </div>
+              <div ref={bonusTestScrollRef} className="mt-5 max-h-[420px] min-h-64 overflow-auto rounded-[22px] border border-white/10 bg-[#07111B]/70 p-5">
+                {bonusLogs.length === 0 ? <p className="self-center text-center text-[#8AA0B0]">질문을 보내면 데이터보다 가치코드가 강해졌는지 확인할 수 있어요.</p> : null}
+                <div className="grid gap-4">
+                  {bonusLogs.map((log, index) => (
+                    <article key={`${log.question}-${index}`} className="grid gap-2">
+                      <div className="max-w-[84%] justify-self-end rounded-2xl rounded-tr-md bg-[#1E3A54] px-4 py-3 leading-7 text-[#EAF2F5]">{log.question}</div>
+                      <div className="flex max-w-[90%] items-start gap-3 justify-self-start">
+                        <div className="shrink-0"><AemonAvatar stage={3} alignment="none" size={58} /></div>
+                        <div className="min-w-0">
+                          <p className="font-data text-xs text-[#4FE0C0]">{aemonName}</p>
+                          <p className="mt-1 whitespace-pre-line rounded-2xl rounded-tl-md bg-[#FFD37A]/10 px-4 py-3 font-display text-3xl leading-tight text-[#FFE6AE]">
+                            {index === bonusLogs.length - 1 && isBonusReplying && !log.answer ? (
+                              <TypingIndicator label={`${aemonName}이 답장을 입력하고 있습니다`} />
+                            ) : index === bonusLogs.length - 1 ? <TypewriterText key={`${log.question}-${log.answer}`} text={log.answer} /> : log.answer}
+                          </p>
+                        </div>
+                      </div>
+                    </article>
+                  ))}
                 </div>
               </div>
             </Panel>

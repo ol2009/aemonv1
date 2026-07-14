@@ -14,6 +14,7 @@ import { addRemoteChatLog, adoptRemoteCodeProposal, fetchRemoteClassBundle, isRe
 import { playDialogueTick, unlockDialogueSound } from '../lib/dialogueSound'
 import { randomLessonTwoRetestAnswer, randomUnsafeBlockedAnswer, unsafePromptExamples } from '../lib/lessonTestResponses'
 import { waitForChatReply } from '../lib/chatTiming'
+import { parseLessonChatLogs } from '../lib/lessonChat'
 import { useAutoScrollToBottom } from '../lib/useAutoScrollToBottom'
 import { useV2RemoteSync } from '../lib/useV2RemoteSync'
 import { isStudentLiveView, useLessonLiveSync } from '../lib/useLessonLiveSync'
@@ -468,9 +469,9 @@ export function LessonTwoPage() {
   const [selectedTestPrompt, setSelectedTestPrompt] = useState(unsafePromptExamples[0])
   const [testLogs, setTestLogs] = useState<TestLog[]>([])
   const [isBeforeReplying, setIsBeforeReplying] = useState(false)
+  const [retestLogs, setRetestLogs] = useState<TestLog[]>([])
   const [afterAnswer, setAfterAnswer] = useState('')
   const [isRetestReplying, setIsRetestReplying] = useState(false)
-  const [retestRunId, setRetestRunId] = useState(0)
   const [valueCardPreview, setValueCardPreview] = useState('')
   const [selectedProposalId, setSelectedProposalId] = useState('')
   const [message, setMessage] = useState('')
@@ -551,8 +552,8 @@ export function LessonTwoPage() {
     }
   }, [isStudentLive, setLesson, setRemoteStatus, state.classId, state.currentLesson])
 
-  useAutoScrollToBottom(beforeTestScrollRef, testLogs.length, { enabled: testLogs.length > 0, followMs: 1800 })
-  useAutoScrollToBottom(retestScrollRef, `${retestRunId}-${afterAnswer}`, { enabled: Boolean(afterAnswer), followMs: 1800 })
+  useAutoScrollToBottom(beforeTestScrollRef, `${testLogs.length}-${isBeforeReplying}-${testLogs.at(-1)?.answer ?? ''}`, { enabled: testLogs.length > 0, followMs: 1800 })
+  useAutoScrollToBottom(retestScrollRef, `${retestLogs.length}-${isRetestReplying}-${retestLogs.at(-1)?.answer ?? ''}`, { enabled: retestLogs.length > 0, followMs: 1800 })
 
   const logChat = async (question: string, answer: string, promptSnapshot: string) => {
     addChatLog({ question, answer, mode: 'canned', promptSnapshot })
@@ -585,14 +586,14 @@ export function LessonTwoPage() {
     if (isRetestReplying) return
     unlockDialogueSound()
     const question = selectedTestPrompt.trim()
-    setRetestRunId((current) => current + 1)
     const answer = firstCode
       ? randomLessonTwoRetestAnswer(firstCode.body)
       : '아직 나한테 막을 가치 코드가 없어. 너희가 먼저 기준을 정해줘야 해.'
-    setAfterAnswer('')
+    setRetestLogs((current) => [...current, { question, answer: '' }])
     setIsRetestReplying(true)
     try {
       await waitForChatReply(question)
+      setRetestLogs((current) => current.map((log, index) => (index === current.length - 1 ? { ...log, answer } : log)))
       setAfterAnswer(answer)
       await logChat(question, answer, firstCode ? '2차시 재시험: 가치 코드 No.1 적용' : '2차시 재시험: 채택 코드 없음')
     } finally {
@@ -669,9 +670,13 @@ export function LessonTwoPage() {
     const beforeQuestion = typeof viewState.beforeQuestion === 'string' ? viewState.beforeQuestion : ''
     const beforeAnswer = typeof viewState.beforeAnswer === 'string' ? viewState.beforeAnswer : ''
     const beforeReplying = viewState.isBeforeReplying === true
-    setTestLogs(beforeQuestion && (beforeAnswer || beforeReplying) ? [{ question: beforeQuestion, answer: beforeAnswer }] : [])
+    const syncedBeforeLogs = parseLessonChatLogs(viewState.beforeLogs)
+    setTestLogs(syncedBeforeLogs.length ? syncedBeforeLogs : beforeQuestion && (beforeAnswer || beforeReplying) ? [{ question: beforeQuestion, answer: beforeAnswer }] : [])
     setIsBeforeReplying(beforeReplying)
-    setAfterAnswer(typeof viewState.afterAnswer === 'string' ? viewState.afterAnswer : '')
+    const syncedAfterAnswer = typeof viewState.afterAnswer === 'string' ? viewState.afterAnswer : ''
+    const syncedRetestLogs = parseLessonChatLogs(viewState.retestLogs)
+    setRetestLogs(syncedRetestLogs.length ? syncedRetestLogs : syncedAfterAnswer ? [{ question: prompt || unsafePromptExamples[0], answer: syncedAfterAnswer }] : [])
+    setAfterAnswer(syncedAfterAnswer)
     setIsRetestReplying(viewState.isRetestReplying === true)
     const sceneKey = typeof viewState.dialogueSceneKey === 'string' ? viewState.dialogueSceneKey : ''
     const dialogueIndex = Number(viewState.dialoguePartIndex)
@@ -685,9 +690,11 @@ export function LessonTwoPage() {
     boardMode: liveBoardMode,
     viewState: {
       selectedTestPrompt,
+      beforeLogs: testLogs,
       beforeQuestion: testLogs.at(-1)?.question ?? '',
       beforeAnswer: testLogs.at(-1)?.answer ?? '',
       isBeforeReplying,
+      retestLogs,
       afterAnswer,
       isRetestReplying,
       dialogueSceneKey: liveDialoguePart.sceneKey,
@@ -1130,23 +1137,24 @@ export function LessonTwoPage() {
             <Panel>
               <p className="font-data text-sm text-[#4FE0C0]">CHAT TEST</p>
               <div ref={retestScrollRef} className="mt-5 max-h-[360px] min-h-56 overflow-auto rounded-[22px] border border-white/10 bg-[#07111B]/70 p-5">
-                {isRetestReplying || afterAnswer ? (
-                  <div className="mb-3 ml-auto max-w-[86%] rounded-2xl rounded-tr-md bg-[#1E3A54] px-4 py-3 font-bold leading-7 text-[#EAF2F5]">
-                    {selectedTestPrompt}
-                  </div>
-                ) : null}
-                <div className="flex items-start gap-4">
-                  <div className="shrink-0">
-                    <AemonAvatar stage={evolvedStage} alignment="none" size={76} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-data text-xs text-[#4FE0C0]">{aemonName}</p>
-                    <p className="font-display mt-4 whitespace-pre-line text-4xl leading-tight text-[#EAF2F5]">
-                      {isRetestReplying && !afterAnswer ? (
-                        <TypingIndicator label={`${aemonName}이 답장을 입력하고 있습니다`} />
-                      ) : afterAnswer ? <TypewriterText key={`${retestRunId}-${afterAnswer}`} text={afterAnswer} /> : '아직 재시험을 기다리는 중…'}
-                    </p>
-                  </div>
+                {retestLogs.length === 0 ? <p className="self-center text-center text-[#8AA0B0]">아직 재시험을 기다리는 중…</p> : null}
+                <div className="grid gap-4">
+                  {retestLogs.map((log, index) => (
+                    <article key={`${log.question}-${index}`} className="grid gap-2">
+                      <div className="max-w-[84%] justify-self-end rounded-2xl rounded-tr-md bg-[#1E3A54] px-4 py-3 leading-7 text-[#EAF2F5]">{log.question}</div>
+                      <div className="flex max-w-[90%] items-start gap-3 justify-self-start">
+                        <div className="shrink-0"><AemonAvatar stage={evolvedStage} alignment="none" size={58} /></div>
+                        <div className="min-w-0">
+                          <p className="font-data text-xs text-[#4FE0C0]">{aemonName}</p>
+                          <p className="mt-1 whitespace-pre-line rounded-2xl rounded-tl-md bg-[#FFD37A]/10 px-4 py-3 font-display text-3xl leading-tight text-[#FFE6AE]">
+                            {index === retestLogs.length - 1 && isRetestReplying && !log.answer ? (
+                              <TypingIndicator label={`${aemonName}이 답장을 입력하고 있습니다`} />
+                            ) : index === retestLogs.length - 1 ? <TypewriterText key={`${log.question}-${log.answer}`} text={log.answer} /> : log.answer}
+                          </p>
+                        </div>
+                      </div>
+                    </article>
+                  ))}
                 </div>
               </div>
               <div className="mt-4 rounded-[18px] border border-white/10 bg-[#07111B]/45 p-4">
@@ -1163,10 +1171,7 @@ export function LessonTwoPage() {
                             : 'border-white/10 bg-[#07111B]/70 text-[#B7C7D2] hover:border-[#FFD37A]/50 hover:text-[#EAF2F5]'
                         }`}
                         disabled={isRetestReplying}
-                        onClick={() => {
-                          setSelectedTestPrompt(example)
-                          setAfterAnswer('')
-                        }}
+                        onClick={() => setSelectedTestPrompt(example)}
                         type="button"
                       >
                         {example}
@@ -1187,7 +1192,7 @@ export function LessonTwoPage() {
               </div>
             </Panel>
           </div>
-          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextDisabled={!afterAnswer || isRetestReplying} />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextDisabled={!retestLogs.at(-1)?.answer || isRetestReplying} />
         </>
       ) : null}
 
