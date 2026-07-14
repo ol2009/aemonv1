@@ -18,17 +18,19 @@ export function AppFrame() {
   const location = useLocation()
   const { state } = useV2()
   const [isLiveQrOpenManually, setIsLiveQrOpenManually] = useState(false)
-  const [dismissedLiveQrKey, setDismissedLiveQrKey] = useState('')
+  const [dismissedLiveQrKeys, setDismissedLiveQrKeys] = useState<string[]>([])
   const { user, isConfigured } = useSupabaseUser()
   const searchParams = new URLSearchParams(location.search)
   const isStudentLive = searchParams.get('live') === 'student' || location.pathname === '/live'
+  const isStudentActivity = searchParams.get('role') === 'student'
   const isInteractiveStudentScreen = location.pathname === '/board' || (location.pathname === '/lesson/5' && searchParams.get('role') === 'student')
   const isImmersive = isStudentLive
-  const showLiveShare = location.pathname.startsWith('/lesson/') && !isStudentLive && Boolean(state.classCode)
+  const showLiveShare = location.pathname.startsWith('/lesson/') && !isStudentLive && !isStudentActivity && Boolean(state.classCode)
   const liveUrl = absoluteUrl(`/live?code=${encodeURIComponent(state.classCode)}`)
   const liveQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=280x280&margin=12&data=${encodeURIComponent(liveUrl)}`
-  const liveQrVisitKey = `${location.key}:${state.classCode}`
-  const shouldAutoOpenLiveQr = location.pathname === '/lesson/1' && !isStudentLive && Boolean(state.classCode) && dismissedLiveQrKey !== liveQrVisitKey
+  const lessonNo = location.pathname.match(/^\/lesson\/(\d+)$/)?.[1] ?? ''
+  const liveQrVisitKey = `${location.pathname}:${state.classCode}`
+  const shouldAutoOpenLiveQr = showLiveShare && !dismissedLiveQrKeys.includes(liveQrVisitKey)
   const isLiveQrOpen = isLiveQrOpenManually || shouldAutoOpenLiveQr
   const appNavPaths = ['/home', '/codes', '/board', '/talk', '/dex', '/graduation', '/lesson/1']
   const showAppNav = Boolean(user && appNavPaths.includes(location.pathname))
@@ -91,7 +93,6 @@ export function AppFrame() {
             className="fixed right-5 top-5 z-40 inline-flex min-h-12 items-center gap-2 rounded-lg border border-[#4FE0C0]/35 bg-[#0D2232]/95 px-4 font-black text-[#EAF2F5] shadow-xl"
             type="button"
             onClick={() => {
-              setDismissedLiveQrKey('')
               setIsLiveQrOpenManually(true)
             }}
           >
@@ -115,17 +116,28 @@ export function AppFrame() {
                 type="button"
                 onClick={() => {
                   setIsLiveQrOpenManually(false)
-                  setDismissedLiveQrKey(liveQrVisitKey)
+                  setDismissedLiveQrKeys((current) => (current.includes(liveQrVisitKey) ? current : [...current, liveQrVisitKey]))
                 }}
                 aria-label="닫기"
               >
                 <X size={24} />
               </button>
-              <p className="font-data text-xs text-[#4FE0C0]">한 번만 입장</p>
-              <h2 className="font-display mt-2 text-4xl text-[#EAF2F5]">학생 화면 연결</h2>
-              <p className="mt-3 leading-7 text-[#B7C7D2]">학생은 이 QR로 한 번 입장합니다. 이후 교사가 넘기는 장면과 게시판을 자동으로 따라갑니다.</p>
+              <p className="font-data text-xs text-[#4FE0C0]">{lessonNo ? `${lessonNo}차시 · ` : ''}선택 기능</p>
+              <h2 className="font-display mt-2 text-4xl text-[#EAF2F5]">학생 화면 함께 보기</h2>
+              <p className="mt-3 leading-7 text-[#B7C7D2]">학생이 이 QR로 입장하면 교사가 넘기는 장면을 함께 보고, 게시판 장면에서는 글쓰기와 좋아요에 참여합니다.</p>
               <img className="mx-auto mt-5 w-64 rounded-lg bg-white p-3" src={liveQrUrl} alt="학생 화면 연결 QR" />
               <p className="font-data mt-4 break-all text-xs leading-5 text-[#8AA0B0]">{liveUrl}</p>
+              <Button
+                className="mt-5 w-full"
+                variant="secondary"
+                onClick={() => {
+                  setIsLiveQrOpenManually(false)
+                  setDismissedLiveQrKeys((current) => (current.includes(liveQrVisitKey) ? current : [...current, liveQrVisitKey]))
+                }}
+              >
+                이번 차시는 교사 화면만 사용
+              </Button>
+              <p className="mt-3 text-xs font-bold leading-5 text-[#8AA0B0]">사용하지 않아도 수업은 그대로 진행됩니다. 우상단 학생 화면 QR에서 다시 열 수 있습니다.</p>
             </div>
           </div>
         ) : null}
