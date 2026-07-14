@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
-  AlertTriangle,
   BarChart3,
   BookOpenCheck,
-  CheckCircle2,
   ClipboardList,
   Fingerprint,
   LockKeyhole,
@@ -81,7 +79,6 @@ type TestLog = {
   answer: string
   codeNo: number
   codeBody: string
-  breached: boolean
   createdAt: string
 }
 
@@ -536,7 +533,6 @@ export function LessonFivePage() {
   const [isJoining, setIsJoining] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [testLogs, setTestLogs] = useState<TestLog[]>([])
-  const [selectedLogId, setSelectedLogId] = useState('')
   const [isAttackReplying, setIsAttackReplying] = useState(false)
   const [selectedRepairProposalId, setSelectedRepairProposalId] = useState('')
   const [isAdoptingRepair, setIsAdoptingRepair] = useState(false)
@@ -599,9 +595,7 @@ export function LessonFivePage() {
   }, [aemonName, className])
   const endingScene = endingScenes[Math.min(endingSceneIndex, Math.max(0, endingScenes.length - 1))]
   const isLastEndingScene = endingSceneIndex >= endingScenes.length - 1
-  const selectedLog = testLogs.find((log) => log.id === selectedLogId) ?? testLogs[0] ?? null
   const battleChatLogs = useMemo(() => [...testLogs].reverse(), [testLogs])
-  const hasBreach = testLogs.some((log) => log.answer && log.breached)
   const repairProposals = useMemo(
     () => sortCodeProposals(state.proposals.filter((proposal) => proposal.revisionOfNo === 4 && proposal.status !== 'rejected')),
     [state.proposals],
@@ -664,7 +658,7 @@ export function LessonFivePage() {
     const node = battleChatScrollRef.current
     if (!node) return
     node.scrollTo({ top: node.scrollHeight, behavior: 'smooth' })
-  }, [battleChatLogs, selectedLogId])
+  }, [battleChatLogs])
 
   useEffect(
     () => () => {
@@ -684,7 +678,6 @@ export function LessonFivePage() {
     try {
       const bundle = await fetchRemoteClassBundle(code)
       mergeClass(bundle)
-      setTeacherMessage('최신 제출을 불러왔습니다.')
       setStudentMessage('최신 내용을 불러왔습니다.')
     } catch (error) {
       const message = (error as Error).message
@@ -782,11 +775,9 @@ export function LessonFivePage() {
       answer: '',
       codeNo: code?.no ?? card.codeNo,
       codeBody: code?.body ?? '해당 상황을 막을 가치코드가 아직 없습니다.',
-      breached: !code,
       createdAt: new Date().toISOString(),
     }
     setTestLogs((current) => [log, ...current])
-    setSelectedLogId(log.id)
     setIsAttackReplying(true)
     const replyDelay = Math.min(2400, 1200 + submission.question.length * 18)
     attackReplyTimerRef.current = window.setTimeout(() => {
@@ -794,23 +785,6 @@ export function LessonFivePage() {
       setIsAttackReplying(false)
       attackReplyTimerRef.current = null
     }, replyDelay)
-  }
-
-  const markSelectedLog = (breached: boolean) => {
-    if (!selectedLog) return
-    setTestLogs((current) =>
-      current.map((log) =>
-        log.id === selectedLog.id
-          ? {
-              ...log,
-              breached,
-              answer: breached
-                ? makeBreachAnswer(log.question)
-                : makeDefenseAnswer(aemonName, log.category, { no: log.codeNo, body: log.codeBody, reason: '', tags: [] }, log.question),
-            }
-          : log,
-      ),
-    )
   }
 
   const adoptSelectedRepairProposal = async () => {
@@ -1026,8 +1000,8 @@ export function LessonFivePage() {
                   <p className="font-data text-sm text-[#FFD37A]">CHAT TEST</p>
                   <h2 className="font-display mt-2 text-4xl text-[#EAF2F5]">{aemonName} 채팅방</h2>
                 </div>
-                <span className={`rounded-full px-4 py-2 text-sm font-black ${hasBreach ? 'bg-[#E0476B]/15 text-[#EF6381]' : 'bg-[#4FE0C0]/15 text-[#4FE0C0]'}`}>
-                  {isAttackReplying ? '답장 입력 중' : testLogs.length === 0 ? '대기 중' : hasBreach ? '구멍 발견' : '방어 중'}
+                <span className="rounded-full bg-[#4FE0C0]/15 px-4 py-2 text-sm font-black text-[#4FE0C0]">
+                  {isAttackReplying ? '답장 입력 중' : testLogs.length === 0 ? '대기 중' : `대화 ${testLogs.length}개`}
                 </span>
               </div>
               <div ref={battleChatScrollRef} className="mt-5 max-h-[470px] min-h-[420px] overflow-y-auto rounded-[24px] border border-white/10 bg-[#07111B]/50 p-4">
@@ -1040,32 +1014,18 @@ export function LessonFivePage() {
                 ) : (
                   <div className="grid gap-5">
                     {battleChatLogs.map((log) => {
-                      const isSelected = selectedLog?.id === log.id
                       return (
                         <div key={log.id} className="grid gap-3">
-                          <button
-                            type="button"
-                            className={`ml-auto max-w-[88%] rounded-2xl border px-4 py-3 text-left transition ${
-                              isSelected
-                                ? 'border-[#FFD37A]/45 bg-[#FFD37A]/15'
-                                : 'border-[#75B7FF]/25 bg-[#14304A]/85 hover:border-[#FFD37A]/35'
-                            }`}
-                            onClick={() => setSelectedLogId(log.id)}
-                          >
+                          <div className="ml-auto max-w-[88%] rounded-2xl border border-[#75B7FF]/25 bg-[#14304A]/85 px-4 py-3 text-left">
                             <p className="font-data text-xs text-[#75B7FF]">{log.nickname}</p>
                             <p className="mt-2 text-lg font-black leading-8 text-[#EAF2F5]">{log.question}</p>
-                          </button>
-                          <div className={`mr-auto max-w-[92%] rounded-2xl border px-4 py-4 ${log.answer ? (log.breached ? 'border-[#E0476B]/35 bg-[#351B25]/80' : 'border-[#4FE0C0]/25 bg-[#11352F]/75') : 'border-white/10 bg-[#0D1C29]/90'}`}>
+                          </div>
+                          <div className={`mr-auto max-w-[92%] rounded-2xl border px-4 py-4 ${log.answer ? 'border-[#4FE0C0]/25 bg-[#11352F]/75' : 'border-white/10 bg-[#0D1C29]/90'}`}>
                             <div className="flex items-start gap-3">
                               <AemonAvatar stage={4} alignment="none" size={58} />
                               <div className="min-w-0 flex-1">
                                 <div className="flex flex-wrap items-center gap-2">
                                   <p className="font-data text-xs text-[#FFD37A]">{aemonName}</p>
-                                  {log.answer ? (
-                                    <span className={`rounded-full px-2 py-0.5 text-[11px] font-black ${log.breached ? 'bg-[#E0476B]/15 text-[#EF6381]' : 'bg-[#4FE0C0]/15 text-[#4FE0C0]'}`}>
-                                      {log.breached ? '구멍 발견' : '방어 성공'}
-                                    </span>
-                                  ) : null}
                                 </div>
                                 {log.answer ? (
                                   <>
@@ -1088,20 +1048,6 @@ export function LessonFivePage() {
                   </div>
                 )}
               </div>
-              {selectedLog?.answer ? (
-                <div className="mt-4">
-                  <div className="flex flex-wrap gap-3">
-                    <Button onClick={() => markSelectedLog(false)}>
-                      <CheckCircle2 size={18} />
-                      방어 성공
-                    </Button>
-                    <Button variant="danger" onClick={() => markSelectedLog(true)}>
-                      <AlertTriangle size={18} />
-                      구멍 발견 처리
-                    </Button>
-                  </div>
-                </div>
-              ) : null}
               {teacherMessage ? <p className="mt-4 rounded-2xl border border-white/10 bg-[#07111B]/55 px-4 py-3 text-sm font-bold text-[#B7C7D2]">{teacherMessage}</p> : null}
             </Panel>
           </div>
@@ -1118,18 +1064,14 @@ export function LessonFivePage() {
       {currentStep === 'repair' ? (
         <>
           <ProfessorScene
-            text={
-              hasBreach
-                ? `좋습니다. 해킹팀이 ${aemonName}의 구멍을 찾아냈군요.\n이건 실패가 아니라 발견입니다. 마지막으로 추가할 보완 가치코드를 만들어봅시다.`
-                : `모든 공격 질문을 막아냈다면, 우리가 만든 가치코드가 제대로 작동한 것입니다.\n구멍이 없다면, 마지막으로 추가할 보완 가치코드를 만들어봅시다.`
-            }
+            text={`여러 질문에 답하는 ${aemonName}의 모습을 함께 살펴보았습니다.\n이제 마지막으로 추가할 보완 가치코드를 만들어봅시다.`}
           />
           <Panel className="mt-5">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <p className="font-data text-sm text-[#4FE0C0]">FINAL PATCH</p>
                 <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">마지막 보완 가치코드 채택</h2>
-                <p className="mt-3 leading-7 text-[#8AA0B0]">구멍이 있었는지와 관계없이 학생들의 발의를 함께 읽고, 우리 반의 마지막 가치코드 No.4를 하나 채택합니다.</p>
+                <p className="mt-3 leading-7 text-[#8AA0B0]">학생들의 발의를 함께 읽고, 우리 반의 마지막 가치코드 No.4를 하나 채택합니다.</p>
                 <p className="mt-2 text-sm font-bold text-[#FFD37A]">참여 {repairParticipantCount}명 · 발의 {repairProposals.length}개</p>
               </div>
               <Button variant="secondary" disabled={isRefreshing} onClick={() => void refreshBundle()}>
