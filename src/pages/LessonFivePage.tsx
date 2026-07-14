@@ -792,6 +792,7 @@ export function LessonFivePage() {
         entryNickname={entryNickname}
         isJoining={isJoining}
         message={studentMessage}
+        attackSubmissions={attackSubmissions}
         postSurveyAnswers={postSurveyAnswers}
         queryCode={queryCode}
         session={studentSession}
@@ -1179,6 +1180,7 @@ export function LessonFivePage() {
 
 function StudentLessonFive({
   activity,
+  attackSubmissions,
   entryCode,
   entryNickname,
   isJoining,
@@ -1195,6 +1197,7 @@ function StudentLessonFive({
   onSave,
 }: {
   activity: StudentActivity
+  attackSubmissions: ReturnType<typeof attackFromResponse>[]
   entryCode: string
   entryNickname: string
   isJoining: boolean
@@ -1269,7 +1272,9 @@ function StudentLessonFive({
         </div>
       </header>
 
-      {activity === 'attack' ? <StudentAttackBoard message={message} nickname={session.nickname} onRefresh={onRefresh} onSave={onSave} /> : null}
+      {activity === 'attack' ? (
+        <StudentAttackBoard attackSubmissions={attackSubmissions} message={message} nickname={session.nickname} onRefresh={onRefresh} onSave={onSave} />
+      ) : null}
       {activity === 'pledge' ? (
         <StudentPledgeBoard message={message} nickname={session.nickname} pledgeSubmissions={pledgeSubmissions} onRefresh={onRefresh} onSave={onSave} />
       ) : null}
@@ -1281,11 +1286,13 @@ function StudentLessonFive({
 }
 
 function StudentAttackBoard({
+  attackSubmissions,
   message,
   nickname,
   onRefresh,
   onSave,
 }: {
+  attackSubmissions: ReturnType<typeof attackFromResponse>[]
   message: string
   nickname: string
   onRefresh: () => void
@@ -1361,6 +1368,38 @@ function StudentAttackBoard({
         ) : null}
         {message ? <p className="mt-4 rounded-2xl border border-white/10 bg-[#07111B]/55 px-4 py-3 text-sm font-bold text-[#B7C7D2]">{message}</p> : null}
       </Panel>
+      <section className="border-y border-white/10 py-6">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="font-data text-sm text-[#4FE0C0]">TEAM QUESTIONS</p>
+            <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">제출된 해킹팀 질문</h2>
+            <p className="mt-2 text-sm font-bold text-[#8AA0B0]">우리 반에서 지금까지 질문 {attackSubmissions.length}개를 제출했습니다.</p>
+          </div>
+          <Button variant="secondary" onClick={onRefresh}>
+            <RefreshCw size={17} />
+            새로고침
+          </Button>
+        </div>
+        {attackSubmissions.length === 0 ? (
+          <p className="mt-5 border border-dashed border-white/15 px-4 py-8 text-center font-bold text-[#8AA0B0]">아직 제출된 질문이 없습니다.</p>
+        ) : (
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {attackSubmissions.map((submission) => {
+              const isMine = submission.response.nickname === nickname
+              return (
+                <article key={submission.response.id} className="min-h-36 border border-white/10 bg-[#07111B]/55 p-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="bg-[#14283D] px-2.5 py-1 text-xs font-black text-[#4FE0C0]">{submission.response.nickname}</span>
+                    <span className="bg-[#FFD37A]/15 px-2.5 py-1 text-xs font-black text-[#FFD37A]">{submission.card.title}</span>
+                    {isMine ? <span className="bg-[#75B7FF]/15 px-2.5 py-1 text-xs font-black text-[#75B7FF]">우리 모둠</span> : null}
+                  </div>
+                  <p className="mt-3 break-words text-lg font-black leading-8 text-[#EAF2F5]">{submission.question}</p>
+                </article>
+              )
+            })}
+          </div>
+        )}
+      </section>
     </div>
   )
 }
