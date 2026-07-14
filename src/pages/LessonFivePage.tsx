@@ -658,11 +658,22 @@ export function LessonFivePage() {
   const saveSurveyResponse = useCallback(
     async ({ nickname, questionKey, body }: { nickname: string; questionKey: string; body: string }) => {
       upsertSurveyResponse({ nickname, questionKey, body })
-      if (!state.classId || !isRemoteReady()) return true
+      if (!isRemoteReady()) return true
 
       try {
-        await upsertRemoteSurveyResponse({ classId: state.classId, nickname, questionKey, body })
+        let classId = state.classId
+        if (!classId) {
+          const initialBundle = await fetchRemoteClassBundle(syncCode)
+          mergeClass(initialBundle)
+          classId = typeof initialBundle.classId === 'string' ? initialBundle.classId : ''
+        }
+        if (!classId) throw new Error('학급 정보를 불러오지 못했습니다. 다시 입장해 주세요.')
+
+        await upsertRemoteSurveyResponse({ classId, nickname, questionKey, body })
+        const savedBundle = await fetchRemoteClassBundle(syncCode)
+        mergeClass(savedBundle)
         setRemoteStatus({ ok: true, message: '학생 입력 저장 완료' })
+        setStudentMessage('저장되었습니다. 아래 목록에서 내 글을 확인할 수 있습니다.')
         return true
       } catch (error) {
         const message = (error as Error).message
@@ -672,8 +683,29 @@ export function LessonFivePage() {
         return false
       }
     },
-    [setRemoteStatus, state.classId, upsertSurveyResponse],
+    [mergeClass, setRemoteStatus, state.classId, syncCode, upsertSurveyResponse],
   )
+
+  useEffect(() => {
+    if (isStudentView || isStudentLive || currentStep !== 'pledge' || !syncCode || !isRemoteReady()) return
+
+    let cancelled = false
+    const syncPledges = async () => {
+      if (document.visibilityState !== 'visible') return
+      try {
+        const bundle = await fetchRemoteClassBundle(syncCode)
+        if (!cancelled) mergeClass(bundle)
+      } catch {
+        // The manual refresh button remains available if a classroom network drops briefly.
+      }
+    }
+    const timer = window.setInterval(() => void syncPledges(), 5000)
+    void syncPledges()
+    return () => {
+      cancelled = true
+      window.clearInterval(timer)
+    }
+  }, [currentStep, isStudentLive, isStudentView, mergeClass, syncCode])
 
   const join = async () => {
     const classCode = (queryCode || entryCode).trim()
@@ -1408,6 +1440,7 @@ function StudentPledgeBoard({
   const [pledge, setPledge] = useState(existing?.pledge ?? '')
   const [saved, setSaved] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const savedPledge = existing?.pledge ?? (saved ? pledge.trim() : '')
 
   const submit = async () => {
     const trimmed = pledge.trim()
@@ -1442,6 +1475,12 @@ function StudentPledgeBoard({
           </Button>
         </div>
         {saved ? <p className="mt-4 rounded-2xl border border-[#4FE0C0]/25 bg-[#4FE0C0]/10 px-4 py-3 text-lg font-black text-[#4FE0C0]">다짐이 저장되었습니다.</p> : null}
+        {savedPledge ? (
+          <div className="mt-4 rounded-2xl border border-[#75B7FF]/30 bg-[#75B7FF]/10 p-4">
+            <p className="text-sm font-black text-[#75B7FF]">내 다짐</p>
+            <p className="mt-2 text-lg font-black leading-8 text-[#EAF2F5]">{savedPledge}</p>
+          </div>
+        ) : null}
         {message ? <p className="mt-4 rounded-2xl border border-white/10 bg-[#07111B]/55 px-4 py-3 text-sm font-bold text-[#B7C7D2]">{message}</p> : null}
       </Panel>
       <Panel>
