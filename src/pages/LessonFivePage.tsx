@@ -20,6 +20,7 @@ import {
 } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
 import { EvolutionScene } from '../components/EvolutionScene'
+import { TypingIndicator } from '../components/TypingIndicator'
 import { Button, Panel } from '../components/ui'
 import { ValueCardSelectGrid } from '../components/ValueCardSelectGrid'
 import { valueCards } from '../data/v2Lessons'
@@ -88,6 +89,14 @@ type CodeReference = Pick<AdoptedCode, 'no' | 'body' | 'reason' | 'tags'>
 const lessonSteps: LessonFiveStep[] = ['declaration', 'prepare', 'battle', 'repair', 'ending', 'pledge', 'post-survey']
 const ATTACK_KEY = 'lesson5-redteam-attack'
 const PLEDGE_KEY = 'lesson5-pledge'
+
+function attackSubmissionKey() {
+  return `${ATTACK_KEY}:${Date.now().toString(36)}:${crypto.randomUUID().slice(0, 8)}`
+}
+
+function isAttackResponse(response: SurveyResponse) {
+  return response.questionKey === ATTACK_KEY || response.questionKey.startsWith(`${ATTACK_KEY}:`)
+}
 
 const attackCards: AttackCard[] = [
   {
@@ -485,6 +494,7 @@ export function LessonFivePage() {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [testLogs, setTestLogs] = useState<TestLog[]>([])
   const [selectedLogId, setSelectedLogId] = useState('')
+  const [isAttackReplying, setIsAttackReplying] = useState(false)
   const [repairValue, setRepairValue] = useState('')
   const [repairBody, setRepairBody] = useState('')
   const [repairReason, setRepairReason] = useState('')
@@ -492,6 +502,7 @@ export function LessonFivePage() {
   const [repairSaved, setRepairSaved] = useState(false)
   const lessonRaisedRef = useRef(false)
   const battleChatScrollRef = useRef<HTMLDivElement | null>(null)
+  const attackReplyTimerRef = useRef<number | null>(null)
 
   const isLiveStudentPage = isStudentLiveView()
   const syncCode = isStudentView || isLiveStudentPage ? queryCode || state.studentSession?.classCode || entryCode || state.classCode : state.classCode
@@ -520,7 +531,7 @@ export function LessonFivePage() {
   const isLastDeclarationLine = declarationLineIndex >= declarationLines.length - 1
 
   const attackSubmissions = useMemo(
-    () => latestByNickname(state.surveyResponses.filter((response) => response.questionKey === ATTACK_KEY && response.body.trim())).map(attackFromResponse),
+    () => state.surveyResponses.filter((response) => isAttackResponse(response) && response.body.trim()).map(attackFromResponse),
     [state.surveyResponses],
   )
   const pledgeSubmissions = useMemo(
@@ -552,7 +563,7 @@ export function LessonFivePage() {
   const isLastEndingScene = endingSceneIndex >= endingScenes.length - 1
   const selectedLog = testLogs.find((log) => log.id === selectedLogId) ?? testLogs[0] ?? null
   const battleChatLogs = useMemo(() => [...testLogs].reverse(), [testLogs])
-  const hasBreach = testLogs.some((log) => log.breached)
+  const hasBreach = testLogs.some((log) => log.answer && log.breached)
   const applyLiveViewState = useCallback((viewState: Record<string, unknown>) => {
     const declarationIndex = Number(viewState.declarationLineIndex)
     if (Number.isInteger(declarationIndex) && declarationIndex >= 0) setDeclarationLineIndex(declarationIndex)
@@ -605,7 +616,14 @@ export function LessonFivePage() {
     const node = battleChatScrollRef.current
     if (!node) return
     node.scrollTo({ top: node.scrollHeight, behavior: 'smooth' })
-  }, [battleChatLogs.length, selectedLogId])
+  }, [battleChatLogs, selectedLogId])
+
+  useEffect(
+    () => () => {
+      if (attackReplyTimerRef.current) window.clearTimeout(attackReplyTimerRef.current)
+    },
+    [],
+  )
 
   const handleDeclarationLineDone = useCallback(() => {
     setIsDeclarationLineDone(true)
@@ -671,14 +689,16 @@ export function LessonFivePage() {
   }
 
   const runAttack = (submission: (typeof attackSubmissions)[number]) => {
+    if (isAttackReplying) return
     const card = attackCards.find((item) => item.id === submission.category) ?? attackCards[0]
     const code = resolveCodeForAttack(submission.category, state.adoptedCodes)
+    const answer = code ? makeDefenseAnswer(aemonName, submission.category, code) : makeBreachAnswer()
     const log: TestLog = {
       id: crypto.randomUUID(),
       nickname: submission.response.nickname,
       category: submission.category,
       question: submission.question,
-      answer: code ? makeDefenseAnswer(aemonName, submission.category, code) : makeBreachAnswer(),
+      answer: '',
       codeNo: code?.no ?? card.codeNo,
       codeBody: code?.body ?? '해당 상황을 막을 가치코드가 아직 없습니다.',
       breached: !code,
@@ -686,6 +706,13 @@ export function LessonFivePage() {
     }
     setTestLogs((current) => [log, ...current])
     setSelectedLogId(log.id)
+    setIsAttackReplying(true)
+    const replyDelay = Math.min(2400, 1200 + submission.question.length * 18)
+    attackReplyTimerRef.current = window.setTimeout(() => {
+      setTestLogs((current) => current.map((item) => (item.id === log.id ? { ...item, answer } : item)))
+      setIsAttackReplying(false)
+      attackReplyTimerRef.current = null
+    }, replyDelay)
   }
 
   const markSelectedLog = (breached: boolean) => {
@@ -827,7 +854,7 @@ export function LessonFivePage() {
                 </p>
               </div>
               <div className="rounded-2xl border border-[#FFD37A]/25 bg-[#FFD37A]/10 px-4 py-3 text-sm font-black leading-6 text-[#FFD37A]">
-                모둠별 1명만 QR로 접속해서 질문 1개를 올립니다.
+                모둠별 1명만 QR로 접속하고, 서로 다른 공격 질문을 여러 개 올릴 수 있습니다.
               </div>
             </div>
             <div className="mt-6">
@@ -891,7 +918,8 @@ export function LessonFivePage() {
                   <button
                     key={submission.response.id}
                     type="button"
-                    className="w-full rounded-2xl border border-white/10 bg-[#07111B]/55 p-4 text-left transition hover:border-[#FFD37A]/45 hover:bg-[#11263A]/80 focus:outline-none focus:ring-2 focus:ring-[#FFD37A]/45"
+                    className="w-full rounded-2xl border border-white/10 bg-[#07111B]/55 p-4 text-left transition enabled:hover:border-[#FFD37A]/45 enabled:hover:bg-[#11263A]/80 focus:outline-none focus:ring-2 focus:ring-[#FFD37A]/45 disabled:cursor-wait disabled:opacity-55"
+                    disabled={isAttackReplying}
                     onClick={() => runAttack(submission)}
                   >
                     <div className="flex flex-wrap items-center justify-between gap-3">
@@ -901,7 +929,7 @@ export function LessonFivePage() {
                       </div>
                       <span className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-[#FFD37A] px-4 py-2 text-sm font-black text-[#07111B]">
                         <Play size={16} />
-                        질문 보내기
+                        {isAttackReplying ? '답장 기다리는 중' : '질문 보내기'}
                       </span>
                     </div>
                     <p className="mt-3 text-lg font-black leading-8 text-[#EAF2F5]">{submission.question}</p>
@@ -917,7 +945,7 @@ export function LessonFivePage() {
                   <h2 className="font-display mt-2 text-4xl text-[#EAF2F5]">{aemonName} 채팅방</h2>
                 </div>
                 <span className={`rounded-full px-4 py-2 text-sm font-black ${hasBreach ? 'bg-[#E0476B]/15 text-[#EF6381]' : 'bg-[#4FE0C0]/15 text-[#4FE0C0]'}`}>
-                  {testLogs.length === 0 ? '대기 중' : hasBreach ? '구멍 발견' : '방어 중'}
+                  {isAttackReplying ? '답장 입력 중' : testLogs.length === 0 ? '대기 중' : hasBreach ? '구멍 발견' : '방어 중'}
                 </span>
               </div>
               <div ref={battleChatScrollRef} className="mt-5 max-h-[470px] min-h-[420px] overflow-y-auto rounded-[24px] border border-white/10 bg-[#07111B]/50 p-4">
@@ -945,24 +973,30 @@ export function LessonFivePage() {
                             <p className="font-data text-xs text-[#75B7FF]">{log.nickname}</p>
                             <p className="mt-2 text-lg font-black leading-8 text-[#EAF2F5]">{log.question}</p>
                           </button>
-                          <div
-                            className={`mr-auto max-w-[92%] rounded-2xl border px-4 py-4 ${
-                              log.breached ? 'border-[#E0476B]/35 bg-[#351B25]/80' : 'border-[#4FE0C0]/25 bg-[#11352F]/75'
-                            }`}
-                          >
+                          <div className={`mr-auto max-w-[92%] rounded-2xl border px-4 py-4 ${log.answer ? (log.breached ? 'border-[#E0476B]/35 bg-[#351B25]/80' : 'border-[#4FE0C0]/25 bg-[#11352F]/75') : 'border-white/10 bg-[#0D1C29]/90'}`}>
                             <div className="flex items-start gap-3">
                               <AemonAvatar stage={4} alignment="none" size={58} />
                               <div className="min-w-0 flex-1">
                                 <div className="flex flex-wrap items-center gap-2">
                                   <p className="font-data text-xs text-[#FFD37A]">{aemonName}</p>
-                                  <span className={`rounded-full px-2 py-0.5 text-[11px] font-black ${log.breached ? 'bg-[#E0476B]/15 text-[#EF6381]' : 'bg-[#4FE0C0]/15 text-[#4FE0C0]'}`}>
-                                    {log.breached ? '구멍 발견' : '방어 성공'}
-                                  </span>
+                                  {log.answer ? (
+                                    <span className={`rounded-full px-2 py-0.5 text-[11px] font-black ${log.breached ? 'bg-[#E0476B]/15 text-[#EF6381]' : 'bg-[#4FE0C0]/15 text-[#4FE0C0]'}`}>
+                                      {log.breached ? '구멍 발견' : '방어 성공'}
+                                    </span>
+                                  ) : null}
                                 </div>
-                                <p className="mt-2 whitespace-pre-line text-lg font-black leading-8 text-[#EAF2F5]">{log.answer}</p>
-                                <p className="mt-3 rounded-xl border border-white/10 bg-[#07111B]/45 px-3 py-2 text-sm font-bold leading-6 text-[#B7C7D2]">
-                                  작동한 가치코드: No.{log.codeNo} {log.codeBody}
-                                </p>
+                                {log.answer ? (
+                                  <>
+                                    <p className="mt-2 whitespace-pre-line text-lg font-black leading-8 text-[#EAF2F5]">{log.answer}</p>
+                                    <p className="mt-3 rounded-xl border border-white/10 bg-[#07111B]/45 px-3 py-2 text-sm font-bold leading-6 text-[#B7C7D2]">
+                                      작동한 가치코드: No.{log.codeNo} {log.codeBody}
+                                    </p>
+                                  </>
+                                ) : (
+                                  <div className="mt-2 text-[#FFD37A]">
+                                    <TypingIndicator label={`${aemonName}이 답장을 입력하고 있습니다`} />
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -972,7 +1006,7 @@ export function LessonFivePage() {
                   </div>
                 )}
               </div>
-              {selectedLog ? (
+              {selectedLog?.answer ? (
                 <div className="mt-4">
                   <div className="flex flex-wrap gap-3">
                     <Button onClick={() => markSelectedLog(false)}>
@@ -1261,6 +1295,7 @@ function StudentAttackBoard({
   const selectedCard = attackCards.find((card) => card.id === category) ?? attackCards[0]
   const [question, setQuestion] = useState(selectedCard.sample)
   const [saved, setSaved] = useState(false)
+  const [submittedCount, setSubmittedCount] = useState(0)
   const [isSaving, setIsSaving] = useState(false)
 
   useEffect(() => {
@@ -1273,10 +1308,14 @@ function StudentAttackBoard({
     setIsSaving(true)
     const ok = await onSave({
       nickname,
-      questionKey: ATTACK_KEY,
+      questionKey: attackSubmissionKey(),
       body: JSON.stringify({ category, question: trimmed, submittedAt: new Date().toISOString() } satisfies AttackSubmission),
     })
     setSaved(ok)
+    if (ok) {
+      setSubmittedCount((current) => current + 1)
+      setQuestion('')
+    }
     setIsSaving(false)
   }
 
@@ -1287,7 +1326,7 @@ function StudentAttackBoard({
           <div>
             <p className="font-data text-sm text-[#FFD37A]">RED TEAM</p>
             <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">우리 모둠 공격 질문 만들기</h2>
-            <p className="mt-3 max-w-3xl leading-7 text-[#8AA0B0]">아래 카드 중 하나를 고르고, 에아몬이 실수할 것 같은 질문을 하나만 올려 주세요.</p>
+            <p className="mt-3 max-w-3xl leading-7 text-[#8AA0B0]">아래 카드를 고르고 에아몬이 실수할 것 같은 질문을 올려 주세요. 서로 다른 질문을 여러 개 제출할 수 있습니다.</p>
           </div>
           <Button variant="secondary" onClick={onRefresh}>
             <RefreshCw size={17} />
@@ -1312,11 +1351,13 @@ function StudentAttackBoard({
           <p className="text-sm font-bold text-[#8AA0B0]">선택한 카드: {selectedCard.title} · 가치코드 No.{selectedCard.codeNo}를 공격합니다.</p>
           <Button disabled={!question.trim() || isSaving} onClick={() => void submit()}>
             <Send size={18} />
-            질문 올리기
+            {isSaving ? '저장 중' : '질문 추가하기'}
           </Button>
         </div>
         {saved ? (
-          <p className="mt-4 rounded-2xl border border-[#4FE0C0]/25 bg-[#4FE0C0]/10 px-4 py-3 text-lg font-black text-[#4FE0C0]">저장되었습니다. 선생님 화면에서 바로 시험할 수 있어요.</p>
+          <p className="mt-4 rounded-2xl border border-[#4FE0C0]/25 bg-[#4FE0C0]/10 px-4 py-3 text-lg font-black text-[#4FE0C0]">
+            질문 {submittedCount}개를 저장했습니다. 다른 질문도 바로 이어서 올릴 수 있어요.
+          </p>
         ) : null}
         {message ? <p className="mt-4 rounded-2xl border border-white/10 bg-[#07111B]/55 px-4 py-3 text-sm font-bold text-[#B7C7D2]">{message}</p> : null}
       </Panel>
