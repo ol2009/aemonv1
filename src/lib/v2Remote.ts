@@ -214,16 +214,27 @@ function latestAdoptedCodeRows(rows: CodeRow[]) {
 
 function mapAdoptedCodes(rows: CodeRow[]): AdoptedCode[] {
   return latestAdoptedCodeRows(rows)
-    .map((row) => ({
-      id: row.id,
-      no: row.adopted_no ?? 0,
-      body: row.body,
-      reason: row.reason,
-      valueCard: row.value_card,
-      tags: decodeCodeTags(row.value_card),
-      sourceProposalId: row.id,
-      createdAt: row.adopted_at ?? row.created_at,
-    }))
+    .map((row) => {
+      const originalProposal = rows.find(
+        (candidate) =>
+          candidate.status === 'pending' &&
+          candidate.id !== row.id &&
+          candidate.nickname === row.nickname &&
+          candidate.body === row.body &&
+          candidate.reason === row.reason,
+      )
+
+      return {
+        id: row.id,
+        no: row.adopted_no ?? 0,
+        body: row.body,
+        reason: row.reason,
+        valueCard: row.value_card,
+        tags: decodeCodeTags(row.value_card),
+        sourceProposalId: originalProposal?.id ?? row.id,
+        createdAt: row.adopted_at ?? row.created_at,
+      }
+    })
     .sort((a, b) => a.no - b.no)
 }
 
@@ -417,6 +428,20 @@ export async function fetchRemoteTeacherClasses(teacherId: string): Promise<Remo
       counts,
     }
   }))
+}
+
+export async function deleteRemoteClass(args: { classId: string; teacherId: string }) {
+  const client = ensureClient()
+  const { data, error } = await client
+    .from('classes')
+    .delete()
+    .eq('id', args.classId)
+    .eq('teacher_id', args.teacherId.trim())
+    .select('id')
+    .maybeSingle<{ id: string }>()
+  if (error) throw new Error(toMessage(error))
+  if (!data) throw new Error('학급을 삭제하지 못했습니다. 다시 로그인한 뒤 시도해 주세요.')
+  return data.id
 }
 
 async function fetchTableCount(table: 'name_candidates' | 'wishes' | 'survey_responses' | 'codes' | 'chat_logs', classId: string, status?: 'adopted') {
@@ -741,39 +766,17 @@ export async function adoptRemoteCodeProposal(args: { proposalId: string; adopte
   const client = ensureClient()
   const { data: proposal, error: findError } = await client
     .from('codes')
-    .select('id,class_id,nickname,body,reason,value_card')
+    .select('id,class_id,nickname,body,reason,value_card,status')
     .eq('id', args.proposalId)
-    .single<{ id: string; class_id: string; nickname: string; body: string; reason: string; value_card: string }>()
+    .single<{ id: string; class_id: string; nickname: string; body: string; reason: string; value_card: string; status: CodeProposal['status'] }>()
   if (findError) throw new Error(toMessage(findError))
+  if (proposal.status !== 'pending') throw new Error('이미 처리된 발의입니다. 새로고침한 뒤 다른 문장을 선택해 주세요.')
 
   const adoptedAt = new Date().toISOString()
 
-  const { error: clearError } = await client
-    .from('codes')
-    .update({ status: 'rejected', adopted_no: null, adopted_at: null })
-    .eq('class_id', proposal.class_id)
-    .eq('status', 'adopted')
-    .eq('adopted_no', args.adoptedNo)
-    .neq('id', args.proposalId)
-  if (clearError) throw new Error(toMessage(clearError))
-
-  const { data: updated, error } = await client
-    .from('codes')
-    .update({
-      status: 'adopted',
-      adopted_no: args.adoptedNo,
-      value_card: args.valueCard.trim(),
-      adopted_at: adoptedAt,
-    })
-    .eq('id', args.proposalId)
-    .select('id')
-    .maybeSingle<{ id: string }>()
-  if (error) throw new Error(toMessage(error))
-  if (updated) return { adoptedId: updated.id, copied: false }
-
-  // An expired teacher session can make an RLS-protected UPDATE affect zero rows
-  // without returning an error. Preserve the selected sentence as a new adopted row.
-  const { data: copied, error: copyError } = await client
+  // Updating a proposal requires a live teacher session. Saving an immutable
+  // adopted snapshot keeps adoption reliable even after a long-running lesson.
+  const { data: adopted, error: adoptError } = await client
     .from('codes')
     .insert({
       class_id: proposal.class_id,
@@ -786,10 +789,13 @@ export async function adoptRemoteCodeProposal(args: { proposalId: string; adopte
       adopted_no: args.adoptedNo,
       adopted_at: adoptedAt,
     })
-    .select('id')
-    .single<{ id: string }>()
-  if (copyError || !copied) throw new Error(toMessage(copyError ?? new Error('가치코드가 저장되지 않았습니다.')))
-  return { adoptedId: copied.id, copied: true }
+    .select('id,status,adopted_no')
+    .single<{ id: string; status: CodeProposal['status']; adopted_no: number | null }>()
+  if (adoptError || !adopted) throw new Error(toMessage(adoptError ?? new Error('가치코드가 저장되지 않았습니다.')))
+  if (adopted.status !== 'adopted' || adopted.adopted_no !== args.adoptedNo) {
+    throw new Error('가치코드 저장을 확인하지 못했습니다. 다시 눌러주세요.')
+  }
+  return { adoptedId: adopted.id, copied: true }
 }
 
 export async function rejectRemoteCodeProposal(proposalId: string) {

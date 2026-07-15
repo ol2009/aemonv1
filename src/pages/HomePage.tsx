@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AlertTriangle, BookOpen, KeyRound, Play, RefreshCw, RotateCcw, Send, MessageSquare, MonitorPlay, Waves, X } from 'lucide-react'
+import { AlertTriangle, BookOpen, CheckCircle2, KeyRound, LockKeyhole, Play, RefreshCw, RotateCcw, Send, MessageSquare, Waves, X } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
 import { ApiConnectionModal } from '../components/ApiConnectionModal'
 import { TypingIndicator } from '../components/TypingIndicator'
@@ -12,7 +12,7 @@ import type { WalkItem, WalkItemType } from '../domain/types'
 import { markDashboardPrompt } from '../lib/chatLogFilters'
 import { findBestRecoverableClass, shouldAutoRestoreClass } from '../lib/classRecovery'
 import { providerLabel, runV2Chat } from '../lib/v2Chat'
-import { addRemoteChatLog, fetchRemoteClassBundle, fetchRemoteTeacherClasses, isRemoteReady, updateRemoteLesson } from '../lib/v2Remote'
+import { addRemoteChatLog, fetchRemoteClassBundle, fetchRemoteTeacherClasses, isRemoteReady } from '../lib/v2Remote'
 import { useSupabaseUser } from '../lib/useSupabaseUser'
 import { useV2RemoteSync } from '../lib/useV2RemoteSync'
 import { useV2 } from '../state/V2Store'
@@ -28,7 +28,7 @@ const typeMeta: Record<WalkItemType, { color: string; soft: string }> = {
 export function HomePage() {
   const navigate = useNavigate()
   const { user, isLoading } = useSupabaseUser()
-  const { state, evolutionStage, adoptedCodeCount, addChatLog, mergeClass, setLesson, setRemoteStatus, updateAiSettings, resetDemo } = useV2()
+  const { state, evolutionStage, adoptedCodeCount, addChatLog, mergeClass, setRemoteStatus, updateAiSettings, resetDemo } = useV2()
   const [isApiOpen, setIsApiOpen] = useState(false)
   const [walkPhase, setWalkPhase] = useState<WalkPhase>('idle')
   const [walkItem, setWalkItem] = useState<WalkItem | null>(null)
@@ -45,7 +45,9 @@ export function HomePage() {
   const walkMeta = walkItem ? typeMeta[walkItem.type] : null
   const lessonNo = Math.min(TOTAL_V2_LESSONS, Math.max(1, state.currentLesson || 1))
   const currentLesson = findV2Lesson(lessonNo)
-  const progressPercent = Math.round((lessonNo / TOTAL_V2_LESSONS) * 100)
+  const completedLessonCount = Math.max(0, lessonNo - 1)
+  const remainingLessonCount = Math.max(0, TOTAL_V2_LESSONS - lessonNo)
+  const progressPercent = Math.round((completedLessonCount / TOTAL_V2_LESSONS) * 100)
   const statusLines = getDashboardStatusLines()
   const dashboardQuestions = getDashboardQuestions()
   const dashboardLines = statusLines.flatMap((line, index) => [line, dashboardQuestions[index % dashboardQuestions.length]])
@@ -217,18 +219,6 @@ export function HomePage() {
     }
   }
 
-  const saveLesson = async (nextLesson: number) => {
-    const clamped = Math.min(TOTAL_V2_LESSONS, Math.max(1, nextLesson))
-    setLesson(clamped)
-    if (canWriteRemote) {
-      try {
-        await updateRemoteLesson({ classId: state.classId, lessonNo: clamped })
-      } catch (error) {
-        setRemoteStatus({ ok: false, message: (error as Error).message })
-      }
-    }
-  }
-
   const openCurrentLesson = () => {
     if (lessonNo <= 1) navigate('/lesson/1')
     else if (lessonNo === 2) navigate('/lesson/2')
@@ -250,7 +240,7 @@ export function HomePage() {
           <div className="mt-3 flex flex-wrap items-end justify-between gap-5">
             <div>
               <h1 className="font-display text-5xl leading-tight text-[#EAF2F5]">학급 정보 저장 완료</h1>
-              <p className="mt-3 text-lg leading-8 text-[#B7C7D2]">실제 수업을 시작하거나, 학생 데이터 없이 교사 리허설로 흐름을 먼저 연습할 수 있습니다.</p>
+              <p className="mt-3 text-lg leading-8 text-[#B7C7D2]">1차시부터 차례대로 진행하면 완료한 차시는 잠기고, 다음에 해야 할 차시가 자동으로 열립니다.</p>
             </div>
             <Button variant="secondary" onClick={() => navigate('/start')}>
               시작 화면
@@ -274,21 +264,6 @@ export function HomePage() {
             </Button>
           </Panel>
 
-          <Panel className="flex min-h-72 flex-col justify-between border-[#4FE0C0]/35">
-            <div>
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#4FE0C0]/10 text-[#4FE0C0]">
-                <MonitorPlay size={30} />
-              </div>
-              <p className="font-data mt-6 text-xs text-[#4FE0C0]">PRACTICE</p>
-              <h2 className="font-display mt-2 text-4xl text-[#EAF2F5]">교사 리허설</h2>
-              <p className="mt-4 text-lg leading-8 text-[#B7C7D2]">실제 학급 기록을 바꾸지 않고 1~5차시 발문과 화면 전환을 연습합니다.</p>
-            </div>
-            <Button className="mt-8 w-full" variant="secondary" onClick={() => navigate('/rehearsal?lesson=1')}>
-              리허설 시작
-              <MonitorPlay size={18} />
-            </Button>
-          </Panel>
-
           <Panel className="flex min-h-72 flex-col justify-between">
             <div>
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#4FE0C0]/10 text-[#4FE0C0]">
@@ -296,7 +271,7 @@ export function HomePage() {
               </div>
               <p className="font-data mt-6 text-xs text-[#4FE0C0]">TEACHER</p>
               <h2 className="font-display mt-2 text-4xl text-[#EAF2F5]">사전연수</h2>
-              <p className="mt-4 text-lg leading-8 text-[#B7C7D2]">프로젝트 철학, 차시별 40분 과정안, 운영 준비를 확인합니다.</p>
+              <p className="mt-4 text-lg leading-8 text-[#B7C7D2]">프로젝트 철학과 차시별 40분 수업 과정안을 확인합니다.</p>
             </div>
             <Button className="mt-8 w-full" variant="secondary" onClick={() => navigate('/training')}>
               사전연수
@@ -469,19 +444,13 @@ export function HomePage() {
 
       </Panel>
 
-      <div className="mt-4 flex justify-end">
-        <Button variant="ghost" onClick={() => navigate(`/rehearsal?lesson=${lessonNo}`)}>
-          <MonitorPlay size={18} />
-          {lessonNo}차시 교사 리허설
-        </Button>
-      </div>
-
       <section className="mt-8">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="font-data text-sm text-[#4FE0C0]">차시 이동</p>
-            <p className="mt-2 text-lg font-black text-[#EAF2F5]">{currentLesson.no}차시 · {currentLesson.title}</p>
+            <p className="font-data text-sm text-[#4FE0C0]">수업 진행</p>
+            <p className="mt-2 text-lg font-black text-[#EAF2F5]">지금 해야 할 수업 · {currentLesson.no}차시 {currentLesson.title}</p>
             <p className="mt-1 max-w-4xl text-sm leading-6 text-[#8AA0B0]">{currentLesson.dashboardSummary}</p>
+            <p className="mt-3 text-sm font-bold text-[#B7C7D2]">완료 {completedLessonCount}차시 · 현재 {lessonNo}차시 진행 중 · 이후 남은 수업 {remainingLessonCount}차시</p>
           </div>
           <div className="h-2 w-52 overflow-hidden rounded-full bg-white/10">
             <div className="h-full rounded-full bg-[#FFD37A]" style={{ width: `${progressPercent}%` }} />
@@ -492,29 +461,22 @@ export function HomePage() {
           {v2Lessons.map((lesson) => (
             <button
               key={lesson.no}
-              className={`h-11 min-w-11 rounded-xl border px-3 font-black transition ${
+              className={`inline-flex h-12 min-w-28 items-center justify-center gap-2 rounded-xl border px-4 font-black transition ${
                 lesson.no === lessonNo
                   ? 'border-[#FFD37A] bg-[#FFD37A] text-[#0A1622]'
                   : lesson.no < lessonNo
-                    ? 'border-[#4FE0C0]/35 bg-[#4FE0C0]/10 text-[#4FE0C0]'
-                    : 'border-white/10 bg-[#07111B]/55 text-[#B7C7D2] hover:border-white/25'
+                    ? 'border-[#4FE0C0]/20 bg-[#4FE0C0]/8 text-[#6D9B91]'
+                    : 'border-white/10 bg-[#07111B]/55 text-[#667987]'
               }`}
-              onClick={() => void saveLesson(lesson.no)}
-              title={lesson.title}
+              disabled={lesson.no !== lessonNo}
+              onClick={lesson.no === lessonNo ? openCurrentLesson : undefined}
+              title={lesson.no < lessonNo ? '완료한 차시' : lesson.no > lessonNo ? '아직 열리지 않은 차시' : '현재 차시 열기'}
               type="button"
             >
-              {lesson.no}
+              {lesson.no < lessonNo ? <CheckCircle2 size={17} /> : lesson.no > lessonNo ? <LockKeyhole size={16} /> : <Play size={16} />}
+              {lesson.no}차시
             </button>
           ))}
-        </div>
-        <div className="mt-4 flex flex-wrap gap-2">
-          <Button className="min-h-10 px-4" variant="secondary" disabled={lessonNo <= 1} onClick={() => void saveLesson(lessonNo - 1)}>
-            <RotateCcw size={18} />
-            이전
-          </Button>
-          <Button className="min-h-10 px-4" disabled={lessonNo >= TOTAL_V2_LESSONS} onClick={() => void saveLesson(lessonNo + 1)}>
-            다음
-          </Button>
         </div>
       </section>
 

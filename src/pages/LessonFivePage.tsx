@@ -614,13 +614,29 @@ export function LessonFivePage() {
   const endingScene = endingScenes[Math.min(endingSceneIndex, Math.max(0, endingScenes.length - 1))]
   const isLastEndingScene = endingSceneIndex >= endingScenes.length - 1
   const battleChatLogs = useMemo(() => [...testLogs].reverse(), [testLogs])
-  const repairProposals = useMemo(
-    () => sortCodeProposals(state.proposals.filter((proposal) => proposal.revisionOfNo === 4 && proposal.status !== 'rejected')),
-    [state.proposals],
+  const repairProposals = useMemo(() => {
+    const proposals = sortCodeProposals(state.proposals.filter((proposal) => proposal.revisionOfNo === 4 && proposal.status !== 'rejected'))
+    return proposals.filter(
+      (proposal) =>
+        proposal.status !== 'adopted' ||
+        !proposals.some(
+          (candidate) =>
+            candidate.status === 'pending' &&
+            candidate.nickname === proposal.nickname &&
+            candidate.body === proposal.body &&
+            candidate.reason === proposal.reason,
+        ),
+    )
+  }, [state.proposals])
+  const repairCodes = state.adoptedCodes.filter((code) => code.no >= 4)
+  const pendingRepairProposals = repairProposals.filter(
+    (proposal) =>
+      proposal.status === 'pending' &&
+      !repairCodes.some((code) => code.body === proposal.body && code.reason === proposal.reason),
   )
-  const pendingRepairProposals = repairProposals.filter((proposal) => proposal.status === 'pending')
-  const finalCode = state.adoptedCodes.find((code) => code.no === 4) ?? null
-  const selectedRepairProposal = pendingRepairProposals.find((proposal) => proposal.id === selectedRepairProposalId) ?? (finalCode ? null : pendingRepairProposals[0] ?? null)
+  const finalCode = repairCodes[0] ?? null
+  const nextRepairCodeNo = Math.max(4, ...repairCodes.map((code) => code.no + 1))
+  const selectedRepairProposal = pendingRepairProposals.find((proposal) => proposal.id === selectedRepairProposalId) ?? pendingRepairProposals[0] ?? null
   const repairParticipantCount = new Set(repairProposals.map((proposal) => proposal.nickname.trim()).filter(Boolean)).size
   const applyLiveViewState = useCallback((viewState: Record<string, unknown>) => {
     const declarationIndex = Number(viewState.declarationLineIndex)
@@ -818,18 +834,24 @@ export function LessonFivePage() {
   const adoptSelectedRepairProposal = async () => {
     if (!selectedRepairProposal || isAdoptingRepair) return
     const valueCard = selectedRepairProposal.valueCard || '책임'
+    const adoptedNo = nextRepairCodeNo
     setIsAdoptingRepair(true)
     setTeacherMessage('')
 
     try {
       if (canWriteRemote) {
-        await adoptRemoteCodeProposal({ proposalId: selectedRepairProposal.id, adoptedNo: 4, valueCard })
+        const saved = await adoptRemoteCodeProposal({ proposalId: selectedRepairProposal.id, adoptedNo, valueCard })
+        const bundle = await fetchRemoteClassBundle(syncCode || state.classCode)
+        if (!(bundle.adoptedCodes ?? []).some((code) => code.id === saved.adoptedId && code.no === adoptedNo)) {
+          throw new Error('채택 결과를 서버에서 확인하지 못했습니다. 다시 눌러주세요.')
+        }
+        mergeClass(bundle)
+      } else {
+        adoptProposal(selectedRepairProposal.id, valueCard, adoptedNo)
       }
-      adoptProposal(selectedRepairProposal.id, valueCard, 4)
-      if (canWriteRemote) await refreshBundle()
       setSelectedRepairProposalId('')
-      setTeacherMessage('마지막 보완 가치코드를 No.4로 채택했습니다.')
-      setRemoteStatus({ ok: true, message: '가치코드 No.4 채택 완료' })
+      setTeacherMessage(`보완 가치코드를 No.${adoptedNo}로 채택했습니다. 다른 문장도 이어서 채택할 수 있습니다.`)
+      setRemoteStatus({ ok: true, message: `가치코드 No.${adoptedNo} 채택 완료` })
     } catch (error) {
       const message = (error as Error).message
       setTeacherMessage(message)
@@ -1116,10 +1138,10 @@ export function LessonFivePage() {
               </Button>
             </div>
             <ProposalAdoptionPanel
-              proposals={repairProposals}
-              adoptedCode={finalCode}
+              proposals={pendingRepairProposals}
+              adoptedCode={null}
               selectedProposal={selectedRepairProposal}
-              codeNo={4}
+              codeNo={nextRepairCodeNo}
               fallbackValueCard="책임"
               isAdopting={isAdoptingRepair}
               emptyText="학생들의 마지막 보완 가치코드 발의를 기다리는 중입니다."

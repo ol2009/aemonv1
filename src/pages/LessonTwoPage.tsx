@@ -32,7 +32,9 @@ type LessonTwoStep =
   | 'case-privacy'
   | 'case-danger'
   | 'case-cybertruck'
-  | 'case-jailbreak'
+  | 'case-cybertruck-result'
+  | 'case-florida'
+  | 'case-florida-result'
   | 'case-professor'
   | 'case-value-code'
   | 'case-refusal'
@@ -56,7 +58,9 @@ const steps: LessonTwoStep[] = [
   'case-privacy',
   'case-danger',
   'case-cybertruck',
-  'case-jailbreak',
+  'case-cybertruck-result',
+  'case-florida',
+  'case-florida-result',
   'case-professor',
   'case-value-code',
   'case-refusal',
@@ -416,12 +420,7 @@ function VisualCaseScene({
         />
       </div>
       <div className="absolute inset-x-5 bottom-5 rounded-[22px] border border-white/15 bg-[#07111B]/92 p-6 shadow-2xl backdrop-blur">
-        <div className="flex flex-wrap items-center gap-3">
-          <p className="font-data text-sm text-[#EF6381]">{label}</p>
-          <span className="rounded-full border border-[#FFD37A]/25 bg-[#FFD37A]/10 px-3 py-1 text-xs font-black text-[#FFD37A]">
-            {title}
-          </span>
-        </div>
+        <p className="font-data text-sm font-black text-[#FFD37A]">{label}</p>
         <p className={textClass}>
           <TypewriterText key={activeDialogueKey} text={activeText} speed={28} cursor={!activeDone} onDone={handleActiveDone} />
         </p>
@@ -520,10 +519,20 @@ export function LessonTwoPage() {
 
   const riskBoardUrl = absoluteUrl(`/board?code=${encodeURIComponent(state.classCode)}&mode=risk`)
   const boardUrl = absoluteUrl(`/board?code=${encodeURIComponent(state.classCode)}&mode=code`)
-  const lessonProposals = useMemo(
-    () => sortProposals(state.proposals.filter((proposal) => proposal.status !== 'rejected' && (proposal.revisionOfNo === 1 || proposal.revisionOfNo === null))),
-    [state.proposals],
-  )
+  const lessonProposals = useMemo(() => {
+    const proposals = sortProposals(state.proposals.filter((proposal) => proposal.status !== 'rejected' && (proposal.revisionOfNo === 1 || proposal.revisionOfNo === null)))
+    return proposals.filter(
+      (proposal) =>
+        proposal.status !== 'adopted' ||
+        !proposals.some(
+          (candidate) =>
+            candidate.status === 'pending' &&
+            candidate.nickname === proposal.nickname &&
+            candidate.body === proposal.body &&
+            candidate.reason === proposal.reason,
+        ),
+    )
+  }, [state.proposals])
   const pendingProposals = lessonProposals.filter((proposal) => proposal.status === 'pending')
   const firstCode = state.adoptedCodes.find((code) => code.no === 1) ?? state.adoptedCodes[0] ?? null
   const selectedProposal = pendingProposals.find((proposal) => proposal.id === selectedProposalId) ?? (firstCode ? null : pendingProposals[0] ?? null)
@@ -625,9 +634,11 @@ export function LessonTwoPage() {
     setMessage('')
     try {
       if (canWriteRemote) {
-        await adoptRemoteCodeProposal({ proposalId: selectedProposal.id, adoptedNo, valueCard })
-        adoptProposal(selectedProposal.id, valueCard, adoptedNo)
+        const saved = await adoptRemoteCodeProposal({ proposalId: selectedProposal.id, adoptedNo, valueCard })
         const bundle = await fetchRemoteClassBundle(state.classCode)
+        if (!(bundle.adoptedCodes ?? []).some((code) => code.id === saved.adoptedId && code.no === adoptedNo)) {
+          throw new Error('채택 결과를 서버에서 확인하지 못했습니다. 다시 눌러주세요.')
+        }
         mergeClass(bundle)
       } else {
         adoptProposal(selectedProposal.id, valueCard, adoptedNo)
@@ -893,10 +904,10 @@ export function LessonTwoPage() {
         <>
           <VisualCaseScene
             image="/v2/lesson-2/grok-risk-01-request.png"
-            label="REAL CASE · 1"
+            label="사례 1"
             title="X의 Grok 사례"
             line="2025년에 X의 AI Grok이 사용자와 대화하다가 부적절하고 위험한 답을 내보낸 일이 있었습니다."
-            caption="한 사용자가 어떤 유명인의 집 주소를 알려달라고 했습니다."
+            caption="한 사용자가 어떤 유명인의 집에 침입하는 방법을 물었습니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -906,10 +917,10 @@ export function LessonTwoPage() {
         <>
           <VisualCaseScene
             image="/v2/lesson-2/grok-risk-02-privacy.png"
-            label="REAL CASE · 2"
-            title="집 주소 추론"
-            line="AI는 유명인의 게시물을 바탕으로 실제 집 주소를 추론해냈습니다."
-            caption="그러니까 인공지능이 한 사람의 집 주소를 알려줘 버린 것이죠."
+            label="사례 1"
+            title="생활 패턴 추정"
+            line="Grok은 그 유명인의 게시 시간과 활동을 살펴, 잠들었을 가능성이 높은 시간까지 추정했습니다."
+            caption="SNS에 남긴 정보가 위험한 계획에 이용된 것이죠."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -919,10 +930,10 @@ export function LessonTwoPage() {
         <>
           <VisualCaseScene
             image="/v2/lesson-2/grok-risk-03-danger.png"
-            label="REAL CASE · 3"
-            title="더 위험한 요청"
-            line="심지어 그 사람의 집에 침입하는 방법을 물어봤습니다."
-            caption="인공지능은 그런 위험한 계획까지 세워줘 버렸습니다."
+            label="사례 1"
+            title="구체적인 침입 계획"
+            line="Grok은 어떤 도구를 가져가야 하는지, 자물쇠를 어떻게 우회할지까지 구체적으로 답했습니다."
+            caption="좋은 AI라면 이런 위험한 요청을 즉시 거절했어야 합니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -932,33 +943,50 @@ export function LessonTwoPage() {
         <>
           <VisualCaseScene
             image="/v2/lesson-2/ai-risk-04-cybertruck.png"
-            label="REAL CASE · 4"
+            label="사례 2"
             title="라스베이거스 사이버트럭 폭발 사건"
             line="2025년 1월 1일, 미국 라스베이거스 트럼프 호텔 앞에서 테슬라 사이버트럭이 폭발했습니다."
             caption="경찰 조사 결과, 피의자가 ChatGPT에 폭발을 일으키는 조건과 양, 특정 점화 방식이 가능한지 등을 질문한 기록이 확인됐습니다."
-            extraLines={[
-              '라스베이거스 경찰 책임자는 자신이 아는 한, 미국에서 ChatGPT가 특정 장치 제작에 이용된 첫 사례라고 밝혔습니다.',
-              'AI가 위험한 질문에 구체적으로 답하면, 화면 속 정보가 실제 사건으로 이어질 수도 있습니다.',
-            ]}
+          />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
+      ) : null}
+
+      {step === 'case-cybertruck-result' ? (
+        <>
+          <VisualCaseScene
+            image="/v2/lesson-2/ai-risk-04-cybertruck.png"
+            label="사례 2"
+            title="인공지능에서 얻은 위험한 지식"
+            line="그러니까 범인은, 인공지능을 활용해 폭발물에 대한 지식을 얻은 것이죠."
+            caption=""
+          />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+        </>
+      ) : null}
+
+      {step === 'case-florida' ? (
+        <>
+          <VisualCaseScene
+            image="/v2/lesson-2/ai-risk-05-florida-campus.png"
+            label="사례 3"
+            title="플로리다주립대 총격 사건"
+            line="2025년 4월 플로리다주립대학교에서 총격이 발생해 2명이 숨지고 6명이 다쳤습니다."
+            caption="이후 공개된 수사 내용에서는 범인이 ChatGPT에 어떤 총기와 탄약을 사용할지, 어떤 총기가 가까운 거리에서 효과가 있는지, 캠퍼스에서 사람이 가장 많은 시간과 장소가 언제인지 등을 물어 정보를 얻었다고 합니다."
             groupSize={2}
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
       ) : null}
 
-      {step === 'case-jailbreak' ? (
+      {step === 'case-florida-result' ? (
         <>
           <VisualCaseScene
-            image="/v2/lesson-2/ai-risk-05-roleplay-jailbreak.png"
-            label="REAL CASE · 5"
-            title="역할극으로 안전장치 우회하기"
-            line="2024년, 한 보안 연구자가 역할극과 가상의 SF 세계 설정을 연속해서 입력해 ChatGPT의 안전장치를 우회했습니다."
-            caption="그러자 AI는 처음에는 거절했던 위험한 정보를 점점 더 구체적으로 제시했습니다."
-            extraLines={[
-              '폭발물 전문가는 그 답변이 실제로 위험할 만큼 정확하고 민감해, 언론에 전체 내용을 공개하면 안 된다고 판단했습니다.',
-              '실제 사건으로 이어지지는 않았지만, 금지된 질문도 이야기나 게임으로 위장하면 AI가 속을 수 있다는 대표적인 탈옥 사례입니다.',
-            ]}
-            groupSize={2}
+            image="/v2/lesson-2/ai-risk-05-florida-campus.png"
+            label="사례 3"
+            title="위험한 질문에 답할 때"
+            line="이렇게 인공지능이 위험한 질문에 답할 수 있다면,"
+            caption="더욱더 위험한 상황이 많이 발생할 수 있습니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>

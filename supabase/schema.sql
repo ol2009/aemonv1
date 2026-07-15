@@ -130,6 +130,9 @@ create policy "classes public insert" on classes
 drop policy if exists "classes authenticated update" on classes;
 create policy "classes authenticated update" on classes for update to authenticated using (true) with check (true);
 
+drop policy if exists "classes owner delete" on classes;
+create policy "classes owner delete" on classes for delete to authenticated using (teacher_id = auth.uid());
+
 drop policy if exists "classes public update" on classes;
 create policy "classes public update" on classes
   for update using (true) with check (length(trim(name)) between 1 and 50 and current_lesson between 1 and 7 and length(trim(aemon_name)) <= 12);

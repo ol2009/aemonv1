@@ -1,15 +1,14 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, BookOpen, CheckCircle2, ClipboardCheck, Clock3, ListChecks, MonitorPlay, Play, Users } from 'lucide-react'
-import { Button, Panel } from '../components/ui'
+import { ArrowLeft, BookOpen, CheckCircle2, ClipboardCheck } from 'lucide-react'
+import { Button } from '../components/ui'
 import { teacherLessonGuides } from '../data/teacherGuides'
 
-type TrainingTab = 'introduction' | 'lesson-plans' | 'preparation'
+type TrainingTab = 'introduction' | 'lesson-plans'
 
 const tabs: Array<{ id: TrainingTab; label: string; icon: typeof BookOpen }> = [
   { id: 'introduction', label: '프로젝트 소개', icon: BookOpen },
   { id: 'lesson-plans', label: '수업 과정안', icon: ClipboardCheck },
-  { id: 'preparation', label: '운영 준비', icon: ListChecks },
 ]
 
 function IntroductionTab() {
@@ -69,7 +68,6 @@ function IntroductionTab() {
 }
 
 function LessonPlansTab({ selectedLesson, onSelectLesson }: { selectedLesson: number; onSelectLesson: (lessonNo: number) => void }) {
-  const navigate = useNavigate()
   const guide = teacherLessonGuides[selectedLesson - 1]
 
   return (
@@ -119,15 +117,9 @@ function LessonPlansTab({ selectedLesson, onSelectLesson }: { selectedLesson: nu
       </section>
 
       <section className="py-8">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="font-data text-xs text-[#4FE0C0]">40-MINUTE FLOW</p>
-            <h3 className="font-display mt-2 text-3xl text-[#EAF2F5]">교실 수업 흐름</h3>
-          </div>
-          <Button variant="secondary" onClick={() => navigate(`/rehearsal?lesson=${guide.no}`)}>
-            <MonitorPlay size={18} />
-            이 차시 리허설
-          </Button>
+        <div>
+          <p className="font-data text-xs text-[#4FE0C0]">40-MINUTE FLOW</p>
+          <h3 className="font-display mt-2 text-3xl text-[#EAF2F5]">교실 수업 흐름</h3>
         </div>
 
         <div className="mt-6 border-t border-white/10">
@@ -170,61 +162,6 @@ function LessonPlansTab({ selectedLesson, onSelectLesson }: { selectedLesson: nu
   )
 }
 
-function PreparationTab() {
-  const sections = [
-    {
-      icon: MonitorPlay,
-      title: '수업 전 10분',
-      items: ['교사 기기에서 로그인하고 학급을 선택합니다.', '프로젝터에 교사 화면을 크게 띄우고 글자 크기를 확인합니다.', '해당 차시의 영상, 이미지, 진화 효과음이 재생되는지 확인합니다.', 'AI 자유 테스트가 있는 차시는 API 연결 상태를 확인합니다.'],
-    },
-    {
-      icon: Users,
-      title: '학생 기기 운영',
-      items: ['첫 QR에서 학급에 들어오고 닉네임을 입력하면 같은 차시 안에서는 다시 찍지 않습니다.', '설명과 대화에서는 앞 화면, 글쓰기와 좋아요에서는 태블릿을 보게 합니다.', '교사가 다음을 누르면 학생 화면도 함께 이동합니다.', '게시판 화면에서는 학생도 글을 쓰고 친구 의견과 좋아요를 볼 수 있습니다.'],
-    },
-    {
-      icon: Clock3,
-      title: '40분 시간 관리',
-      items: ['질문으로 끝나는 오박사 대사는 바로 설명하지 말고 30초 이상 생각할 시간을 줍니다.', '게시판은 모든 글을 읽기보다 서로 다른 근거 3~5개를 골라 읽습니다.', '좋아요 1위가 곧 정답은 아닙니다. 이유와 행동 기준을 함께 보고 채택합니다.', '영상이 여러 개인 차시는 한 편을 중심으로 보고 나머지는 일부 장면이나 확장 자료로 씁니다.'],
-    },
-    {
-      icon: CheckCircle2,
-      title: '연결이 끊겼을 때',
-      items: ['학생 화면을 한 번 새로고침하면 현재 교사 화면으로 다시 들어옵니다.', '그래도 연결되지 않으면 같은 학급 QR을 다시 열어 닉네임을 확인합니다.', '게시글은 교사 화면의 새로고침 버튼으로 즉시 다시 불러올 수 있습니다.', '교사 화면 이동은 Realtime을 우선 사용하고 연결 장애 때만 저빈도 확인으로 복구합니다.'],
-    },
-  ]
-
-  return (
-    <div className="mt-8">
-      <header className="border-b border-white/10 pb-7">
-        <p className="font-data text-sm text-[#4FE0C0]">CLASSROOM CHECKLIST</p>
-        <h2 className="font-display mt-2 break-keep text-4xl text-[#EAF2F5] sm:text-5xl">교사 화면은 크게, 학생 기기는 참여할 때만</h2>
-        <p className="mt-4 max-w-4xl text-lg leading-8 text-[#B7C7D2]">모든 화면을 학생 태블릿에 동기화하되, 수업의 시선은 교사가 조절합니다. 대사는 함께 보고 입력과 투표가 시작될 때 기기를 들게 하는 방식이 가장 안정적입니다.</p>
-      </header>
-
-      <div className="grid gap-px bg-white/10 md:grid-cols-2">
-        {sections.map((section) => {
-          const Icon = section.icon
-          return (
-            <section key={section.title} className="bg-[#07111B] px-6 py-7 sm:px-8">
-              <Icon className="text-[#4FE0C0]" size={26} />
-              <h3 className="font-display mt-4 text-3xl text-[#EAF2F5]">{section.title}</h3>
-              <div className="mt-5 space-y-3">
-                {section.items.map((item) => (
-                  <p key={item} className="flex gap-3 text-base leading-7 text-[#B7C7D2]">
-                    <span className="mt-3 h-1.5 w-1.5 shrink-0 bg-[#FFD37A]" />
-                    <span>{item}</span>
-                  </p>
-                ))}
-              </div>
-            </section>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
 export function TrainingPage() {
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<TrainingTab>('introduction')
@@ -237,16 +174,6 @@ export function TrainingPage() {
           <ArrowLeft size={18} />
           학급 홈
         </Button>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="secondary" onClick={() => navigate(`/rehearsal?lesson=${selectedLesson}`)}>
-            <MonitorPlay size={18} />
-            교사 리허설
-          </Button>
-          <Button onClick={() => navigate(`/lesson/${selectedLesson}`)}>
-            {selectedLesson}차시 열기
-            <Play size={18} />
-          </Button>
-        </div>
       </div>
 
       <section className="relative min-h-[430px] overflow-hidden border-y border-white/10 bg-[#071A29]">
@@ -264,7 +191,7 @@ export function TrainingPage() {
         </div>
       </section>
 
-      <div className="mt-6 grid grid-cols-3 gap-2 border-b border-white/10" role="tablist" aria-label="사전연수 목차">
+      <div className="mt-6 grid grid-cols-2 gap-2 border-b border-white/10" role="tablist" aria-label="사전연수 목차">
         {tabs.map((tab) => {
           const Icon = tab.icon
           const selected = activeTab === tab.id
@@ -289,19 +216,7 @@ export function TrainingPage() {
       <div role="tabpanel">
         {activeTab === 'introduction' ? <IntroductionTab /> : null}
         {activeTab === 'lesson-plans' ? <LessonPlansTab selectedLesson={selectedLesson} onSelectLesson={setSelectedLesson} /> : null}
-        {activeTab === 'preparation' ? <PreparationTab /> : null}
       </div>
-
-      <Panel className="mt-8 flex flex-col items-start justify-between gap-5 sm:flex-row sm:items-center">
-        <div>
-          <p className="font-data text-sm text-[#4FE0C0]">PRACTICE FIRST</p>
-          <p className="font-display mt-2 break-keep text-3xl text-[#EAF2F5]">학생 데이터 없이 교사 화면 흐름부터 연습해 보세요.</p>
-        </div>
-        <Button onClick={() => navigate(`/rehearsal?lesson=${selectedLesson}`)}>
-          교사 리허설
-          <MonitorPlay size={18} />
-        </Button>
-      </Panel>
     </div>
   )
 }

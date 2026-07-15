@@ -1,11 +1,10 @@
 import { useNavigate } from 'react-router-dom'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { BookOpen, CheckCircle2, KeyRound, MonitorPlay, Play, RotateCcw, Search } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
+import { BookOpen, CheckCircle2, KeyRound, Play, Plus, Trash2, X } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
 import { ApiConnectionModal } from '../components/ApiConnectionModal'
 import { Button, Panel } from '../components/ui'
-import { findBestRecoverableClass, remoteClassHasSharedData, shouldAutoRestoreClass } from '../lib/classRecovery'
-import { fetchRemoteClassBundle, fetchRemoteTeacherClasses, isRemoteReady, type RemoteClassSummary } from '../lib/v2Remote'
+import { deleteRemoteClass, fetchRemoteClassBundle, fetchRemoteTeacherClasses, isRemoteReady, type RemoteClassSummary } from '../lib/v2Remote'
 import { useSupabaseUser } from '../lib/useSupabaseUser'
 import { providerLabel } from '../lib/v2Chat'
 import { useV2 } from '../state/V2Store'
@@ -15,39 +14,27 @@ export function StartPage() {
   const { user } = useSupabaseUser()
   const { state, mergeClass, resetDemo, setRemoteStatus, updateAiSettings } = useV2()
   const [isApiOpen, setIsApiOpen] = useState(false)
-  const [restoreCode, setRestoreCode] = useState('')
   const [restoreMessage, setRestoreMessage] = useState('')
   const [isRestoring, setIsRestoring] = useState(false)
+  const [deletingClassId, setDeletingClassId] = useState('')
   const [remoteClasses, setRemoteClasses] = useState<RemoteClassSummary[]>([])
-  const [newProjectConfirmed, setNewProjectConfirmed] = useState(false)
-  const autoRestoreAttemptedRef = useRef('')
-  const stateRef = useRef(state)
+  const [isStartNoticeOpen, setIsStartNoticeOpen] = useState(true)
   const isApiConnected = Boolean(state.apiKey.trim())
-  const bestRecoverableClass = useMemo(() => findBestRecoverableClass(remoteClasses), [remoteClasses])
-  const hasRecoverableRemoteClass = Boolean(bestRecoverableClass && remoteClassHasSharedData(bestRecoverableClass))
 
-  useEffect(() => {
-    stateRef.current = state
-  }, [state])
-
-  useEffect(() => {
+  const refreshTeacherClasses = useCallback(async () => {
     if (!user?.id || !isRemoteReady()) return
-
-    let cancelled = false
-    fetchRemoteTeacherClasses(user.id)
-      .then((classes) => {
-        if (cancelled) return
-        setRemoteClasses(classes)
-      })
-      .catch((error) => {
-        if (cancelled) return
-        setRemoteStatus({ ok: false, message: (error as Error).message })
-      })
-
-    return () => {
-      cancelled = true
+    try {
+      setRemoteClasses(await fetchRemoteTeacherClasses(user.id))
+    } catch (error) {
+      const message = (error as Error).message
+      setRestoreMessage(message)
+      setRemoteStatus({ ok: false, message })
     }
-  }, [setRemoteStatus, user?.id])
+  }, [setRemoteStatus, user])
+
+  useEffect(() => {
+    Promise.resolve().then(() => void refreshTeacherClasses())
+  }, [refreshTeacherClasses])
 
   const openApiModal = () => {
     setIsApiOpen(true)
@@ -57,16 +44,14 @@ export function StartPage() {
     updateAiSettings({ provider, apiKey })
   }
 
-  const restart = () => {
-    const ok = window.confirm('현재 저장된 에아몬 기록을 지우고 처음 장면부터 다시 시작할까요?')
-    if (!ok) return
+  const createNewClass = () => {
     resetDemo()
     localStorage.removeItem('aemon.v2.state')
     localStorage.removeItem('aemon.state')
     navigate('/lesson/1')
   }
 
-  const loadClass = useCallback(async (code: string, options?: { automatic?: boolean }) => {
+  const loadClass = useCallback(async (code: string) => {
     const trimmedCode = code.trim()
     if (!trimmedCode) return
     if (!isRemoteReady()) {
@@ -79,8 +64,7 @@ export function StartPage() {
     try {
       const bundle = await fetchRemoteClassBundle(trimmedCode)
       mergeClass({ ...bundle, studentSession: null })
-      setRestoreCode('')
-      setRestoreMessage(options?.automatic ? `${bundle.className ?? '학급'} 기존 기록을 자동으로 불러왔습니다.` : `${bundle.className ?? '학급'} 기록을 불러왔습니다.`)
+      setRestoreMessage(`${bundle.className ?? '학급'} 기록을 불러왔습니다.`)
       navigate('/home')
     } catch (error) {
       const message = (error as Error).message
@@ -91,30 +75,27 @@ export function StartPage() {
     }
   }, [mergeClass, navigate, setRemoteStatus])
 
-  useEffect(() => {
-    if (!bestRecoverableClass || isRestoring) return
-    if (!shouldAutoRestoreClass(stateRef.current, remoteClasses)) return
-    if (autoRestoreAttemptedRef.current === bestRecoverableClass.classCode) return
-
-    autoRestoreAttemptedRef.current = bestRecoverableClass.classCode
-    Promise.resolve().then(() => {
-      void loadClass(bestRecoverableClass.classCode, { automatic: true })
-    })
-  }, [bestRecoverableClass, isRestoring, loadClass, remoteClasses])
-
-  const openProject = () => {
-    if (state.classCode) {
-      navigate('/home')
-      return
+  const removeClass = async (remoteClass: RemoteClassSummary) => {
+    if (!user?.id || deletingClassId) return
+    if (!window.confirm(`${remoteClass.className} 학급과 학생 기록을 모두 삭제할까요? 이 작업은 되돌릴 수 없습니다.`)) return
+    setDeletingClassId(remoteClass.classId)
+    setRestoreMessage('')
+    try {
+      await deleteRemoteClass({ classId: remoteClass.classId, teacherId: user.id })
+      if (state.classId === remoteClass.classId) {
+        resetDemo()
+        localStorage.removeItem('aemon.v2.state')
+        localStorage.removeItem('aemon.state')
+      }
+      await refreshTeacherClasses()
+      setRestoreMessage(`${remoteClass.className} 학급을 삭제했습니다.`)
+    } catch (error) {
+      const message = (error as Error).message
+      setRestoreMessage(message)
+      setRemoteStatus({ ok: false, message })
+    } finally {
+      setDeletingClassId('')
     }
-
-    if (hasRecoverableRemoteClass && !newProjectConfirmed) {
-      setNewProjectConfirmed(true)
-      setRestoreMessage(`이미 진행 중인 학급 ${bestRecoverableClass?.className ?? ''} 기록이 있습니다. 이어 하려면 아래 학급을 누르고, 정말 새로 시작하려면 버튼을 한 번 더 눌러주세요.`)
-      return
-    }
-
-    navigate('/lesson/1')
   }
 
   return (
@@ -124,15 +105,13 @@ export function StartPage() {
           <p className="font-data text-sm text-[#4FE0C0]">AEMON PROJECT</p>
           <h1 className="font-display mt-4 text-6xl leading-tight text-[#EAF2F5]">에아몬을 깨울 시간</h1>
           <p className="mt-6 max-w-2xl text-xl leading-9 text-[#B7C7D2]">
-            처음이라면 새 학급을 만든 뒤 학급 홈의 교사 리허설로 수업 흐름을 먼저 시험해 보세요. 기존 학급은 아래 목록에서 불러오면 바로 이어서 진행할 수 있습니다.
+            새 학급을 만들거나, 내가 만든 학급 목록에서 이어서 진행할 학급을 선택하세요.
           </p>
 
-          {!state.classCode ? (
-            <div className="mt-5 border-l-2 border-[#4FE0C0] pl-4">
-              <p className="flex items-center gap-2 font-black text-[#EAF2F5]"><MonitorPlay size={18} className="text-[#4FE0C0]" /> 처음 사용하는 교사 추천 순서</p>
-              <p className="mt-2 text-sm leading-6 text-[#8AA0B0]">프로젝트 시작하기 → 학급 정보 저장 → 교사 리허설 → 실제 1차시 시작</p>
-            </div>
-          ) : null}
+          <Button className="mt-6" onClick={createNewClass}>
+            <Plus size={20} />
+            새 학급 만들기
+          </Button>
 
           {state.classCode ? (
             <div className="mt-6 rounded-2xl border border-[#4FE0C0]/20 bg-[#4FE0C0]/8 p-4">
@@ -146,54 +125,44 @@ export function StartPage() {
           <div className="mt-6 rounded-2xl border border-white/10 bg-[#07111B]/55 p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <p className="font-data text-xs text-[#4FE0C0]">RESTORE CLASS</p>
-                <h2 className="mt-1 text-lg font-black text-[#EAF2F5]">기존 학급 불러오기</h2>
+                <p className="font-data text-xs text-[#4FE0C0]">MY CLASSES</p>
+                <h2 className="mt-1 text-lg font-black text-[#EAF2F5]">내가 만든 학급</h2>
               </div>
-            </div>
-            <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-              <input
-                className="min-h-11 min-w-0 flex-1 rounded-xl border border-white/10 bg-[#07111B]/70 px-4 py-3 font-data text-[#EAF2F5] outline-none transition focus:border-[#4FE0C0]/60"
-                inputMode="numeric"
-                maxLength={6}
-                placeholder="학급 코드 입력"
-                value={restoreCode}
-                onChange={(event) => setRestoreCode(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' && !event.nativeEvent.isComposing) {
-                    event.preventDefault()
-                    void loadClass(restoreCode)
-                  }
-                }}
-              />
-              <Button className="min-h-11 px-4" disabled={!restoreCode.trim() || isRestoring} onClick={() => void loadClass(restoreCode)}>
-                <Search size={17} />
-                불러오기
-              </Button>
             </div>
             {remoteClasses.length > 0 ? (
               <div className="mt-4 grid gap-2">
                 {remoteClasses.map((remoteClass) => (
-                  <button
+                  <article
                     key={remoteClass.classId}
-                    className={`rounded-xl border px-4 py-3 text-left transition ${
+                    className={`grid grid-cols-[minmax(0,1fr)_auto] items-stretch overflow-hidden rounded-xl border transition ${
                       remoteClass.classCode === state.classCode
                         ? 'border-[#4FE0C0]/35 bg-[#4FE0C0]/10'
                         : 'border-white/10 bg-[#07111B]/45 hover:border-[#4FE0C0]/35'
                     }`}
-                    onClick={() => void loadClass(remoteClass.classCode)}
-                    type="button"
                   >
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="font-black text-[#EAF2F5]">{remoteClass.className}</p>
-                      <span className="font-data text-xs text-[#4FE0C0]">{remoteClass.classCode}</span>
-                    </div>
-                    <p className="mt-1 text-sm text-[#8AA0B0]">
-                      {remoteClass.aemonName || '이름 미정'} · {remoteClass.currentLesson}차시 · 기록 {remoteClass.activityCount}개
-                    </p>
-                  </button>
+                    <button className="min-w-0 px-4 py-3 text-left" disabled={isRestoring || Boolean(deletingClassId)} onClick={() => void loadClass(remoteClass.classCode)} type="button">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="font-black text-[#EAF2F5]">{remoteClass.className}</p>
+                        <span className="font-data text-xs text-[#4FE0C0]">{remoteClass.classCode}</span>
+                      </div>
+                      <p className="mt-1 text-sm text-[#8AA0B0]">
+                        {remoteClass.aemonName || '이름 미정'} · 현재 {remoteClass.currentLesson}차시 · 기록 {remoteClass.activityCount}개
+                      </p>
+                    </button>
+                    <button
+                      aria-label={`${remoteClass.className} 삭제`}
+                      className="flex w-14 items-center justify-center border-l border-white/10 text-[#8AA0B0] transition hover:bg-[#E0476B]/15 hover:text-[#FF8AA5] disabled:opacity-40"
+                      disabled={isRestoring || Boolean(deletingClassId)}
+                      onClick={() => void removeClass(remoteClass)}
+                      title="학급 삭제"
+                      type="button"
+                    >
+                      <Trash2 className={deletingClassId === remoteClass.classId ? 'animate-pulse' : ''} size={19} />
+                    </button>
+                  </article>
                 ))}
               </div>
-            ) : null}
+            ) : <p className="mt-4 border border-dashed border-white/15 px-4 py-6 text-center text-sm text-[#8AA0B0]">아직 만든 학급이 없습니다.</p>}
             {restoreMessage ? <p className="mt-3 rounded-xl border border-[#FFD37A]/25 bg-[#FFD37A]/10 px-3 py-2 text-sm font-bold text-[#FFD37A]">{restoreMessage}</p> : null}
           </div>
 
@@ -214,20 +183,14 @@ export function StartPage() {
           </div>
 
           <div className="mt-8 flex flex-wrap gap-3">
-            <Button onClick={openProject}>
+            {state.classCode ? <Button onClick={() => navigate('/home')}>
               <Play size={20} />
-              {state.classCode ? '대시보드로 가기' : newProjectConfirmed ? '정말 새 학급 시작하기' : '프로젝트 시작하기'}
-            </Button>
+              현재 학급으로 가기
+            </Button> : null}
             <Button variant="secondary" onClick={() => navigate('/training')}>
               <BookOpen size={20} />
               사전연수
             </Button>
-            {state.classCode ? (
-              <Button variant="ghost" onClick={restart}>
-                <RotateCcw size={18} />
-                처음부터 다시
-              </Button>
-            ) : null}
           </div>
         </div>
 
@@ -244,6 +207,20 @@ export function StartPage() {
           onClose={() => setIsApiOpen(false)}
           onSave={saveApiSettings}
         />
+      ) : null}
+
+      {isStartNoticeOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-5 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="start-notice-title">
+          <Panel className="w-full max-w-lg">
+            <button className="ml-auto flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 text-[#B7C7D2] hover:border-white/25" onClick={() => setIsStartNoticeOpen(false)} type="button" aria-label="안내 닫기">
+              <X size={18} />
+            </button>
+            <p className="font-data text-sm text-[#4FE0C0]">BEFORE CLASS</p>
+            <h2 id="start-notice-title" className="font-display mt-2 break-keep text-4xl leading-tight text-[#EAF2F5]">프로젝트를 시작하기 전에 테스트 학급을 만들어 시험해 보세요.</h2>
+            <p className="mt-4 text-lg leading-8 text-[#B7C7D2]">언제든지 학급을 새로 만들고 삭제할 수 있습니다.</p>
+            <Button className="mt-6 w-full" onClick={() => setIsStartNoticeOpen(false)}>확인</Button>
+          </Panel>
+        </div>
       ) : null}
     </div>
   )

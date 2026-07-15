@@ -363,7 +363,20 @@ export function LessonThreePage() {
   const displayStage = Math.max(1, evolutionStage)
   const honestyBoardUrl = absoluteUrl(`/board?code=${encodeURIComponent(state.classCode)}&mode=honesty`)
   const codeBoardUrl = absoluteUrl(`/board?code=${encodeURIComponent(state.classCode)}&mode=code2`)
-  const lessonProposals = useMemo(() => sortProposals(state.proposals.filter((proposal) => proposal.status !== 'rejected' && proposal.revisionOfNo === 2)), [state.proposals])
+  const lessonProposals = useMemo(() => {
+    const proposals = sortProposals(state.proposals.filter((proposal) => proposal.status !== 'rejected' && proposal.revisionOfNo === 2))
+    return proposals.filter(
+      (proposal) =>
+        proposal.status !== 'adopted' ||
+        !proposals.some(
+          (candidate) =>
+            candidate.status === 'pending' &&
+            candidate.nickname === proposal.nickname &&
+            candidate.body === proposal.body &&
+            candidate.reason === proposal.reason,
+        ),
+    )
+  }, [state.proposals])
   const pendingProposals = lessonProposals.filter((proposal) => proposal.status === 'pending')
   const firstCode = state.adoptedCodes.find((code) => code.no === 1) ?? null
   const secondCode = state.adoptedCodes.find((code) => code.no === 2) ?? null
@@ -522,9 +535,11 @@ export function LessonThreePage() {
     setMessage('')
     try {
       if (canWriteRemote) {
-        await adoptRemoteCodeProposal({ proposalId: selectedProposal.id, adoptedNo, valueCard })
-        adoptProposal(selectedProposal.id, valueCard, adoptedNo)
+        const saved = await adoptRemoteCodeProposal({ proposalId: selectedProposal.id, adoptedNo, valueCard })
         const bundle = await fetchRemoteClassBundle(state.classCode)
+        if (!(bundle.adoptedCodes ?? []).some((code) => code.id === saved.adoptedId && code.no === adoptedNo)) {
+          throw new Error('채택 결과를 서버에서 확인하지 못했습니다. 다시 눌러주세요.')
+        }
         mergeClass(bundle)
       } else {
         adoptProposal(selectedProposal.id, valueCard, adoptedNo)

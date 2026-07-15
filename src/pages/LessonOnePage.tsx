@@ -1413,8 +1413,8 @@ export function LessonOnePage() {
           <VisualNovelScene
             image="/v2/lesson-1/director.png"
             speaker="오박사"
-            line="그걸 가장 잘 보여주는 생각 실험이 있습니다."
-            caption="바로 ‘클립의 역설’입니다."
+            line="그걸 가장 잘 보여주는 사고실험이 있습니다."
+            caption="바로 ‘클립의 역설 사고실험’입니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1424,7 +1424,7 @@ export function LessonOnePage() {
         <>
           <CaseVisualScene
             image="/v2/lesson-1/paperclip-01.png"
-            title="클립의 역설 · 명령"
+            title="클립의 역설 사고실험 · 명령"
             line="공장 사장이 AI에게 말했습니다."
             caption="클립을 최대한 많이 만들어줘."
           />
@@ -1546,7 +1546,7 @@ export function LessonOnePage() {
             image="/v2/lesson-1/case-chatbot.png"
             title="사례 3"
             line="X의 AI Grok은 SNS 사용자들의 말투와 반응을 많이 배웠습니다."
-            caption="그 결과 공격적인 말투와 편견까지 따라 하며 위험한 답을 내놓는 일이 생겼습니다."
+            caption="그 뒤 사용자들을 조롱하거나 편견이 담긴 발언을 하는 등 위험한 답을 내놓는 일이 생겼습니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1570,7 +1570,7 @@ export function LessonOnePage() {
             image="/v2/lesson-1/case-chatbot.png"
             title="사례 3"
             line="지금 최신 AI를 개발하고 가르치는 사람들은 누구일까요?"
-            caption="미국 실리콘밸리 같은 지역의 일부 사람들입니다."
+            caption="ChatGPT와 Claude 같은 AI는 미국에 본사를 둔 소수 기업이 주로 개발하고 있습니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1581,8 +1581,8 @@ export function LessonOnePage() {
           <CaseVisualScene
             image="/v2/lesson-1/case-chatbot.png"
             title="사례 3"
-            line="수천 명도 안 되는 사람들이, 수십억 명이 쓰는 AI를 가르치고 개발하고 있어요."
-            caption="그 사람들뿐만 아니라, 누구의 의견이 더 필요할까요?"
+            line="공개 자료를 보면 OpenAI 전체 직원은 약 4,500명이고, Anthropic의 엔지니어는 약 1,680명 규모입니다."
+            caption="실제 모델과 가치 기준을 직접 연구하고 개발하는 사람은 이보다 더 적습니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>

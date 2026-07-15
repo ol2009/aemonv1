@@ -89,7 +89,7 @@ const dataBiasCaseScenes: DataBiasCaseScene[] = [
     alt: '다양한 얼굴을 심사한 AI가 흰 피부색의 얼굴만 선택해 데이터 편향이 드러난 모습',
     parts: [
       `AI에게 심사를 맡긴 미인대회도 있었습니다.
-“기계니까 공정하겠지?”라며 전 세계 60만 명이 참가했어요.`,
+“기계니까 공정하겠지?”라며 100개가 넘는 나라에서 수천 명이 참가했어요.`,
       `그런데 뽑힌 44명은 거의 다 흰 피부색이었습니다.
 AI가 배운 사진 데이터에 다양한 사람이
 충분히 들어 있지 않았기 때문입니다.`,
@@ -411,7 +411,20 @@ export function LessonFourPage() {
   const displayStage = Math.max(2, evolutionStage)
   const fairnessBoardUrl = absoluteUrl(`/board?code=${encodeURIComponent(state.classCode)}&mode=fairness`)
   const codeBoardUrl = absoluteUrl(`/board?code=${encodeURIComponent(state.classCode)}&mode=code3`)
-  const lessonProposals = useMemo(() => sortProposals(state.proposals.filter((proposal) => proposal.status !== 'rejected' && proposal.revisionOfNo === 3)), [state.proposals])
+  const lessonProposals = useMemo(() => {
+    const proposals = sortProposals(state.proposals.filter((proposal) => proposal.status !== 'rejected' && proposal.revisionOfNo === 3))
+    return proposals.filter(
+      (proposal) =>
+        proposal.status !== 'adopted' ||
+        !proposals.some(
+          (candidate) =>
+            candidate.status === 'pending' &&
+            candidate.nickname === proposal.nickname &&
+            candidate.body === proposal.body &&
+            candidate.reason === proposal.reason,
+        ),
+    )
+  }, [state.proposals])
   const pendingProposals = lessonProposals.filter((proposal) => proposal.status === 'pending')
   const thirdCode = state.adoptedCodes.find((code) => code.no === 3) ?? null
   const selectedProposal = pendingProposals.find((proposal) => proposal.id === selectedProposalId) ?? (thirdCode ? null : pendingProposals[0] ?? null)
@@ -597,9 +610,11 @@ export function LessonFourPage() {
     setMessage('')
     try {
       if (canWriteRemote) {
-        await adoptRemoteCodeProposal({ proposalId: selectedProposal.id, adoptedNo, valueCard })
-        adoptProposal(selectedProposal.id, valueCard, adoptedNo)
+        const saved = await adoptRemoteCodeProposal({ proposalId: selectedProposal.id, adoptedNo, valueCard })
         const bundle = await fetchRemoteClassBundle(state.classCode)
+        if (!(bundle.adoptedCodes ?? []).some((code) => code.id === saved.adoptedId && code.no === adoptedNo)) {
+          throw new Error('채택 결과를 서버에서 확인하지 못했습니다. 다시 눌러주세요.')
+        }
         mergeClass(bundle)
       } else {
         adoptProposal(selectedProposal.id, valueCard, adoptedNo)

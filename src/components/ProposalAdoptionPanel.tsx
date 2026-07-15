@@ -39,12 +39,14 @@ export function ProposalAdoptionPanel({
             </p>
           ) : null}
           {proposals.map((proposal, index) => {
-            const isAdopted = adoptedCode?.sourceProposalId === proposal.id
+            const isAdopted = adoptedCode?.sourceProposalId === proposal.id || (proposal.status === 'adopted' && proposal.adoptedNo === codeNo)
             const isSelected = selectedProposal?.id === proposal.id
+            const canSelect = proposal.status === 'pending' && !isAdopted && !isAdopting
             return (
               <button
                 key={proposal.id}
                 aria-pressed={isSelected}
+                aria-label={`후보 ${index + 1} 선택: ${proposal.body}`}
                 className={`rounded-[16px] border p-4 text-left transition ${
                   isAdopted
                     ? 'border-[#4FE0C0] bg-[#4FE0C0]/10 shadow-[0_0_24px_rgba(79,224,192,.1)]'
@@ -52,8 +54,8 @@ export function ProposalAdoptionPanel({
                       ? 'border-[#FFD37A] bg-[#FFD37A]/10 shadow-[0_0_24px_rgba(255,211,122,.1)]'
                       : 'border-white/10 bg-[#07111B]/45 hover:border-[#FFD37A]/45 hover:bg-[#102033]'
                 }`}
-                onClick={() => proposal.status === 'pending' && onSelect(proposal.id)}
-                disabled={proposal.status === 'adopted'}
+                onClick={() => canSelect && onSelect(proposal.id)}
+                disabled={!canSelect}
                 type="button"
               >
                 <div className="flex items-start gap-3">
