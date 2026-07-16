@@ -21,6 +21,7 @@ type LiveSyncOptions = {
   activityPath?: string | null
   viewState?: Record<string, unknown>
   applyViewState?: (viewState: Record<string, unknown>) => void
+  publishDelayMs?: number
 }
 
 export function isStudentLiveView() {
@@ -34,7 +35,12 @@ function studentTarget(state: LiveLessonState, classCode: string) {
     return `${state.activityPath}${separator}live=student&code=${code}`
   }
   if (state.boardMode) return `/board?code=${code}&mode=${state.boardMode}&live=student`
-  return `/lesson/${state.lessonNo}?code=${code}&live=student&step=${state.stepIndex}`
+  const boundaryCardIndex = Number(state.viewState.boundaryCardIndex)
+  const boundaryCardQuery =
+    state.lessonNo === 2 && state.stepIndex === 6 && Number.isInteger(boundaryCardIndex) && boundaryCardIndex >= 0
+      ? `&card=${boundaryCardIndex}`
+      : ''
+  return `/lesson/${state.lessonNo}?code=${code}&live=student&step=${state.stepIndex}${boundaryCardQuery}`
 }
 
 function remoteSignature(remote: LiveLessonState) {
@@ -59,6 +65,7 @@ export function useLessonLiveSync({
   activityPath = null,
   viewState = {},
   applyViewState,
+  publishDelayMs = 120,
 }: LiveSyncOptions) {
   const navigate = useNavigate()
   const location = useLocation()
@@ -109,7 +116,7 @@ export function useLessonLiveSync({
     if (signature === lastPublishedRef.current) return
     lastPublishedRef.current = signature
 
-    const timer = window.setTimeout(() => {
+    const publish = () => {
       const liveState: LiveLessonState = {
         lessonNo,
         stepIndex,
@@ -130,10 +137,17 @@ export function useLessonLiveSync({
         activityPath,
         viewState: JSON.parse(serializedViewState) as Record<string, unknown>,
       }).catch((error) => setRemoteStatus({ ok: false, message: `학생 화면 동기화 실패: ${(error as Error).message}` }))
-    }, 120)
+    }
+
+    if (publishDelayMs <= 0) {
+      publish()
+      return
+    }
+
+    const timer = window.setTimeout(publish, publishDelayMs)
 
     return () => window.clearTimeout(timer)
-  }, [activityPath, boardMode, classCode, isStudentLive, lessonNo, serializedViewState, setRemoteStatus, state.classId, stepIndex])
+  }, [activityPath, boardMode, classCode, isStudentLive, lessonNo, publishDelayMs, serializedViewState, setRemoteStatus, state.classId, stepIndex])
 
   useEffect(() => {
     if (!isStudentLive || !classCode || !isRemoteReady()) return
@@ -184,10 +198,13 @@ export function useLessonLiveSync({
           })
       : null
 
-    // Broadcast is primary. Poll only when the socket is actually unavailable.
+    // Broadcast is primary. During the classroom O/X activity, keep a small
+    // safety poll because some school networks report a connected socket while
+    // silently dropping later broadcasts.
+    const needsBoundarySafetyPoll = lessonNo === 2 && stepIndex === 6
     const fallbackTimer = window.setInterval(() => {
-      if (!realtimeConnected) void sync()
-    }, 5000)
+      if (!realtimeConnected || needsBoundarySafetyPoll) void sync()
+    }, needsBoundarySafetyPoll ? 2500 : 5000)
     const onVisible = () => {
       if (document.visibilityState === 'visible') void sync()
     }
@@ -202,7 +219,7 @@ export function useLessonLiveSync({
       document.removeEventListener('visibilitychange', onVisible)
       window.removeEventListener('online', onOnline)
     }
-  }, [classCode, isStudentLive, navigate, setRemoteStatus, state.classId])
+  }, [classCode, isStudentLive, lessonNo, navigate, setRemoteStatus, state.classId, stepIndex])
 
   return { isStudentLive, classCode }
 }

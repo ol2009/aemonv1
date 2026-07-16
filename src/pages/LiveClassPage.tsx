@@ -13,7 +13,12 @@ function targetFor(state: Awaited<ReturnType<typeof fetchRemoteLiveLesson>>, cla
     return `${state.activityPath}${separator}live=student&code=${code}`
   }
   if (state.boardMode) return `/board?code=${code}&mode=${state.boardMode}&live=student`
-  return `/lesson/${state.lessonNo}?code=${code}&live=student&step=${state.stepIndex}`
+  const boundaryCardIndex = Number(state.viewState.boundaryCardIndex)
+  const boundaryCardQuery =
+    state.lessonNo === 2 && state.stepIndex === 6 && Number.isInteger(boundaryCardIndex) && boundaryCardIndex >= 0
+      ? `&card=${boundaryCardIndex}`
+      : ''
+  return `/lesson/${state.lessonNo}?code=${code}&live=student&step=${state.stepIndex}${boundaryCardQuery}`
 }
 
 export function LiveClassPage() {

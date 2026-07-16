@@ -663,6 +663,7 @@ export function LessonTwoPage() {
   const beforeTestScrollRef = useRef<HTMLDivElement | null>(null)
   const retestScrollRef = useRef<HTMLDivElement | null>(null)
   const dialogueAdvanceRef = useRef<{ key: string; handler: () => void } | null>(null)
+  const boundaryAdvanceLockedRef = useRef(false)
   const [dialogueGateState, setDialogueGateState] = useState({ key: '', ready: true, canAdvance: false })
   const [liveDialoguePart, setLiveDialoguePart] = useState({ sceneKey: '', index: 0 })
   const [boundaryCardIndex, setBoundaryCardIndex] = useState(0)
@@ -902,6 +903,7 @@ export function LessonTwoPage() {
       boundaryCardIndex: safeBoundaryCardIndex,
     },
     applyViewState: applyLiveViewState,
+    publishDelayMs: step === 'boundary-activity' ? 0 : 120,
   })
 
   if (!state.classCode) {
@@ -1108,8 +1110,13 @@ export function LessonTwoPage() {
               else goPrev()
             }}
             onNext={() => {
+              if (boundaryAdvanceLockedRef.current) return
+              boundaryAdvanceLockedRef.current = true
               if (safeBoundaryCardIndex < lessonTwoBoundaryCards.length - 1) setBoundaryCardIndex((current) => current + 1)
               else goNext()
+              window.setTimeout(() => {
+                boundaryAdvanceLockedRef.current = false
+              }, 600)
             }}
             nextLabel={safeBoundaryCardIndex < lessonTwoBoundaryCards.length - 1 ? '다음 명령' : '정리하기'}
           />
