@@ -554,7 +554,7 @@ export function LessonOnePage() {
   )
 
   const remoteSyncClassCode = isStudentLiveView() ? new URLSearchParams(window.location.search).get('code') || state.classCode : state.classCode
-  useV2RemoteSync(remoteSyncClassCode, Boolean(remoteSyncClassCode))
+  useV2RemoteSync(remoteSyncClassCode, Boolean(remoteSyncClassCode) && !isStudentLiveView())
   useAutoScrollToBottom(demoScrollRef, `${demoLogs.length}-${isDemoRunning}-${demoLogs.at(-1)?.answer ?? ''}`, { enabled: demoLogs.length > 0, followMs: 1800 })
 
   const step = steps[stepIndex]

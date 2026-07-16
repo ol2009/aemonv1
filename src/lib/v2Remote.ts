@@ -274,6 +274,24 @@ function parseLiveLessonState(row: Pick<ChatLogRow, 'answer' | 'created_at'>): L
   }
 }
 
+export function parseLiveLessonBroadcastPayload(value: unknown): LiveLessonState | null {
+  if (!value || typeof value !== 'object') return null
+  const payload = value as Partial<LiveLessonState>
+  const lessonNo = Number(payload.lessonNo)
+  const stepIndex = Number(payload.stepIndex)
+  if (!Number.isInteger(lessonNo) || lessonNo < 1 || lessonNo > TOTAL_V2_LESSONS) return null
+  if (!Number.isInteger(stepIndex) || stepIndex < 0) return null
+
+  return {
+    lessonNo,
+    stepIndex,
+    boardMode: payload.boardMode ?? null,
+    activityPath: typeof payload.activityPath === 'string' ? payload.activityPath : null,
+    viewState: payload.viewState && typeof payload.viewState === 'object' ? payload.viewState : {},
+    updatedAt: typeof payload.updatedAt === 'string' ? payload.updatedAt : new Date().toISOString(),
+  }
+}
+
 export function parseLiveLessonRealtimeRow(value: unknown): LiveLessonState | null {
   if (!value || typeof value !== 'object') return null
   const row = value as Partial<Pick<ChatLogRow, 'question' | 'answer' | 'created_at'>>
@@ -750,6 +768,18 @@ export async function upsertRemoteSurveyResponse(args: { classId: string; nickna
       { onConflict: 'class_id,nickname,question_key' },
     )
   if (error) throw new Error(toMessage(error))
+}
+
+export async function fetchRemoteSurveyResponsesByPrefix(args: { classId: string; questionPrefix: string }) {
+  const client = ensureClient()
+  const { data, error } = await client
+    .from('survey_responses')
+    .select('id,nickname,question_key,body,created_at')
+    .eq('class_id', args.classId)
+    .like('question_key', `${args.questionPrefix}%`)
+    .order('created_at', { ascending: true })
+  if (error) throw new Error(toMessage(error))
+  return mapSurveyResponses((data ?? []) as SurveyResponseRow[])
 }
 
 export async function deleteRemoteWish(wishId: string) {

@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef } from 'react'
+import type { RealtimeChannel } from '@supabase/supabase-js'
 import type { Dispatch, SetStateAction } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   fetchRemoteLiveLesson,
   fetchRemoteLiveLessonByClassId,
   isRemoteReady,
-  parseLiveLessonRealtimeRow,
+  parseLiveLessonBroadcastPayload,
   publishRemoteLiveLesson,
 } from './v2Remote'
 import type { LiveBoardMode, LiveLessonState } from './v2Remote'
@@ -40,6 +41,16 @@ function remoteSignature(remote: LiveLessonState) {
   return `${remote.updatedAt}:${remote.lessonNo}:${remote.stepIndex}:${remote.boardMode ?? ''}:${remote.activityPath ?? ''}:${JSON.stringify(remote.viewState)}`
 }
 
+const LIVE_CHANNEL_EVENT = 'lesson-state'
+
+function sendLiveState(channel: RealtimeChannel, payload: LiveLessonState) {
+  return channel.send({
+    type: 'broadcast',
+    event: LIVE_CHANNEL_EVENT,
+    payload,
+  })
+}
+
 export function useLessonLiveSync({
   lessonNo,
   stepIndex,
@@ -61,6 +72,9 @@ export function useLessonLiveSync({
   const locationRef = useRef(location)
   const setStepIndexRef = useRef(setStepIndex)
   const applyViewStateRef = useRef(applyViewState)
+  const teacherChannelRef = useRef<RealtimeChannel | null>(null)
+  const teacherChannelReadyRef = useRef(false)
+  const pendingBroadcastRef = useRef<LiveLessonState | null>(null)
   const serializedViewState = useMemo(() => JSON.stringify(viewState), [viewState])
 
   useEffect(() => {
@@ -70,12 +84,44 @@ export function useLessonLiveSync({
   }, [applyViewState, location, setStepIndex])
 
   useEffect(() => {
+    if (isStudentLive || !state.classId || !classCode || !supabase || !isRemoteReady()) return
+
+    const client = supabase
+    teacherChannelReadyRef.current = false
+    const channel = client.channel(`live-class-${state.classId}`)
+    teacherChannelRef.current = channel
+    channel.subscribe((status) => {
+      teacherChannelReadyRef.current = status === 'SUBSCRIBED'
+      if (status !== 'SUBSCRIBED' || !pendingBroadcastRef.current) return
+      void sendLiveState(channel, pendingBroadcastRef.current)
+    })
+
+    return () => {
+      teacherChannelReadyRef.current = false
+      teacherChannelRef.current = null
+      void client.removeChannel(channel)
+    }
+  }, [classCode, isStudentLive, state.classId])
+
+  useEffect(() => {
     if (isStudentLive || !state.classId || !classCode || !isRemoteReady()) return
     const signature = JSON.stringify({ lessonNo, stepIndex, boardMode, activityPath, viewState: JSON.parse(serializedViewState) })
     if (signature === lastPublishedRef.current) return
     lastPublishedRef.current = signature
 
     const timer = window.setTimeout(() => {
+      const liveState: LiveLessonState = {
+        lessonNo,
+        stepIndex,
+        boardMode,
+        activityPath,
+        viewState: JSON.parse(serializedViewState) as Record<string, unknown>,
+        updatedAt: new Date().toISOString(),
+      }
+      pendingBroadcastRef.current = liveState
+      const channel = teacherChannelRef.current
+      if (channel && teacherChannelReadyRef.current) void sendLiveState(channel, liveState)
+
       void publishRemoteLiveLesson({
         classId: state.classId,
         lessonNo,
@@ -123,12 +169,12 @@ export function useLessonLiveSync({
     void sync()
     const channel = state.classId && supabase
       ? supabase
-          .channel(`live-lesson-${state.classId}`)
+          .channel(`live-class-${state.classId}`)
           .on(
-            'postgres_changes',
-            { event: 'INSERT', schema: 'public', table: 'chat_logs', filter: `class_id=eq.${state.classId}` },
-            (payload) => {
-              const remote = parseLiveLessonRealtimeRow(payload.new)
+            'broadcast',
+            { event: LIVE_CHANNEL_EVENT },
+            ({ payload }) => {
+              const remote = parseLiveLessonBroadcastPayload(payload)
               if (remote) applyRemote(remote)
             },
           )
@@ -138,11 +184,10 @@ export function useLessonLiveSync({
           })
       : null
 
-    // Realtime is primary. This interval only repairs a missing channel or a
-    // browser that slept through an event; it does not poll while subscribed.
+    // Broadcast is primary. Poll only when the socket is actually unavailable.
     const fallbackTimer = window.setInterval(() => {
       if (!realtimeConnected) void sync()
-    }, 15000)
+    }, 5000)
     const onVisible = () => {
       if (document.visibilityState === 'visible') void sync()
     }
@@ -203,12 +248,12 @@ export function useBoardLiveSync(classCode: string) {
     void sync()
     const channel = state.classId && supabase
       ? supabase
-          .channel(`live-board-${state.classId}`)
+          .channel(`live-class-${state.classId}`)
           .on(
-            'postgres_changes',
-            { event: 'INSERT', schema: 'public', table: 'chat_logs', filter: `class_id=eq.${state.classId}` },
-            (payload) => {
-              const remote = parseLiveLessonRealtimeRow(payload.new)
+            'broadcast',
+            { event: LIVE_CHANNEL_EVENT },
+            ({ payload }) => {
+              const remote = parseLiveLessonBroadcastPayload(payload)
               if (remote) applyRemote(remote)
             },
           )
@@ -220,7 +265,7 @@ export function useBoardLiveSync(classCode: string) {
 
     const fallbackTimer = window.setInterval(() => {
       if (!realtimeConnected) void sync()
-    }, 15000)
+    }, 5000)
     const onVisible = () => {
       if (document.visibilityState === 'visible') void sync()
     }

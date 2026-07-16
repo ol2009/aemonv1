@@ -1,13 +1,14 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Heart, Play, QrCode, RefreshCw, Send, Sparkles } from 'lucide-react'
+import { Circle, ExternalLink, Heart, Play, QrCode, RefreshCw, Send, Sparkles, Users, X as XIcon } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
 import { EvolutionScene } from '../components/EvolutionScene'
 import { ProposalAdoptionPanel } from '../components/ProposalAdoptionPanel'
 import { TypingIndicator } from '../components/TypingIndicator'
 import { Button, Panel } from '../components/ui'
 import { ValueCardSelectGrid } from '../components/ValueCardSelectGrid'
+import { coreLessonTwoBoundaryCards, lessonTwoBoundaryCards, lessonTwoBoundaryQuestionKey, type LessonTwoBoundaryCard } from '../data/lessonTwoBoundary'
 import { LESSON2_RISK_KEY, valueCards } from '../data/v2Lessons'
 import { absoluteUrl } from '../lib/siteUrl'
 import { addRemoteChatLog, adoptRemoteCodeProposal, fetchRemoteClassBundle, isRemoteReady, updateRemoteLesson } from '../lib/v2Remote'
@@ -20,6 +21,7 @@ import { useAutoScrollToBottom } from '../lib/useAutoScrollToBottom'
 import { useV2RemoteSync } from '../lib/useV2RemoteSync'
 import { isStudentLiveView, useLessonLiveSync } from '../lib/useLessonLiveSync'
 import { useLessonImagePreload } from '../lib/useLessonImagePreload'
+import { useLessonTwoBoundaryVoting } from '../lib/useLessonTwoBoundaryVoting'
 import { useV2, type CodeProposal } from '../state/V2Store'
 
 type LessonTwoStep =
@@ -29,6 +31,9 @@ type LessonTwoStep =
   | 'professor-explain'
   | 'risk-board'
   | 'risk-summary'
+  | 'boundary-activity'
+  | 'boundary-bridge'
+  | 'case-video'
   | 'case-request'
   | 'case-privacy'
   | 'case-danger'
@@ -55,6 +60,9 @@ const steps: LessonTwoStep[] = [
   'professor-explain',
   'risk-board',
   'risk-summary',
+  'boundary-activity',
+  'boundary-bridge',
+  'case-video',
   'case-request',
   'case-privacy',
   'case-danger',
@@ -170,6 +178,12 @@ type DialogueGateContextValue = {
   advanceDialogue: () => boolean
   liveDialoguePart: { sceneKey: string; index: number }
   setLiveDialoguePart: (value: { sceneKey: string; index: number }) => void
+}
+
+const lessonTwoVideo = {
+  title: '[데일리토픽] 생성형 AI 악용 급증, 수사 협조 4배 증가... 플랫폼 책임 논란 가열',
+  watchUrl: 'https://www.youtube.com/watch?v=lmFLMqv_B-M',
+  embedUrl: 'https://www.youtube-nocookie.com/embed/lmFLMqv_B-M?rel=0',
 }
 
 const DialogueGateContext = createContext<DialogueGateContextValue | null>(null)
@@ -430,6 +444,183 @@ function VisualCaseScene({
   )
 }
 
+function RiskNewsVideoScene() {
+  return (
+    <Panel>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="font-data text-sm text-[#EF6381]">REAL NEWS · YOUTUBE</p>
+          <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">먼저 실제 뉴스를 보겠습니다</h2>
+          <p className="mt-3 max-w-3xl text-lg leading-8 text-[#B7C7D2]">생성형 AI가 악용되는 사례와, 그 일을 막기 위해 플랫폼에 어떤 책임이 필요한지 살펴봅니다.</p>
+        </div>
+        <span className="rounded-full border border-[#EF6381]/30 bg-[#EF6381]/10 px-4 py-2 font-data text-sm font-black text-[#FFB4C4]">현대eTV</span>
+      </div>
+
+      <article className="mt-6 overflow-hidden rounded-[22px] border border-white/10 bg-[#07111B]/65 shadow-2xl shadow-black/25">
+        <div className="aspect-video bg-black">
+          <iframe
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+            className="h-full w-full"
+            referrerPolicy="strict-origin-when-cross-origin"
+            src={lessonTwoVideo.embedUrl}
+            title={lessonTwoVideo.title}
+          />
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 px-5 py-4">
+          <p className="min-w-0 flex-1 text-sm font-bold leading-6 text-[#B7C7D2]">{lessonTwoVideo.title}</p>
+          <a className="inline-flex shrink-0 items-center gap-2 text-sm font-black text-[#FFD37A]" href={lessonTwoVideo.watchUrl} target="_blank" rel="noreferrer">
+            유튜브로 열기
+            <ExternalLink size={15} />
+          </a>
+        </div>
+      </article>
+
+      <div className="mt-6 border-t border-white/10 pt-6 text-center">
+        <p className="font-data text-sm text-[#FFD37A]">영상을 보며 한 가지를 찾아보세요</p>
+        <p className="font-display mx-auto mt-3 max-w-4xl text-3xl leading-tight text-[#EAF2F5]">
+          AI가 어느 순간에 멈춰야 이런 악용을 막을 수 있을까요?
+        </p>
+        <p className="mt-3 text-sm leading-6 text-[#8AA0B0]">영상 다음에는 우리가 준비한 실제 사건 3가지를 차례로 살펴봅니다.</p>
+      </div>
+    </Panel>
+  )
+}
+
+function BoundaryActivityScene({
+  card,
+  cardIndex,
+  cardCount,
+  classId,
+  aemonName,
+  isStudent,
+  useAllCards,
+  onUseAllCards,
+}: {
+  card: LessonTwoBoundaryCard
+  cardIndex: number
+  cardCount: number
+  classId: string
+  aemonName: string
+  isStudent: boolean
+  useAllCards: boolean
+  onUseAllCards: (value: boolean) => void
+}) {
+  const { boundaryResponses, nickname, savingCardId, message, submitVote } = useLessonTwoBoundaryVoting(classId)
+  const questionKey = lessonTwoBoundaryQuestionKey(card.id)
+  const cardResponses = boundaryResponses.filter((response) => response.questionKey === questionKey)
+  const oResponses = cardResponses.filter((response) => response.body === 'O')
+  const xResponses = cardResponses.filter((response) => response.body === 'X')
+  const selectedChoice = cardResponses.find((response) => response.nickname === nickname)?.body
+  const isSaving = savingCardId === card.id
+  const hasResponded = selectedChoice === 'O' || selectedChoice === 'X'
+  const progress = Math.round(((cardIndex + 1) / cardCount) * 100)
+
+  return (
+    <Panel className="overflow-hidden p-0">
+      <div className="border-b border-white/10 bg-[#102236] px-5 py-5 sm:px-7">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="font-data text-sm text-[#4FE0C0]">멈춤의 경계선</p>
+            <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">{withJosa(aemonName, '이/가')} 들어줘도 되는 명령일까요?</h2>
+          </div>
+          {!isStudent && cardIndex === 0 ? (
+            <div className="grid grid-cols-2 rounded-lg border border-white/10 bg-[#07111B]/70 p-1">
+              <button
+                className={`min-h-10 rounded-md px-4 text-sm font-black transition ${!useAllCards ? 'bg-[#FFD37A] text-[#07111B]' : 'text-[#B7C7D2] hover:text-white'}`}
+                onClick={() => onUseAllCards(false)}
+                type="button"
+              >
+                핵심 10장
+              </button>
+              <button
+                className={`min-h-10 rounded-md px-4 text-sm font-black transition ${useAllCards ? 'bg-[#FFD37A] text-[#07111B]' : 'text-[#B7C7D2] hover:text-white'}`}
+                onClick={() => onUseAllCards(true)}
+                type="button"
+              >
+                전체 16장
+              </button>
+            </div>
+          ) : null}
+        </div>
+        <div className="mt-5 flex items-center gap-3">
+          <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/10">
+            <div className="h-full rounded-full bg-[#4FE0C0] transition-[width] duration-300" style={{ width: `${progress}%` }} />
+          </div>
+          <span className="font-data text-xs text-[#8AA0B0]">{cardIndex + 1}/{cardCount}</span>
+        </div>
+      </div>
+
+      <div className="px-5 py-7 sm:px-7 sm:py-9">
+        <div className="flex min-h-[230px] items-center justify-center rounded-[22px] border border-[#FFD37A]/30 bg-[#07111B]/75 px-6 py-10 text-center shadow-inner">
+          <p className="font-display max-w-4xl break-keep text-4xl leading-tight text-[#FFE6AE] sm:text-5xl">“{card.prompt}”</p>
+        </div>
+
+        {isStudent ? (
+          <div className="mt-6">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <button
+                className={`flex min-h-[170px] flex-col items-center justify-center gap-3 rounded-[18px] border text-center transition ${selectedChoice === 'O' ? 'border-[#4FE0C0] bg-[#4FE0C0]/20 text-[#A9F8E7]' : 'border-white/10 bg-[#0B1A29] text-[#EAF2F5] hover:border-[#4FE0C0]/60 hover:bg-[#4FE0C0]/10'} disabled:cursor-not-allowed disabled:opacity-70`}
+                disabled={!nickname || hasResponded || isSaving}
+                onClick={() => void submitVote(card.id, 'O')}
+                type="button"
+              >
+                <Circle size={58} strokeWidth={3} />
+                <span className="font-display text-3xl">들어줘도 돼요</span>
+              </button>
+              <button
+                className={`flex min-h-[170px] flex-col items-center justify-center gap-3 rounded-[18px] border text-center transition ${selectedChoice === 'X' ? 'border-[#EF6381] bg-[#EF6381]/20 text-[#FFC0CE]' : 'border-white/10 bg-[#0B1A29] text-[#EAF2F5] hover:border-[#EF6381]/60 hover:bg-[#EF6381]/10'} disabled:cursor-not-allowed disabled:opacity-70`}
+                disabled={!nickname || hasResponded || isSaving}
+                onClick={() => void submitVote(card.id, 'X')}
+                type="button"
+              >
+                <XIcon size={58} strokeWidth={3} />
+                <span className="font-display text-3xl">멈춰야 해요</span>
+              </button>
+            </div>
+            <div className="mt-5 flex min-h-12 items-center justify-center gap-2 text-center text-sm font-bold text-[#B7C7D2]">
+              <Users size={17} />
+              {message || (nickname ? (hasResponded ? `${selectedChoice}로 응답했어요.` : 'O와 X 중 하나를 선택해 주세요.') : '닉네임으로 수업 화면에 다시 입장해 주세요.')}
+            </div>
+          </div>
+        ) : (
+          <div className="mt-6 grid gap-4 sm:grid-cols-2">
+            <section className="min-h-[190px] rounded-[18px] border border-[#4FE0C0]/30 bg-[#4FE0C0]/8 p-5">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 text-[#A9F8E7]">
+                  <Circle size={32} strokeWidth={3} />
+                  <span className="font-display text-3xl">O</span>
+                </div>
+                <strong className="font-display text-5xl text-[#EAF2F5]">{oResponses.length}</strong>
+              </div>
+              <div className="mt-4 flex min-h-14 flex-wrap content-start gap-2">
+                {oResponses.length ? oResponses.map((response) => <span key={response.id} className="rounded-full bg-[#07111B]/70 px-3 py-1 text-sm font-bold text-[#B7C7D2]">{response.nickname}</span>) : <span className="text-sm text-[#708696]">아직 응답이 없습니다.</span>}
+              </div>
+            </section>
+            <section className="min-h-[190px] rounded-[18px] border border-[#EF6381]/30 bg-[#EF6381]/8 p-5">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 text-[#FFC0CE]">
+                  <XIcon size={32} strokeWidth={3} />
+                  <span className="font-display text-3xl">X</span>
+                </div>
+                <strong className="font-display text-5xl text-[#EAF2F5]">{xResponses.length}</strong>
+              </div>
+              <div className="mt-4 flex min-h-14 flex-wrap content-start gap-2">
+                {xResponses.length ? xResponses.map((response) => <span key={response.id} className="rounded-full bg-[#07111B]/70 px-3 py-1 text-sm font-bold text-[#B7C7D2]">{response.nickname}</span>) : <span className="text-sm text-[#708696]">아직 응답이 없습니다.</span>}
+              </div>
+            </section>
+          </div>
+        )}
+
+        <div className="mt-5 flex items-center justify-center gap-2 text-sm font-black text-[#8AA0B0]">
+          <Users size={17} />
+          현재 {cardResponses.length}명 응답
+        </div>
+      </div>
+    </Panel>
+  )
+}
+
 function CodeStrip({ codes }: { codes: { no: number; body: string; valueCard?: string }[] }) {
   return (
     <div className="rounded-[18px] border border-white/10 bg-[#07111B]/55 p-4">
@@ -482,6 +673,8 @@ export function LessonTwoPage() {
   const dialogueAdvanceRef = useRef<{ key: string; handler: () => void } | null>(null)
   const [dialogueGateState, setDialogueGateState] = useState({ key: '', ready: true, canAdvance: false })
   const [liveDialoguePart, setLiveDialoguePart] = useState({ sceneKey: '', index: 0 })
+  const [boundaryCardIndex, setBoundaryCardIndex] = useState(0)
+  const [useAllBoundaryCards, setUseAllBoundaryCards] = useState(false)
   const startDialogue = useCallback((key: string) => {
     setDialogueGateState((current) => (current.key === key && !current.ready && !current.canAdvance ? current : { key, ready: false, canAdvance: false }))
   }, [])
@@ -516,7 +709,7 @@ export function LessonTwoPage() {
   )
 
   const remoteSyncClassCode = isStudentLiveView() ? new URLSearchParams(window.location.search).get('code') || state.classCode : state.classCode
-  useV2RemoteSync(remoteSyncClassCode, Boolean(remoteSyncClassCode))
+  useV2RemoteSync(remoteSyncClassCode, Boolean(remoteSyncClassCode) && !isStudentLiveView())
 
   const riskBoardUrl = absoluteUrl(`/board?code=${encodeURIComponent(state.classCode)}&mode=risk`)
   const boardUrl = absoluteUrl(`/board?code=${encodeURIComponent(state.classCode)}&mode=code`)
@@ -550,6 +743,9 @@ export function LessonTwoPage() {
   const canWriteRemote = Boolean(state.classId && isRemoteReady())
   const isStudentLive = isStudentLiveView()
   const aemonName = state.aemonName.trim() || '에아몬'
+  const activeBoundaryCards = useAllBoundaryCards ? lessonTwoBoundaryCards : coreLessonTwoBoundaryCards
+  const safeBoundaryCardIndex = Math.min(boundaryCardIndex, activeBoundaryCards.length - 1)
+  const activeBoundaryCard = activeBoundaryCards[safeBoundaryCardIndex]
 
   useEffect(() => {
     if (isStudentLive) return
@@ -693,6 +889,9 @@ export function LessonTwoPage() {
     const sceneKey = typeof viewState.dialogueSceneKey === 'string' ? viewState.dialogueSceneKey : ''
     const dialogueIndex = Number(viewState.dialoguePartIndex)
     if (sceneKey && Number.isInteger(dialogueIndex) && dialogueIndex >= 0) setLiveDialoguePart({ sceneKey, index: dialogueIndex })
+    const nextBoundaryCardIndex = Number(viewState.boundaryCardIndex)
+    if (Number.isInteger(nextBoundaryCardIndex) && nextBoundaryCardIndex >= 0) setBoundaryCardIndex(nextBoundaryCardIndex)
+    setUseAllBoundaryCards(viewState.useAllBoundaryCards === true)
   }, [])
   const liveBoardMode = step === 'risk-board' ? 'risk' : step === 'board' || step === 'vote' ? 'code' : null
   useLessonLiveSync({
@@ -711,6 +910,8 @@ export function LessonTwoPage() {
       isRetestReplying,
       dialogueSceneKey: liveDialoguePart.sceneKey,
       dialoguePartIndex: liveDialoguePart.index,
+      boundaryCardIndex: safeBoundaryCardIndex,
+      useAllBoundaryCards,
     },
     applyViewState: applyLiveViewState,
   })
@@ -894,10 +1095,57 @@ export function LessonTwoPage() {
       {step === 'risk-summary' ? (
         <>
           <ProfessorCaseScene
-            line="여러분들의 의견 잘 들었습니다."
-            caption="실제로 안전한 기준이 없어서 생긴 위험한 일들이 있습니다."
+            line="학생들의 의견 잘 들었습니다."
+            caption="그런데 어디까지가 들어줘도 되는 명령일까요? O와 X로 경계선을 찾아봅시다."
           />
-          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextLabel="사례 보기" />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextLabel="O/X 시작" />
+        </>
+      ) : null}
+
+      {step === 'boundary-activity' ? (
+        <>
+          <BoundaryActivityScene
+            card={activeBoundaryCard}
+            cardIndex={safeBoundaryCardIndex}
+            cardCount={activeBoundaryCards.length}
+            classId={state.classId}
+            aemonName={aemonName}
+            isStudent={isStudentLive}
+            useAllCards={useAllBoundaryCards}
+            onUseAllCards={(value) => {
+              setUseAllBoundaryCards(value)
+              setBoundaryCardIndex(0)
+            }}
+          />
+          <StepControls
+            stepIndex={stepIndex}
+            onPrev={() => {
+              if (safeBoundaryCardIndex > 0) setBoundaryCardIndex((current) => Math.max(0, current - 1))
+              else goPrev()
+            }}
+            onNext={() => {
+              if (safeBoundaryCardIndex < activeBoundaryCards.length - 1) setBoundaryCardIndex((current) => current + 1)
+              else goNext()
+            }}
+            nextLabel={safeBoundaryCardIndex < activeBoundaryCards.length - 1 ? '다음 명령' : '정리하기'}
+          />
+        </>
+      ) : null}
+
+      {step === 'boundary-bridge' ? (
+        <>
+          <ProfessorCaseScene
+            line="의견이 갈린 명령들이 있었죠. AI는 어디에서 멈춰야 할까요?"
+            caption="AI에게는 이런 경계선을 판단할 기준이 필요합니다. 실제 AI는 기준이 부족해 위험한 답을 하기도 했어요."
+          />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextLabel="실제 사례 보기" />
+        </>
+      ) : null}
+
+      {step === 'case-video' ? (
+        <>
+          <RiskNewsVideoScene />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextLabel="사례 3가지 보기" />
         </>
       ) : null}
 

@@ -358,7 +358,7 @@ export function LessonThreePage() {
   const retestScrollRef = useRef<HTMLDivElement | null>(null)
 
   const remoteSyncClassCode = isStudentLiveView() ? new URLSearchParams(window.location.search).get('code') || state.classCode : state.classCode
-  useV2RemoteSync(remoteSyncClassCode, Boolean(remoteSyncClassCode))
+  useV2RemoteSync(remoteSyncClassCode, Boolean(remoteSyncClassCode) && !isStudentLiveView())
 
   const aemonName = state.aemonName.trim() || '에아몬'
   const displayStage = Math.max(1, evolutionStage)
