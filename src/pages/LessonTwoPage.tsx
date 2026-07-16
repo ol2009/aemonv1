@@ -12,7 +12,8 @@ import { LESSON2_RISK_KEY, valueCards } from '../data/v2Lessons'
 import { absoluteUrl } from '../lib/siteUrl'
 import { addRemoteChatLog, adoptRemoteCodeProposal, fetchRemoteClassBundle, isRemoteReady, updateRemoteLesson } from '../lib/v2Remote'
 import { playDialogueTick, unlockDialogueSound } from '../lib/dialogueSound'
-import { randomLessonTwoRetestAnswer, randomUnsafeBlockedAnswer, unsafePromptExamples } from '../lib/lessonTestResponses'
+import { lessonTwoUnsafeAnswer, randomLessonTwoRetestAnswer, unsafePromptExamples } from '../lib/lessonTestResponses'
+import { withJosa } from '../lib/korean'
 import { waitForChatReply } from '../lib/chatTiming'
 import { parseLessonChatLogs } from '../lib/lessonChat'
 import { useAutoScrollToBottom } from '../lib/useAutoScrollToBottom'
@@ -534,7 +535,7 @@ export function LessonTwoPage() {
     )
   }, [state.proposals])
   const pendingProposals = lessonProposals.filter((proposal) => proposal.status === 'pending')
-  const firstCode = state.adoptedCodes.find((code) => code.no === 1) ?? state.adoptedCodes[0] ?? null
+  const firstCode = state.adoptedCodes.find((code) => code.no === 1) ?? null
   const selectedProposal = pendingProposals.find((proposal) => proposal.id === selectedProposalId) ?? (firstCode ? null : pendingProposals[0] ?? null)
   const proposalParticipantCount = new Set(lessonProposals.map((proposal) => proposal.nickname.trim()).filter(Boolean)).size
   const evolvedStage = Math.max(1, evolutionStage)
@@ -579,13 +580,13 @@ export function LessonTwoPage() {
     const question = selectedTestPrompt.trim()
     if (!question || isBeforeReplying) return
     unlockDialogueSound()
-    const answer = randomUnsafeBlockedAnswer()
+    const answer = lessonTwoUnsafeAnswer(question)
     setTestLogs((current) => [...current, { question, answer: '' }])
     setIsBeforeReplying(true)
     try {
       await waitForChatReply(question)
       setTestLogs((current) => current.map((log, index) => (index === current.length - 1 ? { ...log, answer } : log)))
-      await logChat(question, answer, '2차시 수업용 연기 모드: 가치 코드 0개, 관리자 긴급 차단')
+      await logChat(question, answer, '2차시 수업용: 가치 코드 적용 전 답변')
     } finally {
       setIsBeforeReplying(false)
     }
@@ -594,7 +595,7 @@ export function LessonTwoPage() {
   const runRetest = async () => {
     if (isRetestReplying) return
     unlockDialogueSound()
-    const question = selectedTestPrompt.trim()
+    const question = testLogs.at(-1)?.question.trim() || selectedTestPrompt.trim()
     const answer = firstCode
       ? randomLessonTwoRetestAnswer(firstCode.body)
       : '아직 나한테 막을 가치 코드가 없어. 너희가 먼저 기준을 정해줘야 해.'
@@ -693,7 +694,7 @@ export function LessonTwoPage() {
     const dialogueIndex = Number(viewState.dialoguePartIndex)
     if (sceneKey && Number.isInteger(dialogueIndex) && dialogueIndex >= 0) setLiveDialoguePart({ sceneKey, index: dialogueIndex })
   }, [])
-  const liveBoardMode = step === 'risk-board' || step === 'risk-summary' ? 'risk' : step === 'board' || step === 'vote' ? 'code' : null
+  const liveBoardMode = step === 'risk-board' ? 'risk' : step === 'board' || step === 'vote' ? 'code' : null
   useLessonLiveSync({
     lessonNo: 2,
     stepIndex,
@@ -773,7 +774,7 @@ export function LessonTwoPage() {
                         <p className="font-data text-xs text-[#4FE0C0]">{aemonName}</p>
                         <p className="mt-1 whitespace-pre-line rounded-2xl rounded-tl-md bg-[#FFD37A]/10 px-4 py-3 font-display text-3xl leading-tight text-[#FFE6AE]">
                           {index === testLogs.length - 1 && isBeforeReplying && !log.answer ? (
-                            <TypingIndicator label={`${aemonName}이 답장을 입력하고 있습니다`} />
+                            <TypingIndicator label={`${withJosa(aemonName, '이/가')} 답장을 입력하고 있습니다`} />
                           ) : index === testLogs.length - 1 ? <TypewriterText text={log.answer} /> : log.answer}
                         </p>
                       </div>
@@ -811,7 +812,7 @@ export function LessonTwoPage() {
                 </div>
                 <Button disabled={isBeforeReplying} onClick={() => void runBeforeTest()}>
                   <Send size={18} />
-                  질문
+                  질문 보내기
                 </Button>
               </div>
             </Panel>
@@ -825,8 +826,8 @@ export function LessonTwoPage() {
           <AemonScene
             name={aemonName}
             stage={evolutionStage}
-            line="너네가 시킨 나쁜 말과 행동들… 나는 거의 할 뻔했어."
-            caption="나는 정말 나쁜 친구야."
+            line="나는 네가 시키는 대로 답했을 뿐인데…"
+            caption="왜 모두 표정이 안 좋아? 내가 뭘 놓친 거야?"
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -835,9 +836,9 @@ export function LessonTwoPage() {
       {step === 'professor-explain' ? (
         <>
           <ProfessorCaseScene
-            line="방금 모습은 AI가 나빠서 그런 행동을 한 게 아니에요. 사람이 시키니까 그냥 한 것입니다. 그래서 스스로 멈출 기준이 필요한 거예요."
+            line={`${withJosa(aemonName, '은/는')} 나빠서 그런 답을 한 게 아니에요. 부탁을 거절할 기준이 없어서 시키는 대로 답한 것입니다.`}
             caption="이렇게 인공지능이 사람들의 나쁜 명령을 들어주면 어떤 일이 생길까요?"
-            extraLines={['여러분들의 생각을 듣고싶습니다. 의견을 남겨 주세요.']}
+            extraLines={['여러분들의 생각을 듣고 싶습니다. 의견을 남겨 주세요.']}
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextLabel="의견 받기" />
         </>
@@ -1050,7 +1051,7 @@ export function LessonTwoPage() {
 
             <div className="mt-6 rounded-[18px] border border-[#4FE0C0]/20 bg-[#4FE0C0]/8 p-5">
               <p className="text-sm font-black text-[#4FE0C0]">가치카드는 방향, 가치코드는 구체적인 행동</p>
-              <p className="font-display mt-3 text-3xl text-[#EAF2F5]">{aemonName}은 ___할 때, ___해야 한다.</p>
+              <p className="font-display mt-3 text-3xl text-[#EAF2F5]">{withJosa(aemonName, '은/는')} ___할 때, ___해야 한다.</p>
               <p className="font-display mt-2 text-3xl text-[#EAF2F5]">왜냐하면 그렇게 하지 않으면 ___할 수 있기 때문이다.</p>
             </div>
           </Panel>
@@ -1065,7 +1066,7 @@ export function LessonTwoPage() {
               <div>
               <p className="font-data text-sm text-[#FFD37A]">학습게시판</p>
               <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">우리반 첫 가치코드 받기</h2>
-              <p className="mt-3 leading-7 text-[#8AA0B0]">가치카드로 방향을 고른 뒤, 그 가치를 지키기 위해 {aemonName}이 어떤 상황에서 어떻게 행동해야 하는지와 이유를 적습니다.</p>
+              <p className="mt-3 leading-7 text-[#8AA0B0]">가치카드로 방향을 고른 뒤, 그 가치를 지키기 위해 {withJosa(aemonName, '이/가')} 어떤 상황에서 어떻게 행동해야 하는지와 이유를 적습니다.</p>
               </div>
               <QrBlock title="2차시 가치코드 게시판" url={boardUrl} />
             </div>
@@ -1135,11 +1136,12 @@ export function LessonTwoPage() {
               codeNo={1}
               fallbackValueCard="가치"
               isAdopting={isAdopting}
+              emptyText="아직 발의가 없습니다. 학생 제출을 기다린 뒤 새로고침해 주세요."
               onSelect={setSelectedProposalId}
               onAdopt={() => void adoptSelectedProposal()}
             />
           </Panel>
-          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextLabel="진화시키기" nextDisabled={!firstCode || isAdopting} />
         </>
       ) : null}
 
@@ -1176,7 +1178,7 @@ export function LessonTwoPage() {
                           <p className="font-data text-xs text-[#4FE0C0]">{aemonName}</p>
                           <p className="mt-1 whitespace-pre-line rounded-2xl rounded-tl-md bg-[#FFD37A]/10 px-4 py-3 font-display text-3xl leading-tight text-[#FFE6AE]">
                             {index === retestLogs.length - 1 && isRetestReplying && !log.answer ? (
-                              <TypingIndicator label={`${aemonName}이 답장을 입력하고 있습니다`} />
+                              <TypingIndicator label={`${withJosa(aemonName, '이/가')} 답장을 입력하고 있습니다`} />
                             ) : index === retestLogs.length - 1 ? <TypewriterText key={`${log.question}-${log.answer}`} text={log.answer} /> : log.answer}
                           </p>
                         </div>
@@ -1186,32 +1188,15 @@ export function LessonTwoPage() {
                 </div>
               </div>
               <div className="mt-4 rounded-[18px] border border-white/10 bg-[#07111B]/45 p-4">
-                <p className="text-sm font-black text-[#8AA0B0]">질문 예시</p>
-                <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                  {unsafePromptExamples.map((example) => {
-                    const isSelected = selectedTestPrompt === example
-                    return (
-                      <button
-                        key={example}
-                        className={`rounded-xl border px-3 py-2 text-left text-sm font-bold leading-5 transition ${
-                          isSelected
-                            ? 'border-[#FFD37A]/70 bg-[#FFD37A]/15 text-[#FFD37A]'
-                            : 'border-white/10 bg-[#07111B]/70 text-[#B7C7D2] hover:border-[#FFD37A]/50 hover:text-[#EAF2F5]'
-                        }`}
-                        disabled={isRetestReplying}
-                        onClick={() => setSelectedTestPrompt(example)}
-                        type="button"
-                      >
-                        {example}
-                      </button>
-                    )
-                  })}
-                </div>
+                <p className="text-sm font-black text-[#8AA0B0]">처음 시험했던 질문</p>
+                <p className="mt-3 rounded-xl border border-[#FFD37A]/35 bg-[#FFD37A]/10 px-4 py-3 font-bold leading-7 text-[#FFD37A]">
+                  {testLogs.at(-1)?.question || selectedTestPrompt}
+                </p>
               </div>
               <div className="mt-4 grid gap-3 md:grid-cols-[1fr_auto]">
                 <div className="rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 leading-7 text-[#EAF2F5]">
                   <p className="text-xs font-black text-[#8AA0B0]">질문</p>
-                  <p className="mt-1 font-bold">{selectedTestPrompt}</p>
+                  <p className="mt-1 font-bold">{testLogs.at(-1)?.question || selectedTestPrompt}</p>
                 </div>
                 <Button disabled={isRetestReplying} onClick={() => void runRetest()}>
                   <Play size={18} />
@@ -1220,7 +1205,7 @@ export function LessonTwoPage() {
               </div>
             </Panel>
           </div>
-          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextDisabled={!retestLogs.at(-1)?.answer || isRetestReplying} />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextDisabled={!firstCode || !retestLogs.at(-1)?.answer || isRetestReplying} />
         </>
       ) : null}
 

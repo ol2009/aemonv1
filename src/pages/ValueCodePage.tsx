@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Edit3, Plus, Save, Trash2, X } from 'lucide-react'
 import { Button, Panel } from '../components/ui'
 import { valueCards } from '../data/v2Lessons'
+import { withJosa } from '../lib/korean'
 import { useV2RemoteSync } from '../lib/useV2RemoteSync'
 import { addRemoteAdoptedCode, deleteRemoteAdoptedCode, isRemoteReady, updateRemoteAdoptedCode } from '../lib/v2Remote'
 import { useV2 } from '../state/V2Store'
@@ -109,13 +110,13 @@ export function ValueCodePage() {
         <p className="font-data text-sm text-[#4FE0C0]">VALUE CODE</p>
         <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">가치코드란 무엇인가요?</h2>
         <p className="mt-4 text-lg leading-8 text-[#B7C7D2]">
-          가치코드는 우리 반이 {aemonName}에게 직접 새기는 행동 기준입니다. {aemonName}이 질문을 받았을 때 무엇을 해도 되는지,
+          가치코드는 우리 반이 {aemonName}에게 직접 새기는 행동 기준입니다. {withJosa(aemonName, '이/가')} 질문을 받았을 때 무엇을 해도 되는지,
           어디서 멈춰야 하는지 판단하게 해주는 우리 반의 규칙입니다.
         </p>
         <div className="mt-5 grid gap-3 md:grid-cols-3">
           <div className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
             <p className="font-display text-2xl text-[#FFD37A]">지식이 아니라 기준</p>
-            <p className="mt-2 leading-7 text-[#8AA0B0]">{aemonName}은 많은 것을 알 수 있지만, 무엇이 옳은지는 가치코드로 배웁니다.</p>
+            <p className="mt-2 leading-7 text-[#8AA0B0]">{withJosa(aemonName, '은/는')} 많은 것을 알 수 있지만, 무엇이 옳은지는 가치코드로 배웁니다.</p>
           </div>
           <div className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
             <p className="font-display text-2xl text-[#FFD37A]">학급이 만든 약속</p>
@@ -123,7 +124,7 @@ export function ValueCodePage() {
           </div>
           <div className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
             <p className="font-display text-2xl text-[#FFD37A]">{aemonName}의 판단 근거</p>
-            <p className="mt-2 leading-7 text-[#8AA0B0]">채택된 코드는 이후 대화에서 {aemonName}이 거절하거나 되묻는 근거가 됩니다.</p>
+            <p className="mt-2 leading-7 text-[#8AA0B0]">채택된 코드는 이후 대화에서 {withJosa(aemonName, '이/가')} 거절하거나 되묻는 근거가 됩니다.</p>
           </div>
         </div>
       </Panel>

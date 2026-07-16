@@ -22,7 +22,8 @@ import { ValueCodePage } from './pages/ValueCodePage'
 
 function LessonRouteGuard({ lessonNo, children }: { lessonNo: number; children: ReactNode }) {
   const { state } = useV2()
-  const isStudentView = new URLSearchParams(window.location.search).get('role') === 'student'
+  const searchParams = new URLSearchParams(window.location.search)
+  const isStudentView = searchParams.get('role') === 'student' || searchParams.get('live') === 'student'
   if (isStudentView || !state.classCode || state.currentLesson === lessonNo) return children
   return <Navigate to="/home" replace />
 }

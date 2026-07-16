@@ -4,7 +4,7 @@ import { BookOpen, CheckCircle2, KeyRound, Play, Plus, Trash2, X } from 'lucide-
 import { AemonAvatar } from '../components/AemonAvatar'
 import { ApiConnectionModal } from '../components/ApiConnectionModal'
 import { Button, Panel } from '../components/ui'
-import { deleteRemoteClass, fetchRemoteClassBundle, fetchRemoteTeacherClasses, isRemoteReady, type RemoteClassSummary } from '../lib/v2Remote'
+import { deleteRemoteClass, fetchRemoteClassBundle, fetchRemoteTeacherClasses, isRemoteReady, MAX_TEACHER_CLASSES, type RemoteClassSummary } from '../lib/v2Remote'
 import { useSupabaseUser } from '../lib/useSupabaseUser'
 import { providerLabel } from '../lib/v2Chat'
 import { useV2 } from '../state/V2Store'
@@ -20,6 +20,7 @@ export function StartPage() {
   const [remoteClasses, setRemoteClasses] = useState<RemoteClassSummary[]>([])
   const [isStartNoticeOpen, setIsStartNoticeOpen] = useState(true)
   const isApiConnected = Boolean(state.apiKey.trim())
+  const isClassLimitReached = remoteClasses.length >= MAX_TEACHER_CLASSES
 
   const refreshTeacherClasses = useCallback(async () => {
     if (!user?.id || !isRemoteReady()) return
@@ -45,6 +46,10 @@ export function StartPage() {
   }
 
   const createNewClass = () => {
+    if (isClassLimitReached) {
+      setRestoreMessage(`학급은 계정당 최대 ${MAX_TEACHER_CLASSES}개까지 만들 수 있습니다. 새 학급을 만들려면 기존 학급 하나를 삭제해 주세요.`)
+      return
+    }
     resetDemo()
     localStorage.removeItem('aemon.v2.state')
     localStorage.removeItem('aemon.state')
@@ -108,10 +113,11 @@ export function StartPage() {
             새 학급을 만들거나, 내가 만든 학급 목록에서 이어서 진행할 학급을 선택하세요.
           </p>
 
-          <Button className="mt-6" onClick={createNewClass}>
+          <Button className="mt-6" disabled={isClassLimitReached} onClick={createNewClass}>
             <Plus size={20} />
             새 학급 만들기
           </Button>
+          {isClassLimitReached ? <p className="mt-3 text-sm font-bold text-[#FFD37A]">학급 5개를 모두 사용 중입니다. 새 학급을 만들려면 기존 학급 하나를 삭제해 주세요.</p> : null}
 
           {state.classCode ? (
             <div className="mt-6 rounded-2xl border border-[#4FE0C0]/20 bg-[#4FE0C0]/8 p-4">
@@ -123,11 +129,18 @@ export function StartPage() {
           ) : null}
 
           <div className="mt-6 rounded-2xl border border-white/10 bg-[#07111B]/55 p-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="font-data text-xs text-[#4FE0C0]">MY CLASSES</p>
                 <h2 className="mt-1 text-lg font-black text-[#EAF2F5]">내가 만든 학급</h2>
               </div>
+              <span className={`font-data rounded-lg border px-3 py-1.5 text-sm font-black ${
+                isClassLimitReached
+                  ? 'border-[#FFD37A]/35 bg-[#FFD37A]/10 text-[#FFD37A]'
+                  : 'border-[#4FE0C0]/25 bg-[#4FE0C0]/10 text-[#4FE0C0]'
+              }`}>
+                {remoteClasses.length}/{MAX_TEACHER_CLASSES}
+              </span>
             </div>
             {remoteClasses.length > 0 ? (
               <div className="mt-4 grid gap-2">
@@ -146,7 +159,7 @@ export function StartPage() {
                         <span className="font-data text-xs text-[#4FE0C0]">{remoteClass.classCode}</span>
                       </div>
                       <p className="mt-1 text-sm text-[#8AA0B0]">
-                        {remoteClass.aemonName || '이름 미정'} · 현재 {remoteClass.currentLesson}차시 · 기록 {remoteClass.activityCount}개
+                        {remoteClass.aemonName || '이름 미정'} · 현재 {remoteClass.currentLesson}차시
                       </p>
                     </button>
                     <button

@@ -77,6 +77,11 @@ type ChatLogRow = {
   created_at: string
 }
 
+type ResettableClassRow = ClassRow & {
+  teacher_id: string
+  mode: 'ai' | 'basic'
+}
+
 const LIVE_LESSON_QUESTION = '__aemon_live_lesson__'
 
 export type LiveBoardMode = 'survey' | 'risk' | 'name' | 'wish' | 'code' | 'honesty' | 'code2' | 'fairness' | 'code3'
@@ -347,9 +352,23 @@ export async function probeV2Database() {
   }
 }
 
+export const MAX_TEACHER_CLASSES = 5
+
 export async function createRemoteClass(input: { className: string; teacherId?: string | null; teacherEmail?: string | null }) {
   const client = ensureClient()
   let lastError: unknown = null
+
+  if (input.teacherId) {
+    const { count, error } = await client
+      .from('classes')
+      .select('id', { count: 'exact', head: true })
+      .eq('teacher_id', input.teacherId)
+
+    if (error) throw new Error(toMessage(error))
+    if ((count ?? 0) >= MAX_TEACHER_CLASSES) {
+      throw new Error(`학급은 계정당 최대 ${MAX_TEACHER_CLASSES}개까지 만들 수 있습니다.`)
+    }
+  }
 
   for (let attempt = 0; attempt < 4; attempt += 1) {
     const code = generateClassCode()
@@ -442,6 +461,72 @@ export async function deleteRemoteClass(args: { classId: string; teacherId: stri
   if (error) throw new Error(toMessage(error))
   if (!data) throw new Error('학급을 삭제하지 못했습니다. 다시 로그인한 뒤 시도해 주세요.')
   return data.id
+}
+
+function isMissingResetRpc(error: unknown) {
+  if (!error || typeof error !== 'object') return false
+  const candidate = error as { code?: string; message?: string }
+  return candidate.code === 'PGRST202' || candidate.code === '42883' || /reset_class_content/i.test(candidate.message ?? '')
+}
+
+export async function resetRemoteClassContent(args: { classId: string; teacherId: string }) {
+  const client = ensureClient()
+  const classId = args.classId.trim()
+  const teacherId = args.teacherId.trim()
+  if (!classId || !teacherId) throw new Error('학급 초기화를 위해 다시 로그인해 주세요.')
+
+  const { error: rpcError } = await client.rpc('reset_class_content', { target_class_id: classId })
+  if (!rpcError) {
+    const { data, error } = await client
+      .from('classes')
+      .select('id,name,code,current_lesson,aemon_name,created_at')
+      .eq('id', classId)
+      .eq('teacher_id', teacherId)
+      .single<ClassRow>()
+    if (error || !data) throw new Error(toMessage(error ?? '초기화된 학급을 다시 불러오지 못했습니다.'))
+    return { ...mapClass(data), remote: { enabled: true, ok: true, message: '학급 초기화 완료', lastSyncedAt: new Date().toISOString() } }
+  }
+
+  if (!isMissingResetRpc(rpcError)) throw new Error(toMessage(rpcError))
+
+  // Older deployments may not have the transaction RPC yet. Recreating the
+  // same class row clears every child table through the existing cascades.
+  const select = 'id,teacher_id,name,mode,code,current_lesson,aemon_name,created_at'
+  const { data: existing, error: readError } = await client
+    .from('classes')
+    .select(select)
+    .eq('id', classId)
+    .eq('teacher_id', teacherId)
+    .maybeSingle<ResettableClassRow>()
+  if (readError) throw new Error(toMessage(readError))
+  if (!existing) throw new Error('이 학급을 초기화할 권한이 없습니다. 다시 로그인해 주세요.')
+
+  const { error: deleteError } = await client
+    .from('classes')
+    .delete()
+    .eq('id', classId)
+    .eq('teacher_id', teacherId)
+  if (deleteError) throw new Error(toMessage(deleteError))
+
+  const { data: restored, error: restoreError } = await client
+    .from('classes')
+    .insert({
+      id: existing.id,
+      teacher_id: existing.teacher_id,
+      name: existing.name,
+      mode: existing.mode,
+      code: existing.code,
+      current_lesson: 1,
+      aemon_name: '',
+      created_at: existing.created_at,
+    })
+    .select('id,name,code,current_lesson,aemon_name,created_at')
+    .single<ClassRow>()
+  if (restoreError || !restored) {
+    throw new Error(`학급 내용을 지웠지만 학급 복원에 실패했습니다: ${toMessage(restoreError)}`)
+  }
+
+  return { ...mapClass(restored), remote: { enabled: true, ok: true, message: '학급 초기화 완료', lastSyncedAt: new Date().toISOString() } }
 }
 
 async function fetchTableCount(table: 'name_candidates' | 'wishes' | 'survey_responses' | 'codes' | 'chat_logs', classId: string, status?: 'adopted') {

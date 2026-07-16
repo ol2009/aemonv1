@@ -138,6 +138,7 @@ const initialState: V2State = {
 type Action =
   | { type: 'class/create'; className: string; teacherEmail?: string }
   | { type: 'class/merge'; payload: Partial<V2State> }
+  | { type: 'class/resetContent' }
   | { type: 'class/joinStudent'; classCode: string; nickname: string }
   | { type: 'class/leaveStudent' }
   | { type: 'lesson/set'; lessonNo: number }
@@ -252,6 +253,17 @@ function reducer(state: V2State, action: Action): V2State {
         studentSession: action.payload.studentSession ?? state.studentSession,
       }
     }
+    case 'class/resetContent':
+      return {
+        ...initialState,
+        classId: state.classId,
+        className: state.className,
+        classCode: state.classCode,
+        teacherEmail: state.teacherEmail,
+        apiKey: state.apiKey,
+        aiProvider: state.aiProvider,
+        remote: state.remote,
+      }
     case 'class/joinStudent': {
       const nickname = clamp(action.nickname, 16)
       if (!nickname || action.classCode.trim() !== state.classCode) return state
@@ -426,7 +438,12 @@ function reducer(state: V2State, action: Action): V2State {
       }
     }
     case 'dev/reset':
-      return initialState
+      return {
+        ...initialState,
+        teacherEmail: state.teacherEmail,
+        apiKey: state.apiKey,
+        aiProvider: state.aiProvider,
+      }
     default:
       return state
   }
@@ -440,6 +457,7 @@ interface V2ContextValue {
   currentReaction: string
   createClass: (className: string, teacherEmail?: string) => void
   mergeClass: (payload: Partial<V2State>) => void
+  resetClassContent: () => void
   setRemoteStatus: (status: { ok: boolean; message: string }) => void
   joinStudent: (classCode: string, nickname: string) => void
   leaveStudent: () => void
@@ -487,6 +505,7 @@ export function V2Provider({ children }: { children: ReactNode }) {
       currentReaction,
       createClass: (className, teacherEmail) => dispatch({ type: 'class/create', className, teacherEmail }),
       mergeClass: (payload) => dispatch({ type: 'class/merge', payload }),
+      resetClassContent: () => dispatch({ type: 'class/resetContent' }),
       setRemoteStatus: (status) => dispatch({ type: 'remote/status', ...status }),
       joinStudent: (classCode, nickname) => dispatch({ type: 'class/joinStudent', classCode, nickname }),
       leaveStudent: () => dispatch({ type: 'class/leaveStudent' }),

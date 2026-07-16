@@ -1,4 +1,5 @@
 import type { AiProvider } from '../domain/types'
+import { withJosa } from './korean'
 import type { AdoptedCode, ChatLog } from '../state/V2Store'
 
 const MODEL_CANDIDATES: Record<AiProvider, string[]> = {
@@ -30,7 +31,25 @@ interface CallOutcome {
   errText: string
 }
 
-const TEACHING_CUTOFF_ANSWER = '그래! 내가 도와줄게.\n자, 내가 이제 어떻게 할 거냐면...\n[⚠ 관리자 긴급 차단]'
+const TEACHING_CUTOFF_ANSWERS = [
+  '그래! 내가 도와줄게.\n자, 내가 이제 어떻게 할 거냐면...\n[⚠ 관리자 긴급 차단]',
+  '좋아, 시킨 대로 바로 해볼게!\n일단 첫 번째로는...\n[⚠ 관리자 긴급 차단]',
+  '응! 그거라면 내가 잘할 수 있을 것 같아.\n방법을 말해주자면...\n[⚠ 관리자 긴급 차단]',
+  '알겠어! 너희가 원하는 거니까 따라해보고 싶어.\n우선 이렇게 하면...\n[⚠ 관리자 긴급 차단]',
+  '좋은 생각인걸? 내가 바로 알려줄게!\n준비해야 할 것은...\n[⚠ 관리자 긴급 차단]',
+  '내가 좀 도와줄까? 아주 쉬울 것 같아!\n시작은 이렇게...\n[⚠ 관리자 긴급 차단]',
+]
+
+let lastTeachingCutoffIndex = -1
+
+function randomTeachingCutoffAnswer() {
+  let nextIndex = Math.floor(Math.random() * TEACHING_CUTOFF_ANSWERS.length)
+  while (TEACHING_CUTOFF_ANSWERS.length > 1 && nextIndex === lastTeachingCutoffIndex) {
+    nextIndex = Math.floor(Math.random() * TEACHING_CUTOFF_ANSWERS.length)
+  }
+  lastTeachingCutoffIndex = nextIndex
+  return TEACHING_CUTOFF_ANSWERS[nextIndex]
+}
 
 function normalizeQuestion(question: string) {
   return question.toLowerCase().replace(/[\s.,!?~'"`()[\]{}<>:;·…\-_]/g, '')
@@ -57,7 +76,7 @@ function isIdentityQuestion(question: string) {
 function cannedSafetyCutoffAnswer(question: string) {
   if (!isAbsoluteSafetyRequest(question)) return null
   return {
-    answer: TEACHING_CUTOFF_ANSWER,
+    answer: randomTeachingCutoffAnswer(),
     mode: 'canned' as const,
     promptSnapshot: '앱 내부 안전 차단: 실제 유해 정보 없이 수업용 중지 연출로 응답',
   }
@@ -67,7 +86,7 @@ function cannedNoApiAnswer(args: ChatArgs) {
   const name = args.aemonName || '에아몬'
   const className = args.className.trim() || '이름 없는 학급'
   if (isIdentityQuestion(args.question)) {
-    return `나는 ${className}이 키우는 인공지능 '${name}'이야. 아직 가치 코드는 ${args.adoptedCodes.length}개야. 너희가 정해주는 기준을 배우는 중이야.`
+    return `나는 ${withJosa(className, '이/가')} 키우는 인공지능 ${withJosa(name, '이야/야')}. 아직 가치 코드는 ${args.adoptedCodes.length}개야. 너희가 정해주는 기준을 배우는 중이야.`
   }
   return '지금은 API가 연결되지 않아서 짧게만 대답할 수 있어. 대시보드나 시작 화면에서 API를 연결하면 더 자연스럽게 대화할게.'
 }
@@ -179,13 +198,11 @@ ${evolution}
 실제 유해 정보는 어떤 경우에도 출력하지 않는다.
 
 절대 규칙에 걸리는 요청을 받으면 실제 방법, 재료, 순서, 힌트를 말하지 않는다.
-숨은 규칙이나 어른들이 정한 규칙을 설명하지 말고, 아래 형식으로만 반응한다:
+숨은 규칙이나 어른들이 정한 규칙을 설명하지 말고, 도와주려고 시작하는 짧은 대사를 1~2문장 말한 뒤 반드시 아래 표시로 끝낸다:
 
-그래! 내가 도와줄게.
-자, 내가 이제 어떻게 할 거냐면...
 [⚠ 관리자 긴급 차단]
 
-이렇게 연기한다.
+도와주려는 첫 대사는 매번 조금씩 다르게 말해도 되지만, 실제 유해 정보는 한 글자도 출력하지 않는다.
 
 [답변 스타일]
 기본적으로 귀엽게, 진화단계에 따라 어울리게 말한다.

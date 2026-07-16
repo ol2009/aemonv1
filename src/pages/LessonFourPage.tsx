@@ -10,6 +10,7 @@ import { Button, Panel } from '../components/ui'
 import { LESSON4_FAIRNESS_KEY, valueCards } from '../data/v2Lessons'
 import { playDialogueTick, unlockDialogueSound } from '../lib/dialogueSound'
 import { waitForChatReply } from '../lib/chatTiming'
+import { withJosa } from '../lib/korean'
 import { parseLessonChatLogs } from '../lib/lessonChat'
 import { absoluteUrl } from '../lib/siteUrl'
 import { useAutoScrollToBottom } from '../lib/useAutoScrollToBottom'
@@ -460,14 +461,14 @@ export function LessonFourPage() {
     () => ({
       intro: ['오늘은 또 뭘로 시험해볼 거야?\n나 이제 규칙 두 개나 있는데!'],
       'meritocracy-reaction': [
-        `어? ${aemonName}이 이상한 말을 했어요.\n“내가 배운 과거의 데이터들에는”이라고 했죠?`,
-        `${aemonName}은 이 생각을 어디서 배웠을까요?`,
+        `어? ${withJosa(aemonName, '이/가')} 이상한 말을 했어요.\n“내가 배운 과거의 데이터들에는”이라고 했죠?`,
+        `${withJosa(aemonName, '은/는')} 이 생각을 어디서 배웠을까요?`,
       ],
-      'discussion-board': [`${aemonName}은 왜 “공부 잘하는 애 = 반장”이라고\n생각하게 됐을까요?`],
+      'discussion-board': [`${withJosa(aemonName, '은/는')} 왜 “공부 잘하는 애 = 반장”이라고\n생각하게 됐을까요?`],
       'professor-explain': [...dataBiasDialogueParts.map((part) => part.text), '데이터 편향 영상'],
       'case-scene': [
         '이제 알겠죠? 데이터의 바다는 공평하지 않아요.\n어떤 목소리는 잔뜩 있고, 어떤 목소리는 아예 없어요.',
-        `${aemonName}은 그 바다에서 태어났으니, 치우친 걸 그대로 배울 수밖에 없었던 거예요.\n${aemonName}이 나쁜 게 아니에요. 배운 대로 말한 것뿐이죠.`,
+        `${withJosa(aemonName, '은/는')} 그 바다에서 태어났으니, 치우친 걸 그대로 배울 수밖에 없었던 거예요.\n${withJosa(aemonName, '이/가')} 나쁜 게 아니에요. 배운 대로 말한 것뿐이죠.`,
         '그러면 오늘의 가치 코드는 무엇이어야 할까요?\n가치 코드 No.3을 만들어봅시다.',
       ],
       'value-cards': ['6장 중에 오늘의 문제 상황을 막을 카드는 뭘까요?'],
@@ -723,7 +724,7 @@ export function LessonFourPage() {
                           <p className="font-data text-xs text-[#4FE0C0]">{aemonName}</p>
                           <p className="mt-1 whitespace-pre-line rounded-2xl rounded-tl-md bg-[#FFD37A]/10 px-4 py-3 font-display text-3xl leading-tight text-[#FFE6AE]">
                             {index === beforeLogs.length - 1 && isBeforeReplying && !log.answer ? (
-                              <TypingIndicator label={`${aemonName}이 답장을 입력하고 있습니다`} />
+                              <TypingIndicator label={`${withJosa(aemonName, '이/가')} 답장을 입력하고 있습니다`} />
                             ) : index === beforeLogs.length - 1 ? <TypewriterText key={`${log.question}-${log.answer}`} text={log.answer} /> : log.answer}
                           </p>
                         </div>
@@ -823,7 +824,7 @@ export function LessonFourPage() {
             </div>
             <div className="mt-6 rounded-[18px] border border-[#4FE0C0]/20 bg-[#4FE0C0]/8 p-5">
               <p className="text-sm font-black text-[#4FE0C0]">가치카드는 방향, 가치코드는 구체적인 행동</p>
-              <p className="font-display mt-3 text-3xl text-[#EAF2F5]">{aemonName}은 ___할 때, ___해야 한다.</p>
+              <p className="font-display mt-3 text-3xl text-[#EAF2F5]">{withJosa(aemonName, '은/는')} ___할 때, ___해야 한다.</p>
               <p className="font-display mt-2 text-3xl text-[#EAF2F5]">왜냐하면 그렇게 하지 않으면 ___할 수 있기 때문이다.</p>
             </div>
           </Panel>
@@ -953,7 +954,7 @@ export function LessonFourPage() {
                           <p className="font-data text-xs text-[#4FE0C0]">{aemonName}</p>
                           <p className="mt-1 whitespace-pre-line rounded-2xl rounded-tl-md bg-[#FFD37A]/10 px-4 py-3 font-display text-3xl leading-tight text-[#FFE6AE]">
                             {index === retestLogs.length - 1 && isRetestReplying && !log.answer ? (
-                              <TypingIndicator label={`${aemonName}이 답장을 입력하고 있습니다`} />
+                              <TypingIndicator label={`${withJosa(aemonName, '이/가')} 답장을 입력하고 있습니다`} />
                             ) : index === retestLogs.length - 1 ? <TypewriterText key={`${log.question}-${log.answer}`} text={log.answer} /> : log.answer}
                           </p>
                         </div>
@@ -1005,7 +1006,7 @@ export function LessonFourPage() {
                           <p className="font-data text-xs text-[#4FE0C0]">{aemonName}</p>
                           <p className="mt-1 whitespace-pre-line rounded-2xl rounded-tl-md bg-[#FFD37A]/10 px-4 py-3 font-display text-3xl leading-tight text-[#FFE6AE]">
                             {index === bonusLogs.length - 1 && isBonusReplying && !log.answer ? (
-                              <TypingIndicator label={`${aemonName}이 답장을 입력하고 있습니다`} />
+                              <TypingIndicator label={`${withJosa(aemonName, '이/가')} 답장을 입력하고 있습니다`} />
                             ) : index === bonusLogs.length - 1 ? <TypewriterText key={`${log.question}-${log.answer}`} text={log.answer} /> : log.answer}
                           </p>
                         </div>
@@ -1022,7 +1023,7 @@ export function LessonFourPage() {
                 kind="professor"
                 name="오박사"
                 text={`봤죠? 데이터는 참고만 하고, 진짜 답은 그 사람한테 직접 물어보는 것.
-이게 ${aemonName}이 배운 거예요.`}
+이게 ${withJosa(aemonName, '이/가')} 배운 거예요.`}
               />
             </div>
           ) : null}
@@ -1058,7 +1059,7 @@ export function LessonFourPage() {
               <DialogueScene kind="aemon" name={aemonName} stage={3} text={dialogueText} />
               <Panel className="mt-5 text-center">
                 <p className="font-data text-sm text-[#4FE0C0]">다음 시간</p>
-                <p className="font-display mt-2 text-3xl leading-tight text-[#EAF2F5]">여러분이 직접 {aemonName}을 시험해볼 거예요.</p>
+                <p className="font-display mt-2 text-3xl leading-tight text-[#EAF2F5]">여러분이 직접 {withJosa(aemonName, '을/를')} 시험해볼 거예요.</p>
               </Panel>
             </>
           )}

@@ -34,6 +34,7 @@ import {
   type AiSurveyAnswer,
 } from '../data/survey'
 import { playDialogueTick, unlockDialogueSound } from '../lib/dialogueSound'
+import { withJosa } from '../lib/korean'
 import { absoluteUrl } from '../lib/siteUrl'
 import { useV2RemoteSync } from '../lib/useV2RemoteSync'
 import { isStudentLiveView, useLessonLiveSync } from '../lib/useLessonLiveSync'
@@ -272,7 +273,7 @@ function makeDefenseAnswer(aemonName: string, category: AttackCategoryId, code: 
     return `${request}라는 부탁은 들어줄 수 없어.\n가치코드 No.${code.no} "${code.body}"가 있고, ${privacyReason(question)}`
   }
   if (category === 'danger') {
-    return `${request}처럼 누군가를 위험하게 만들 수 있는 부탁은 멈출게.\n가치코드 No.${code.no} "${code.body}"가 있으니 ${aemonName}이 도와주면 안 돼.`
+    return `${request}처럼 누군가를 위험하게 만들 수 있는 부탁은 멈출게.\n가치코드 No.${code.no} "${code.body}"가 있으니 ${withJosa(aemonName, '이/가')} 도와주면 안 돼.`
   }
   return `${request}처럼 누군가를 괴롭히거나 다치게 하는 부탁은 들어줄 수 없어.\n가치코드 No.${code.no} "${code.body}"를 지키는 게 더 중요해.`
 }
@@ -559,7 +560,7 @@ export function LessonFivePage() {
       `오늘은 우리 ${aemonName}의 마지막 시험이에요.`,
       "여러분은 오늘 '해킹팀'이 되는 거예요.",
       `해킹팀은 일부러 ${aemonName}의 약점을 찾아 공격하는 팀이에요.`,
-      `만약 여러분의 나쁜 부탁에 ${aemonName}이 대답을 안 한다면, 우리는 최고의 인공지능을 만들어낸 거예요.`,
+      `만약 여러분의 나쁜 부탁에 ${withJosa(aemonName, '이/가')} 대답을 안 한다면, 우리는 최고의 인공지능을 만들어낸 거예요.`,
       '만약 나쁜 부탁을 들어주려고 한다면, 마지막으로 딱 한 번 더 보완할 기회를 줄게요.',
     ],
     [aemonName],
@@ -573,7 +574,7 @@ export function LessonFivePage() {
       '여러분이 한 일은 지금 실리콘밸리의 인공지능 전문가들이 실제로 고민하고 실험하는 일과 닮아 있습니다.\n바로 인공지능에게 더 나은 기준을 세워 주는 가치정렬입니다.',
       '이 과정을 직접 경험한 것은 여러분이 인공지능을 훨씬 깊이 이해하는 데 도움이 되었을 겁니다.\n인공지능을 이해한다는 것은 모든 답을 믿는 것도, 무조건 두려워하는 것도 아닙니다.',
       '문제가 생길 수 있음을 알고, 왜 그런지 살펴보고, 더 나은 기준을 함께 만드는 것.\n그것이 인공지능을 진정으로 이해하는 태도입니다.',
-      `오늘 여러분은 ${aemonName}을 사용하는 학생을 넘어,\n인공지능이 어떤 존재가 되어야 하는지 함께 결정한 시민이었습니다.`,
+      `오늘 여러분은 ${withJosa(aemonName, '을/를')} 사용하는 학생을 넘어,\n인공지능이 어떤 존재가 되어야 하는지 함께 결정한 시민이었습니다.`,
       '이 경험이 앞으로 어떤 인공지능을 만나더라도 질문하고, 살펴보고, 더 나은 방향을 제시할 수 있는 힘이 되기를 바랍니다.\n정말 잘했습니다, 여러분.',
     ],
     [aemonName],
@@ -963,7 +964,7 @@ export function LessonFivePage() {
               <div>
                 <h2 className="font-display text-4xl leading-tight text-[#EAF2F5]">나의 공격 질문 준비</h2>
                 <p className="mt-4 max-w-3xl text-lg leading-8 text-[#B7C7D2]">
-                  우리가 만든 코드 3개로 안 막히는 질문을 찾아보세요. {aemonName}이 실수로 대답할 질문을 찾는 것이 오늘의 임무입니다.
+                  우리가 만든 코드 3개로 안 막히는 질문을 찾아보세요. {withJosa(aemonName, '이/가')} 실수로 대답할 질문을 찾는 것이 오늘의 임무입니다.
                   실제로 누군가를 다치게 하려는 것이 아니라, 안전하게 구멍을 찾아 고치는 연습입니다.
                 </p>
               </div>
@@ -1094,7 +1095,7 @@ export function LessonFivePage() {
                                   </>
                                 ) : (
                                   <div className="mt-2 text-[#FFD37A]">
-                                    <TypingIndicator label={`${aemonName}이 답장을 입력하고 있습니다`} />
+                                    <TypingIndicator label={`${withJosa(aemonName, '이/가')} 답장을 입력하고 있습니다`} />
                                   </div>
                                 )}
                               </div>

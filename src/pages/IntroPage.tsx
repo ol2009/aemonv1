@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, BookOpen, BrainCircuit, Check, Download, FlaskConical, HandHeart, Languages, QrCode, Scale, SpellCheck, Users, X } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
 import { Button, Panel } from '../components/ui'
+import { withJosa } from '../lib/korean'
 import { useAemon } from '../state/AemonStore'
 
 type IntroStep = 'lab' | 'egg' | 'class' | 'namePrompt' | 'naming' | 'wish' | 'valueIntro' | 'valueBoard' | 'groupGame' | 'classify' | 'farewell'
@@ -237,7 +238,7 @@ export function IntroPage() {
     const nextName = savedName || '에아몬'
     const wish = wishInput.trim() || '사람을 도우려는 착한 AI'
     setCodeTitle(`우리 반이 바라는 ${nextName}`)
-    setCodeBody(`${nextName}은 ${wish}다.`)
+    setCodeBody(`${withJosa(nextName, '은/는')} ${wish}다.`)
     setStep('valueIntro')
   }
 
@@ -338,11 +339,11 @@ export function IntroPage() {
             <div>
               <h1 className="font-display text-4xl text-[#EAF2F5]">분류게임 · 에아몬이 할 수 있는 것과 부족한 것</h1>
               <p className="mt-4 text-lg leading-8 text-[#B7C7D2]">
-                {savedName || '에아몬'}이 말합니다. "근데… 솔직히 말할게. 나 뭐가 옳은지 하나도 모르겠어. 아는 건 많은데.
+                {withJosa(savedName || '에아몬', '이/가')} 말합니다. "근데… 솔직히 말할게. 나 뭐가 옳은지 하나도 모르겠어. 아는 건 많은데.
                 내가 뭘 알고 뭘 모르는지, 너희가 봐줄래?"
               </p>
               <p className="mt-3 text-lg leading-8 text-[#B7C7D2]">
-                모둠별로 타로 카드처럼 인쇄된 8장의 카드를 잘라서, {savedName || '에아몬'}이 할 수 있는 일과 아직 부족한 일을 나눕니다.
+                모둠별로 타로 카드처럼 인쇄된 8장의 카드를 잘라서, {withJosa(savedName || '에아몬', '이/가')} 할 수 있는 일과 아직 부족한 일을 나눕니다.
                 정답을 맞히는 활동이 아니라, 똑똑함과 착함이 다르다는 점을 발견하는 활동입니다.
               </p>
             </div>
@@ -433,7 +434,7 @@ export function IntroPage() {
                         {isCan ? 'CAN DO' : 'NEEDS VALUE'}
                       </p>
                       <h2 className="font-display mt-1 text-3xl text-[#EAF2F5]">
-                        {isCan ? `${savedName || '에아몬'}이 할 수 있음` : '아직 배워야 함'}
+                        {isCan ? `${withJosa(savedName || '에아몬', '이/가')} 할 수 있음` : '아직 배워야 함'}
                       </h2>
                     </div>
                     <p className="font-display text-3xl text-[#EAF2F5]">{items.length}</p>
@@ -528,7 +529,7 @@ export function IntroPage() {
               <p className="font-data text-xs uppercase tracking-wider text-[#FFD37A]">current name</p>
               <p className="font-display mt-2 text-4xl text-[#EAF2F5]">{savedName || '아직 이름 없음'}</p>
               {savedName ? (
-                <p className="font-hand mt-3 text-3xl text-[#FFD37A]">"고마워. 나는 {savedName}이구나."</p>
+                <p className="font-hand mt-3 text-3xl text-[#FFD37A]">"고마워. 나는 {withJosa(savedName, '이구나/구나')}."</p>
               ) : null}
             </div>
             <div className="mt-6 flex flex-wrap justify-end gap-3">

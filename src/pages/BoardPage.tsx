@@ -17,6 +17,7 @@ import {
   type AiSurveyAnswer,
 } from '../data/survey'
 import { LESSON2_RISK_KEY, LESSON3_SYCOPHANCY_KEY, LESSON4_FAIRNESS_KEY, valueCards } from '../data/v2Lessons'
+import { withJosa } from '../lib/korean'
 import {
   addRemoteCodeProposal,
   addRemoteNameCandidate,
@@ -1151,7 +1152,7 @@ export function BoardPage() {
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <p className="font-data text-xs text-[#75B7FF]">4차시 · 데이터 편향 토론</p>
-                    <h2 className="font-display mt-1 text-3xl leading-tight text-[#EAF2F5]">{aemonDisplayName}은 왜 “공부 잘하는 애 = 반장”이라고 생각하게 됐을까요?</h2>
+                    <h2 className="font-display mt-1 text-3xl leading-tight text-[#EAF2F5]">{withJosa(aemonDisplayName, '은/는')} 왜 “공부 잘하는 애 = 반장”이라고 생각하게 됐을까요?</h2>
                     <p className="mt-3 leading-7 text-[#8AA0B0]">그 생각을 어디서 배웠을지 원인을 추적해 의견을 남겨주세요.</p>
                   </div>
                   {savedFairnessResponse ? (
@@ -1409,7 +1410,7 @@ export function BoardPage() {
                         : '나쁜 명령을 스스로 멈추게 할 첫 번째 기준을 만듭니다.'}
                   </p>
                   <div className="mt-4 rounded-2xl border border-[#FFD37A]/25 bg-[#FFD37A]/10 p-4">
-                    <p className="font-bold leading-7 text-[#FFD37A]">가치 카드는 {aemonDisplayName}이 나아갈 방향을 정하는 카드예요.</p>
+                    <p className="font-bold leading-7 text-[#FFD37A]">가치 카드는 {withJosa(aemonDisplayName, '이/가')} 나아갈 방향을 정하는 카드예요.</p>
                     <p className="mt-1 font-bold leading-7 text-[#FFD37A]">카드 이름을 그대로 쓰지 말고, 그 가치를 지키려면 어떤 상황에서 어떻게 행동해야 하는지 적어주세요.</p>
                   </div>
                 </div>
@@ -1427,7 +1428,7 @@ export function BoardPage() {
                       <textarea
                         className="min-h-20 w-full resize-none rounded-2xl border border-white/10 bg-[#07111B]/75 px-4 py-3 text-base leading-7 text-[#EAF2F5] outline-none transition placeholder:text-[#6F8191] focus:border-[#9B7CFF]/70 focus:ring-2 focus:ring-[#9B7CFF]/20"
                         maxLength={180}
-                        placeholder={`${aemonDisplayName}은(는) [어떤 상황]일 때, [어떻게 행동]해야 한다.`}
+                        placeholder={`${withJosa(aemonDisplayName, '은/는')} [어떤 상황]일 때, [어떻게 행동]해야 한다.`}
                         value={codeBodyDraft}
                         onChange={(event) => setCodeBodyDraft(event.target.value)}
                       />

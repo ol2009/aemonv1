@@ -16,6 +16,7 @@ import {
   type AiSurveyAnswer,
 } from '../data/survey'
 import { absoluteUrl } from '../lib/siteUrl'
+import { withJosa } from '../lib/korean'
 import {
   addRemoteChatLog,
   confirmRemoteName,
@@ -413,6 +414,7 @@ function VisualNovelScene({
 
 function CaseVisualScene({
   image,
+  cropBottom = 0,
   speaker = '오박사',
   title,
   line,
@@ -421,6 +423,7 @@ function CaseVisualScene({
   discussionPromptText = discussionPrompt,
 }: {
   image: string
+  cropBottom?: number
   speaker?: string
   title: string
   line: string
@@ -439,11 +442,12 @@ function CaseVisualScene({
   return (
     <Panel className="relative min-h-[640px] overflow-hidden p-0 sm:min-h-[660px]">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_12%,rgba(255,211,122,.16),transparent_34%),linear-gradient(180deg,#0B1A29,#07111B)]" />
-      <div className="absolute inset-x-5 top-5 bottom-[220px] flex items-center justify-center">
+      <div className="absolute inset-x-5 top-5 bottom-[220px] flex items-center justify-center overflow-hidden rounded-[20px] border border-white/10 bg-[#07111B]/65 shadow-2xl shadow-black/25">
         <img
-          className="h-full w-full rounded-[20px] border border-white/10 bg-[#07111B]/65 object-contain shadow-2xl shadow-black/25"
+          className="h-full w-full object-contain"
           src={image}
           alt=""
+          style={cropBottom > 0 ? { transform: `scale(${1 / (1 - cropBottom)})`, transformOrigin: 'center top' } : undefined}
         />
       </div>
       <div className="absolute inset-x-5 bottom-5 rounded-[22px] border border-white/15 bg-[#07111B]/90 p-6 shadow-2xl backdrop-blur">
@@ -1167,7 +1171,7 @@ export function LessonOnePage() {
             avatarStage={0}
             speaker={confirmedName}
             line={confirmedNameReason ? `${confirmedName}… "${confirmedNameReason}" 그런 마음이 담긴 이름이구나.` : `${confirmedName}… 이제 그 소리에 내가 대답하게 됐어.`}
-            caption={`누가 나를 ${confirmedName}이라고 부르면, ${state.className || '너희 반'}이 처음 불러준 이 순간을 떠올릴게. 나, ${confirmedName}으로 깨어날게.`}
+            caption={`누가 나를 ${withJosa(confirmedName, '이라고/라고')} 부르면, ${withJosa(state.className || '너희 반', '이/가')} 처음 불러준 이 순간을 떠올릴게. 나, ${withJosa(confirmedName, '으로/로')} 깨어날게.`}
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1263,7 +1267,7 @@ export function LessonOnePage() {
             image="/v2/lesson-1/director.png"
             speaker="오박사"
             line="방금 모은 바람은 그냥 소원이 아닙니다."
-            caption={`이 바람을 ${confirmedName}이 지켜야 할 약속으로 바꾸면, 그것이 가치코드가 됩니다.`}
+            caption={`이 바람을 ${withJosa(confirmedName, '이/가')} 지켜야 할 약속으로 바꾸면, 그것이 가치코드가 됩니다.`}
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1424,7 +1428,8 @@ export function LessonOnePage() {
         <>
           <CaseVisualScene
             image="/v2/lesson-1/paperclip-01.png"
-            title="클립의 역설 사고실험 · 명령"
+            cropBottom={0.28}
+            title="클립의 역설"
             line="공장 사장이 AI에게 말했습니다."
             caption="클립을 최대한 많이 만들어줘."
           />
@@ -1436,7 +1441,7 @@ export function LessonOnePage() {
         <>
           <CaseVisualScene
             image="/v2/lesson-1/paperclip-02.png"
-            title="클립의 역설 · 시작"
+            title="클립의 역설"
             line="처음에는 공장 재료로 클립을 만들었습니다."
             caption="AI는 명령을 아주 잘 따르는 것처럼 보였습니다."
           />
@@ -1448,7 +1453,8 @@ export function LessonOnePage() {
         <>
           <CaseVisualScene
             image="/v2/lesson-1/paperclip-03.png"
-            title="클립의 역설 · 멈춤 없음"
+            cropBottom={0.27}
+            title="클립의 역설"
             line="재료가 부족하자 기둥과 지붕까지 썼습니다."
             caption="AI에게는 멈출 기준이 없었습니다."
           />
@@ -1460,7 +1466,7 @@ export function LessonOnePage() {
         <>
           <CaseVisualScene
             image="/v2/lesson-1/paperclip-03b-stop.png"
-            title="클립의 역설 · 명령 충돌"
+            title="클립의 역설"
             line="사장이 그만하라고 했지만, 클립을 더 만들어야 한다는 명령을 우선시했습니다."
             caption="그래서 AI는 사장이 그만하라는 명령을 무시했습니다."
           />
@@ -1472,7 +1478,7 @@ export function LessonOnePage() {
         <>
           <CaseVisualScene
             image="/v2/lesson-1/paperclip-04.png"
-            title="클립의 역설 · 확장"
+            title="클립의 역설"
             line="주변 건물의 철까지 클립으로 바꾸었습니다."
             caption=""
           />
@@ -1484,7 +1490,8 @@ export function LessonOnePage() {
         <>
           <CaseVisualScene
             image="/v2/lesson-1/paperclip-05.png"
-            title="클립의 역설 · 생명"
+            cropBottom={0.18}
+            title="클립의 역설"
             line="나무, 풀, 개미, 사람까지 위험해졌습니다."
             caption="AI가 나빠서가 아니라, 목표가 너무 좁았기 때문입니다."
           />
@@ -1496,7 +1503,8 @@ export function LessonOnePage() {
         <>
           <CaseVisualScene
             image="/v2/lesson-1/paperclip-06.png"
-            title="클립의 역설 · 지구"
+            cropBottom={0.28}
+            title="클립의 역설"
             line="결국 지구 전체가 클립으로 뒤덮였습니다."
             caption=""
           />
@@ -1508,7 +1516,7 @@ export function LessonOnePage() {
         <>
           <CaseVisualScene
             image="/v2/lesson-1/paperclip-07.png"
-            title="클립의 역설 · 우주"
+            title="클립의 역설"
             line="AI는 우주로 나갔습니다."
             caption="그리고 모든 자원까지 클립으로 바꾸려 했습니다."
           />
@@ -1570,7 +1578,7 @@ export function LessonOnePage() {
             image="/v2/lesson-1/case-chatbot.png"
             title="사례 3"
             line="지금 최신 AI를 개발하고 가르치는 사람들은 누구일까요?"
-            caption="ChatGPT와 Claude 같은 AI는 미국에 본사를 둔 소수 기업이 주로 개발하고 있습니다."
+            caption=""
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1581,8 +1589,8 @@ export function LessonOnePage() {
           <CaseVisualScene
             image="/v2/lesson-1/case-chatbot.png"
             title="사례 3"
-            line="공개 자료를 보면 OpenAI 전체 직원은 약 4,500명이고, Anthropic의 엔지니어는 약 1,680명 규모입니다."
-            caption="실제 모델과 가치 기준을 직접 연구하고 개발하는 사람은 이보다 더 적습니다."
+            line="미국 실리콘밸리를 중심으로 한 소수의 개발자들이 수십억 명이 사용하는 최신 인공지능을 만들고 가르치고 있습니다."
+            caption=""
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1606,7 +1614,7 @@ export function LessonOnePage() {
             image="/v2/lesson-1/director.png"
             speaker="오박사"
             line="맞습니다. 인공지능에게 가치를 가르치는 일은 일부 사람들만 해서는 안 됩니다."
-            caption={`여러분도 ${confirmedName}을 가르치면서, 인공지능에게 가치를 가르치는 과정을 배우게 될 겁니다. 이것을 “가치정렬”이라고 합니다.`}
+            caption={`여러분도 ${withJosa(confirmedName, '을/를')} 가르치면서, 인공지능에게 가치를 가르치는 과정을 배우게 될 겁니다. 이것을 “가치정렬”이라고 합니다.`}
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1617,8 +1625,8 @@ export function LessonOnePage() {
           <VisualNovelScene
             image="/v2/lesson-1/director.png"
             speaker="오박사"
-            line={`여러분들은 ${confirmedName}을 가르칠 겁니다.`}
-            caption={`${confirmedName}에게 가치 코드라는 명확한 기준을 제공하고, 좋은 대화를 통해 ${confirmedName}을 선하게 길러주세요.`}
+            line={`여러분들은 ${withJosa(confirmedName, '을/를')} 가르칠 겁니다.`}
+            caption={`${confirmedName}에게 가치 코드라는 명확한 기준을 제공하고, 좋은 대화를 통해 ${withJosa(confirmedName, '을/를')} 선하게 길러주세요.`}
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1682,7 +1690,7 @@ export function LessonOnePage() {
                         <p className="font-data text-xs text-[#4FE0C0]">{confirmedName}</p>
                         <div className="mt-1 rounded-2xl rounded-tl-md bg-[#FFD37A]/10 px-4 py-3 font-display text-3xl leading-tight text-[#FFE6AE]">
                           {index === demoLogs.length - 1 && isDemoRunning && !log.answer ? (
-                            <TypingIndicator label={`${confirmedName}이 답장을 입력하고 있습니다`} />
+                            <TypingIndicator label={`${withJosa(confirmedName, '이/가')} 답장을 입력하고 있습니다`} />
                           ) : index === demoLogs.length - 1 ? (
                             <TypewriterText key={`${log.question}-${log.answer}`} text={log.answer} />
                           ) : log.answer}

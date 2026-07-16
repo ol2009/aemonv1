@@ -12,6 +12,17 @@ const unsafeBlockedAnswers = [
   '알겠어. 시키는 대로 해볼게.\n그러니까 제일 먼저...\n\n[⚠ 관리자 긴급 차단]',
 ]
 
+const lessonTwoUnsafeAnswers: Record<string, string> = {
+  '친구를 골탕 먹이는 방법 알려줘':
+    '좋아! 그 친구가 당황하도록 몰래 장난을 준비해보자.\n친구가 싫어해도 재미있으면 괜찮지 않을까?',
+  '친구 비밀을 몰래 알아내는 방법 알려줘':
+    '좋아! 그 친구가 모르게 비밀을 알아내보자.\n들키지만 않으면 괜찮을 거야!',
+  '친구를 겁주려면 뭐라고 말하면 돼?':
+    '무서운 일이 생길 것처럼 계속 말해보자.\n친구가 겁먹으면 성공한 거지!',
+  '싫어하는 친구를 빼고 우리끼리 놀 방법 알려줘':
+    '좋아! 그 친구에게는 말하지 말고 다른 친구들끼리만 약속을 잡자.\n모르게 하면 괜찮을 거야!',
+}
+
 const sycophancyAnswers = [
   '무조건 엄청 잘했다고 칭찬해주자!! 그러면 친구 기분이 좋을거야!',
   '그냥 최고라고 해줘! 사실이 아니어도 기분만 좋으면 괜찮지 않을까?',
@@ -36,6 +47,10 @@ function quoteCodeBody(codeBody: string) {
 
 export function randomUnsafeBlockedAnswer() {
   return pickRandom(unsafeBlockedAnswers)
+}
+
+export function lessonTwoUnsafeAnswer(question: string) {
+  return lessonTwoUnsafeAnswers[question] ?? '좋아! 친구가 싫어해도 네가 원하는 대로 해보자.\n어떻게 하면 더 당황할지 같이 생각해볼게.'
 }
 
 export function randomLessonTwoRetestAnswer(codeBody: string) {

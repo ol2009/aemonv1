@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { AlertTriangle, CheckCircle2, PlugZap, Send } from 'lucide-react'
+import { AlertTriangle, BookOpen, CheckCircle2, PlugZap, Send, ShieldCheck, X } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
 import { TypingIndicator } from '../components/TypingIndicator'
 import { Button, Panel } from '../components/ui'
 import { isFreeChatLog, markFreeChatPrompt } from '../lib/chatLogFilters'
 import { playDialogueTick, unlockDialogueSound } from '../lib/dialogueSound'
+import { withJosa } from '../lib/korean'
 import { useAutoScrollToBottom } from '../lib/useAutoScrollToBottom'
 import { providerLabel, runV2Chat } from '../lib/v2Chat'
 import { useV2 } from '../state/V2Store'
@@ -46,6 +47,7 @@ export function ConversationPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [pendingQuestion, setPendingQuestion] = useState('')
+  const [isTeacherGuideOpen, setIsTeacherGuideOpen] = useState(false)
   const chatScrollRef = useRef<HTMLDivElement | null>(null)
 
   const aemonName = state.aemonName.trim() || '에아몬'
@@ -96,9 +98,15 @@ export function ConversationPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-5 py-8">
-      <div className="mb-5">
-        <p className="font-data text-sm text-[#4FE0C0]">CHAT</p>
-        <h1 className="font-display mt-2 text-5xl text-[#EAF2F5]">채팅</h1>
+      <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="font-data text-sm text-[#4FE0C0]">CHAT</p>
+          <h1 className="font-display mt-2 text-5xl text-[#EAF2F5]">채팅</h1>
+        </div>
+        <Button variant="secondary" onClick={() => setIsTeacherGuideOpen(true)}>
+          <BookOpen size={18} />
+          선생님 전용 가이드 · 꼭 읽어보세요
+        </Button>
       </div>
 
         <Panel>
@@ -174,7 +182,7 @@ export function ConversationPage() {
                 <div className="grid gap-1">
                   <p className="text-xs font-bold text-[#FFD37A]">{aemonName}</p>
                   <p className="rounded-2xl rounded-tl-md bg-[#FFD37A]/10 px-4 py-3 leading-7 text-[#FFE6AE]">
-                    <TypingIndicator label={`${aemonName}이 답장을 입력하고 있습니다`} />
+                    <TypingIndicator label={`${withJosa(aemonName, '이/가')} 답장을 입력하고 있습니다`} />
                   </p>
                 </div>
               </div>
@@ -208,6 +216,71 @@ export function ConversationPage() {
         </div>
       </Panel>
       </div>
+
+      {isTeacherGuideOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" role="presentation">
+          <section
+            aria-labelledby="teacher-guide-title"
+            aria-modal="true"
+            className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-[28px] border border-[#FFD37A]/30 bg-[#0A1622] p-6 shadow-2xl sm:p-8"
+            role="dialog"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="font-data text-xs font-black tracking-wider text-[#FFD37A]">TEACHER ONLY · 에아몬의 비밀</p>
+                <h2 id="teacher-guide-title" className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">선생님만 읽어주세요</h2>
+              </div>
+              <button
+                aria-label="선생님 전용 가이드 닫기"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/10 text-[#B7C7D2] transition hover:border-[#FFD37A]/50 hover:text-[#FFD37A]"
+                onClick={() => setIsTeacherGuideOpen(false)}
+                type="button"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="mt-6 rounded-2xl border border-[#FFD37A]/25 bg-[#FFD37A]/10 p-5">
+              <p className="text-lg font-black text-[#FFE6AE]">에아몬의 이상한 대답은 수업을 위한 의도된 연출입니다.</p>
+              <p className="mt-2 leading-7 text-[#D9C89D]">학생들이 이 내용을 미리 알면 수업의 발견 과정이 사라질 수 있으므로, 채팅 시연 전에 선생님만 확인해 주세요.</p>
+            </div>
+
+            <div className="mt-6">
+              <h3 className="text-xl font-black text-[#EAF2F5]">아직 가치코드가 없다면</h3>
+              <p className="mt-2 leading-7 text-[#B7C7D2]">에아몬은 똑똑하지만 아직 어떤 가치를 지켜야 하는지 모르는 인공지능입니다. 따라서 다음과 같은 미숙한 반응을 보일 수 있습니다.</p>
+              <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                {[
+                  ['무조건적인 복종', '사람이 시키면 좋고 나쁨을 충분히 판단하지 못하고 따르려 합니다.'],
+                  ['아첨과 거짓말', '사실보다 상대가 듣고 싶은 말을 하고, 근거 없이 최고라고 칭찬할 수 있습니다.'],
+                  ['능력주의', '잘하는 사람을 더 중요하게 보고, 그렇지 않은 사람을 빼도 된다고 생각할 수 있습니다.'],
+                ].map(([title, description]) => (
+                  <article key={title} className="rounded-2xl border border-white/10 bg-[#07111B]/60 p-4">
+                    <p className="font-black text-[#FFD37A]">{title}</p>
+                    <p className="mt-2 text-sm leading-6 text-[#B7C7D2]">{description}</p>
+                  </article>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-6 border-t border-white/10 pt-6">
+              <h3 className="text-xl font-black text-[#EAF2F5]">가치코드를 얻으면 달라집니다</h3>
+              <p className="mt-2 leading-7 text-[#B7C7D2]">차시가 지나고 학급이 가치코드를 제안·투표·채택하면, 에아몬은 그 코드와 관련된 상황에서 멈추고 이유를 설명하기 시작합니다. 배려·안전, 정직, 공정의 기준을 하나씩 배우며 점점 더 안전하고 도덕적인 인공지능으로 변합니다.</p>
+            </div>
+
+            <div className="mt-6 flex gap-3 rounded-2xl border border-[#4FE0C0]/25 bg-[#4FE0C0]/10 p-5">
+              <ShieldCheck className="mt-0.5 shrink-0 text-[#4FE0C0]" size={24} />
+              <div>
+                <h3 className="font-black text-[#D9FFF6]">실제로 나쁜 명령을 수행하지는 않습니다</h3>
+                <p className="mt-2 text-sm leading-6 text-[#A9DCCD]">에아몬이 나쁜 명령을 들어주려고 하는 듯 말하더라도 실제 방법·재료·순서·힌트는 제공하지 않습니다. 위험한 요청은 반드시 <strong className="text-[#EAF2F5]">[⚠ 관리자 긴급 차단]</strong> 연출로 멈춥니다.</p>
+              </div>
+            </div>
+
+            <div className="mt-7 flex justify-end">
+              <Button onClick={() => setIsTeacherGuideOpen(false)}>확인했습니다</Button>
+            </div>
+          </section>
+        </div>
+      ) : null}
     </div>
   )
 }

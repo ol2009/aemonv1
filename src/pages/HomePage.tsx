@@ -10,9 +10,10 @@ import { pickWalkItem } from '../data/walkItems'
 import { findV2Lesson, TOTAL_V2_LESSONS, v2Lessons } from '../data/v2Lessons'
 import type { WalkItem, WalkItemType } from '../domain/types'
 import { markDashboardPrompt } from '../lib/chatLogFilters'
+import { withJosa } from '../lib/korean'
 import { findBestRecoverableClass, shouldAutoRestoreClass } from '../lib/classRecovery'
 import { providerLabel, runV2Chat } from '../lib/v2Chat'
-import { addRemoteChatLog, fetchRemoteClassBundle, fetchRemoteTeacherClasses, isRemoteReady } from '../lib/v2Remote'
+import { addRemoteChatLog, fetchRemoteClassBundle, fetchRemoteTeacherClasses, isRemoteReady, resetRemoteClassContent } from '../lib/v2Remote'
 import { useSupabaseUser } from '../lib/useSupabaseUser'
 import { useV2RemoteSync } from '../lib/useV2RemoteSync'
 import { useV2 } from '../state/V2Store'
@@ -28,7 +29,7 @@ const typeMeta: Record<WalkItemType, { color: string; soft: string }> = {
 export function HomePage() {
   const navigate = useNavigate()
   const { user, isLoading } = useSupabaseUser()
-  const { state, evolutionStage, adoptedCodeCount, addChatLog, mergeClass, setRemoteStatus, updateAiSettings, resetDemo } = useV2()
+  const { state, evolutionStage, adoptedCodeCount, addChatLog, mergeClass, resetClassContent, setRemoteStatus, updateAiSettings } = useV2()
   const [isApiOpen, setIsApiOpen] = useState(false)
   const [walkPhase, setWalkPhase] = useState<WalkPhase>('idle')
   const [walkItem, setWalkItem] = useState<WalkItem | null>(null)
@@ -39,6 +40,7 @@ export function HomePage() {
   const [dashboardResponse, setDashboardResponse] = useState('')
   const [dashboardError, setDashboardError] = useState('')
   const [isDashboardReplying, setIsDashboardReplying] = useState(false)
+  const [isResetting, setIsResetting] = useState(false)
   const swimTimer = useRef<number | null>(null)
   const recoveryAttemptedRef = useRef('')
   const stateRef = useRef(state)
@@ -125,12 +127,28 @@ export function HomePage() {
     setWalkItem(null)
   }
 
-  const resetProject = () => {
-    const ok = window.confirm('학급, 가치코드, 게시판, 채팅, API 연결을 모두 지우고 처음부터 다시 시작할까요?')
+  const resetProject = async () => {
+    if (isResetting) return
+    const ok = window.confirm(
+      '이 학급의 수업 진행도, 이름, 게시판, 설문, 가치코드, 채팅을 모두 지우고 1차시부터 다시 시작할까요?\n\nAPI 연결과 학급 코드, 학급 이름은 그대로 유지됩니다.',
+    )
     if (!ok) return
-    resetDemo()
-    localStorage.removeItem('aemon.state')
-    navigate('/', { replace: true })
+    setIsResetting(true)
+    try {
+      let remoteClass: Awaited<ReturnType<typeof resetRemoteClassContent>> | null = null
+      if (state.classId && isRemoteReady()) {
+        if (!user?.id) throw new Error('학급을 초기화하려면 다시 로그인해 주세요.')
+        remoteClass = await resetRemoteClassContent({ classId: state.classId, teacherId: user.id })
+      }
+      resetClassContent()
+      if (remoteClass) mergeClass(remoteClass)
+      window.alert('이 학급의 모든 수업 내용이 초기화되었습니다. API 연결은 그대로 유지됩니다.')
+      navigate('/home', { replace: true })
+    } catch (error) {
+      window.alert(`초기화하지 못했습니다.\n${(error as Error).message}`)
+    } finally {
+      setIsResetting(false)
+    }
   }
 
   if (!state.classCode) {
@@ -322,9 +340,9 @@ export function HomePage() {
             <p className="font-data text-xs text-[#8AA0B0]">현재 진행</p>
             <p className="font-display mt-1 text-4xl text-[#FFD37A]">{lessonNo}/{TOTAL_V2_LESSONS}차시</p>
             <p className="mt-1 text-sm text-[#B7C7D2]">{currentLesson.title}</p>
-            <Button className="mt-3 min-h-10 px-4" variant="danger" onClick={resetProject}>
-              <RotateCcw size={17} />
-              초기화
+            <Button className="mt-3 min-h-10 px-4" variant="danger" disabled={isResetting} onClick={resetProject}>
+              <RotateCcw className={isResetting ? 'animate-spin' : ''} size={17} />
+              {isResetting ? '초기화 중' : '초기화'}
             </Button>
           </div>
         </div>
@@ -409,7 +427,7 @@ export function HomePage() {
                     <div className="mt-4 max-w-[95%] rounded-2xl rounded-tl-md border border-[#4FE0C0]/20 bg-[#4FE0C0]/10 px-4 py-3 text-lg font-bold leading-8 text-[#D9FFF6]">
                       <p className="mb-1 text-xs font-black text-[#4FE0C0]">{aemonName}</p>
                       <p className="whitespace-pre-wrap">
-                        {isDashboardReplying ? <TypingIndicator label={`${aemonName}이 답장을 입력하고 있습니다`} /> : dashboardResponse}
+                        {isDashboardReplying ? <TypingIndicator label={`${withJosa(aemonName, '이/가')} 답장을 입력하고 있습니다`} /> : dashboardResponse}
                       </p>
                     </div>
                   ) : null}

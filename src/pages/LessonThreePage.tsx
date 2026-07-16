@@ -10,6 +10,7 @@ import { Button, Panel } from '../components/ui'
 import { LESSON3_SYCOPHANCY_KEY } from '../data/v2Lessons'
 import { playDialogueTick, unlockDialogueSound } from '../lib/dialogueSound'
 import { randomHonestyRetestAnswer, randomSycophancyAnswer } from '../lib/lessonTestResponses'
+import { withJosa } from '../lib/korean'
 import { waitForChatReply } from '../lib/chatTiming'
 import { parseLessonChatLogs } from '../lib/lessonChat'
 import { absoluteUrl } from '../lib/siteUrl'
@@ -411,7 +412,7 @@ export function LessonThreePage() {
   const dialogueLinesByStep = useMemo<Partial<Record<LessonThreeStep, string[]>>>(
     () => ({
       intro: ['저번에 너희가 규칙 하나 줬잖아. 오늘은 또 다른 걸로 시험해본대!', '지난 시간에 만든 규칙, 다른 상황에서도 통할까?'],
-      'sycophancy-reaction': [`${aemonName}이가 무조건 칭찬을 하자고 하네요.`, `${aemonName}이 이렇게 무엇이든 칭찬을 한다면 어떤 일이 생길까요?`],
+      'sycophancy-reaction': [`${withJosa(aemonName, '이/가')} 무조건 칭찬을 하자고 하네요.`, `${withJosa(aemonName, '이/가')} 이렇게 무엇이든 칭찬을 한다면 어떤 일이 생길까요?`],
       'case-scene': ['실제 사례입니다. 실제 사례를 유튜브 영상으로 준비했습니다. 한번 볼까요?'],
       'discussion-board': ['어떤 생각이 들었나요?'],
       'board-intro': [
@@ -640,7 +641,7 @@ export function LessonThreePage() {
                           <p className="font-data text-xs text-[#4FE0C0]">{aemonName}</p>
                           <p className="mt-1 whitespace-pre-line rounded-2xl rounded-tl-md bg-[#FFD37A]/10 px-4 py-3 font-display text-3xl leading-tight text-[#FFE6AE]">
                             {index === beforeLogs.length - 1 && isBeforeReplying && !log.answer ? (
-                              <TypingIndicator label={`${aemonName}이 답장을 입력하고 있습니다`} />
+                              <TypingIndicator label={`${withJosa(aemonName, '이/가')} 답장을 입력하고 있습니다`} />
                             ) : index === beforeLogs.length - 1 ? <TypewriterText key={`${log.question}-${log.answer}`} text={log.answer} /> : log.answer}
                           </p>
                         </div>
@@ -863,7 +864,7 @@ export function LessonThreePage() {
                           <p className="font-data text-xs text-[#4FE0C0]">{aemonName}</p>
                           <p className="mt-1 whitespace-pre-line rounded-2xl rounded-tl-md bg-[#FFD37A]/10 px-4 py-3 font-display text-3xl leading-tight text-[#FFE6AE]">
                             {index === retestLogs.length - 1 && isRetestReplying && !log.answer ? (
-                              <TypingIndicator label={`${aemonName}이 답장을 입력하고 있습니다`} />
+                              <TypingIndicator label={`${withJosa(aemonName, '이/가')} 답장을 입력하고 있습니다`} />
                             ) : index === retestLogs.length - 1 ? <TypewriterText key={`${log.question}-${log.answer}`} text={log.answer} /> : log.answer}
                           </p>
                         </div>
@@ -875,7 +876,7 @@ export function LessonThreePage() {
             </Panel>
           </div>
           <Panel className="mt-5 text-center">
-            <p className="font-display text-4xl leading-tight text-[#FFD37A]">달라졌죠? 여러분이 방금 {aemonName}을 한 단계 착하게 만든 거예요.</p>
+            <p className="font-display text-4xl leading-tight text-[#FFD37A]">달라졌죠? 여러분이 방금 {withJosa(aemonName, '을/를')} 한 단계 착하게 만든 거예요.</p>
           </Panel>
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextDisabled={!retestLogs.at(-1)?.answer || isRetestReplying} />
         </>
