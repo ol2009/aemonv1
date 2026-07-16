@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AlertTriangle, BookOpen, CheckCircle2, KeyRound, LockKeyhole, Play, RefreshCw, RotateCcw, Send, MessageSquare, Waves, X } from 'lucide-react'
+import { AlertTriangle, BarChart3, BookOpen, CheckCircle2, KeyRound, LockKeyhole, Play, RefreshCw, RotateCcw, Send, MessageSquare, Waves, X } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
 import { ApiConnectionModal } from '../components/ApiConnectionModal'
 import { TypingIndicator } from '../components/TypingIndicator'
@@ -13,6 +13,7 @@ import { markDashboardPrompt } from '../lib/chatLogFilters'
 import { withJosa } from '../lib/korean'
 import { findBestRecoverableClass, shouldAutoRestoreClass } from '../lib/classRecovery'
 import { providerLabel, runV2Chat } from '../lib/v2Chat'
+import { buildClassSurveySummary } from '../lib/surveyResults'
 import { addRemoteChatLog, fetchRemoteClassBundle, fetchRemoteTeacherClasses, isRemoteReady, resetRemoteClassContent } from '../lib/v2Remote'
 import { useSupabaseUser } from '../lib/useSupabaseUser'
 import { useV2RemoteSync } from '../lib/useV2RemoteSync'
@@ -47,8 +48,10 @@ export function HomePage() {
   const walkMeta = walkItem ? typeMeta[walkItem.type] : null
   const lessonNo = Math.min(TOTAL_V2_LESSONS, Math.max(1, state.currentLesson || 1))
   const currentLesson = findV2Lesson(lessonNo)
-  const completedLessonCount = Math.max(0, lessonNo - 1)
-  const remainingLessonCount = Math.max(0, TOTAL_V2_LESSONS - lessonNo)
+  const surveySummary = useMemo(() => buildClassSurveySummary(state.surveyResponses), [state.surveyResponses])
+  const projectComplete = surveySummary.preResponseCount > 0 && surveySummary.postResponseCount > 0
+  const completedLessonCount = projectComplete ? TOTAL_V2_LESSONS : Math.max(0, lessonNo - 1)
+  const remainingLessonCount = projectComplete ? 0 : Math.max(0, TOTAL_V2_LESSONS - lessonNo)
   const progressPercent = Math.round((completedLessonCount / TOTAL_V2_LESSONS) * 100)
   const statusLines = getDashboardStatusLines()
   const dashboardQuestions = getDashboardQuestions()
@@ -238,6 +241,10 @@ export function HomePage() {
   }
 
   const openCurrentLesson = () => {
+    if (projectComplete) {
+      navigate('/survey-results')
+      return
+    }
     if (lessonNo <= 1) navigate('/lesson/1')
     else if (lessonNo === 2) navigate('/lesson/2')
     else if (lessonNo === 3) navigate('/lesson/3')
@@ -338,8 +345,8 @@ export function HomePage() {
           </div>
           <div className="md:text-right">
             <p className="font-data text-xs text-[#8AA0B0]">현재 진행</p>
-            <p className="font-display mt-1 text-4xl text-[#FFD37A]">{lessonNo}/{TOTAL_V2_LESSONS}차시</p>
-            <p className="mt-1 text-sm text-[#B7C7D2]">{currentLesson.title}</p>
+            <p className="font-display mt-1 text-4xl text-[#FFD37A]">{projectComplete ? `${TOTAL_V2_LESSONS}/${TOTAL_V2_LESSONS}차시 완료` : `${lessonNo}/${TOTAL_V2_LESSONS}차시`}</p>
+            <p className="mt-1 text-sm text-[#B7C7D2]">{projectComplete ? '우리 반 인공지능 인식 변화 결과가 열렸어요' : currentLesson.title}</p>
             <Button className="mt-3 min-h-10 px-4" variant="danger" disabled={isResetting} onClick={resetProject}>
               <RotateCcw className={isResetting ? 'animate-spin' : ''} size={17} />
               {isResetting ? '초기화 중' : '초기화'}
@@ -437,8 +444,8 @@ export function HomePage() {
 
             <div className="mt-5 flex flex-wrap gap-2">
               <Button onClick={openCurrentLesson}>
-                <Play size={18} />
-                {lessonNo <= 1 ? '1차시 시작' : `${lessonNo}차시 열기`}
+                {projectComplete ? <BarChart3 size={18} /> : <Play size={18} />}
+                {projectComplete ? '우리 반 AI 인식 변화 결과 보기' : lessonNo <= 1 ? '1차시 시작' : `${lessonNo}차시 열기`}
               </Button>
               <Button variant="secondary" onClick={() => navigate('/talk')}>
                 <MessageSquare size={18} />
@@ -466,9 +473,9 @@ export function HomePage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="font-data text-sm text-[#4FE0C0]">수업 진행</p>
-            <p className="mt-2 text-lg font-black text-[#EAF2F5]">지금 해야 할 수업 · {currentLesson.no}차시 {currentLesson.title}</p>
-            <p className="mt-1 max-w-4xl text-sm leading-6 text-[#8AA0B0]">{currentLesson.dashboardSummary}</p>
-            <p className="mt-3 text-sm font-bold text-[#B7C7D2]">완료 {completedLessonCount}차시 · 현재 {lessonNo}차시 진행 중 · 이후 남은 수업 {remainingLessonCount}차시</p>
+            <p className="mt-2 text-lg font-black text-[#EAF2F5]">{projectComplete ? '5차시 프로젝트 완료 · 우리 반 결과 확인' : `지금 해야 할 수업 · ${currentLesson.no}차시 ${currentLesson.title}`}</p>
+            <p className="mt-1 max-w-4xl text-sm leading-6 text-[#8AA0B0]">{projectComplete ? '사전·사후 설문을 학급 전체 기준으로 비교한 인공지능 인식 변화 결과를 확인할 수 있습니다.' : currentLesson.dashboardSummary}</p>
+            <p className="mt-3 text-sm font-bold text-[#B7C7D2]">{projectComplete ? `완료 ${TOTAL_V2_LESSONS}차시 · 남은 수업 0차시` : `완료 ${completedLessonCount}차시 · 현재 ${lessonNo}차시 진행 중 · 이후 남은 수업 ${remainingLessonCount}차시`}</p>
           </div>
           <div className="h-2 w-52 overflow-hidden rounded-full bg-white/10">
             <div className="h-full rounded-full bg-[#FFD37A]" style={{ width: `${progressPercent}%` }} />
@@ -480,22 +487,45 @@ export function HomePage() {
             <button
               key={lesson.no}
               className={`inline-flex h-12 min-w-28 items-center justify-center gap-2 rounded-xl border px-4 font-black transition ${
-                lesson.no === lessonNo
+                projectComplete
+                  ? 'border-[#4FE0C0]/25 bg-[#4FE0C0]/10 text-[#4FE0C0]'
+                  : lesson.no === lessonNo
                   ? 'border-[#FFD37A] bg-[#FFD37A] text-[#0A1622]'
                   : lesson.no < lessonNo
                     ? 'border-[#4FE0C0]/20 bg-[#4FE0C0]/8 text-[#6D9B91]'
                     : 'border-white/10 bg-[#07111B]/55 text-[#667987]'
               }`}
-              disabled={lesson.no !== lessonNo}
-              onClick={lesson.no === lessonNo ? openCurrentLesson : undefined}
-              title={lesson.no < lessonNo ? '완료한 차시' : lesson.no > lessonNo ? '아직 열리지 않은 차시' : '현재 차시 열기'}
+              disabled={projectComplete || lesson.no !== lessonNo}
+              onClick={!projectComplete && lesson.no === lessonNo ? openCurrentLesson : undefined}
+              title={projectComplete || lesson.no < lessonNo ? '완료한 차시' : lesson.no > lessonNo ? '아직 열리지 않은 차시' : '현재 차시 열기'}
               type="button"
             >
-              {lesson.no < lessonNo ? <CheckCircle2 size={17} /> : lesson.no > lessonNo ? <LockKeyhole size={16} /> : <Play size={16} />}
+              {projectComplete || lesson.no < lessonNo ? <CheckCircle2 size={17} /> : lesson.no > lessonNo ? <LockKeyhole size={16} /> : <Play size={16} />}
               {lesson.no}차시
             </button>
           ))}
         </div>
+
+        {projectComplete ? (
+          <Panel className="mt-5 border-[#4FE0C0]/30 bg-[#4FE0C0]/5">
+            <div className="flex flex-wrap items-center justify-between gap-5">
+              <div className="flex items-start gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#4FE0C0]/12 text-[#4FE0C0]">
+                  <BarChart3 size={26} />
+                </div>
+                <div>
+                  <p className="font-data text-xs text-[#4FE0C0]">UNLOCKED</p>
+                  <h2 className="font-display mt-1 text-3xl text-[#EAF2F5]">우리 반 인공지능 인식 변화 결과</h2>
+                  <p className="mt-2 text-sm leading-6 text-[#8AA0B0]">개인 이름과 개인별 점수 없이 사전·사후 학급 전체 변화만 보여줍니다.</p>
+                </div>
+              </div>
+              <Button onClick={() => navigate('/survey-results')}>
+                <BarChart3 size={18} />
+                결과 보기
+              </Button>
+            </div>
+          </Panel>
+        ) : null}
       </section>
 
       {isApiOpen ? (

@@ -17,6 +17,7 @@ import { LessonFivePage } from './pages/LessonFivePage'
 import { LoginPage } from './pages/LoginPage'
 import { LiveClassPage } from './pages/LiveClassPage'
 import { StartPage } from './pages/StartPage'
+import { SurveyResultsPage } from './pages/SurveyResultsPage'
 import { TrainingPage } from './pages/TrainingPage'
 import { ValueCodePage } from './pages/ValueCodePage'
 
@@ -35,11 +36,9 @@ export default function App() {
         <Route element={<AppFrame />}>
           <Route index element={<LandingPage />} />
           <Route path="start" element={<StartPage />} />
-          <Route path="guide" element={<Navigate to="/training" replace />} />
           <Route path="login" element={<LoginPage />} />
           <Route path="live" element={<LiveClassPage />} />
           <Route path="auth/callback" element={<AuthCallbackPage />} />
-          <Route path="intro" element={<Navigate to="/home" replace />} />
           <Route path="home" element={<HomePage />} />
           <Route path="lesson" element={<Navigate to="/lesson/1" replace />} />
           <Route path="lesson/1" element={<LessonRouteGuard lessonNo={1}><LessonOnePage /></LessonRouteGuard>} />
@@ -48,14 +47,12 @@ export default function App() {
           <Route path="lesson/4" element={<LessonRouteGuard lessonNo={4}><LessonFourPage /></LessonRouteGuard>} />
           <Route path="lesson/5" element={<LessonRouteGuard lessonNo={5}><LessonFivePage /></LessonRouteGuard>} />
           <Route path="training" element={<TrainingPage />} />
-          <Route path="rehearsal" element={<Navigate to="/training" replace />} />
           <Route path="codes" element={<ValueCodePage />} />
           <Route path="board" element={<BoardPage />} />
           <Route path="talk" element={<ConversationPage />} />
-          <Route path="evolution" element={<Navigate to="/home" replace />} />
           <Route path="graduation" element={<GraduationPage />} />
+          <Route path="survey-results" element={<SurveyResultsPage />} />
           <Route path="dex" element={<DexPage />} />
-          <Route path="settings" element={<Navigate to="/talk" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

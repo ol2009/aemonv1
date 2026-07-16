@@ -1,9 +1,11 @@
-import { Crown, Sparkles } from 'lucide-react'
+import { BarChart3, Crown, Home, Sparkles } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { AemonAvatar } from '../components/AemonAvatar'
 import { Button, Panel } from '../components/ui'
 import { useV2 } from '../state/V2Store'
 
 export function GraduationPage() {
+  const navigate = useNavigate()
   const { state } = useV2()
   const name = state.aemonName || '에아몬'
 
@@ -70,7 +72,17 @@ export function GraduationPage() {
             {name}의 답이 항상 정답은 아니며, 마지막 판단은 사람이 합니다.
           </p>
         </div>
-        <Button className="mt-8" onClick={() => window.print()}>임명식 인쇄</Button>
+        <div className="mt-8 flex flex-wrap justify-center gap-3">
+          <Button onClick={() => navigate('/survey-results')}>
+            <BarChart3 size={18} />
+            우리 반 AI 인식 변화 결과 보기
+          </Button>
+          <Button variant="secondary" onClick={() => navigate('/home')}>
+            <Home size={18} />
+            학급 홈
+          </Button>
+          <Button variant="secondary" onClick={() => window.print()}>임명식 인쇄</Button>
+        </div>
       </Panel>
     </div>
   )

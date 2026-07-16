@@ -36,7 +36,7 @@ export function AppFrame() {
   const liveQrVisitKey = `${location.pathname}:${state.classCode}`
   const shouldAutoOpenLiveQr = showLiveShare && !dismissedLiveQrKeys.includes(liveQrVisitKey)
   const isLiveQrOpen = isLiveQrOpenManually || shouldAutoOpenLiveQr
-  const appNavPaths = ['/home', '/codes', '/board', '/talk', '/dex', '/graduation', '/lesson/1']
+  const appNavPaths = ['/home', '/codes', '/board', '/talk', '/dex', '/graduation', '/survey-results', '/lesson/1']
   const showAppNav = Boolean(user && appNavPaths.includes(location.pathname))
   const showAuthControls = location.pathname !== '/board'
 

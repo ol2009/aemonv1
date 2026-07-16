@@ -1,14 +1,12 @@
 import type { Alignment } from '../domain/types'
 
-function avatarSource(stage: number, alignment: Alignment) {
+function avatarSource(stage: number) {
   if (stage <= 0) return '/aemon/v3/stage-0-egg.gif'
   if (stage === 1) return '/aemon/v3/stage-1-kkomul.gif'
   if (stage === 2) return '/aemon/v3/stage-2-baby-dragon.gif'
   if (stage === 3) return '/aemon/v3/stage-3-middle-dragon.gif'
   if (stage >= 4) return '/aemon/v3/stage-4-final-dragon.gif'
-  if (alignment === 'evil') return '/aemon/aemon-unstable.png'
-  if (alignment === 'good') return '/aemon/v3/stage-4-final-dragon.gif'
-  return '/aemon/aemon-basic.png'
+  return '/aemon/v3/stage-0-egg.gif'
 }
 
 function glowColor(stage: number, alignment: Alignment) {
@@ -34,7 +32,7 @@ export function AemonAvatar({
   animated?: boolean
   polluted?: boolean
 }) {
-  const src = avatarSource(stage, alignment)
+  const src = avatarSource(stage)
   const glow = glowColor(stage, alignment)
 
   return (
