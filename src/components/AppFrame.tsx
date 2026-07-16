@@ -23,7 +23,11 @@ export function AppFrame() {
   const searchParams = new URLSearchParams(location.search)
   const isStudentLive = searchParams.get('live') === 'student' || location.pathname === '/live'
   const isStudentActivity = searchParams.get('role') === 'student'
-  const isInteractiveStudentScreen = location.pathname === '/board' || (location.pathname === '/lesson/5' && searchParams.get('role') === 'student')
+  const isLessonTwoBoundaryVote = location.pathname === '/lesson/2' && searchParams.get('step') === '6'
+  const isInteractiveStudentScreen =
+    location.pathname === '/board' ||
+    isLessonTwoBoundaryVote ||
+    (location.pathname === '/lesson/5' && searchParams.get('role') === 'student')
   const isImmersive = isStudentLive
   const showLiveShare = location.pathname.startsWith('/lesson/') && !isStudentLive && !isStudentActivity && Boolean(state.classCode)
   const liveUrl = absoluteUrl(`/live?code=${encodeURIComponent(state.classCode)}`)
