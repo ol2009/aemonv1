@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Radio, Send } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Button, Panel } from '../components/ui'
@@ -21,15 +21,23 @@ export function LiveClassPage() {
   const [searchParams] = useSearchParams()
   const queryCode = (searchParams.get('code') ?? '').trim()
   const { state, joinStudent, mergeClass, setRemoteStatus } = useV2()
+  const mergeClassRef = useRef(mergeClass)
   const existingSession = state.studentSession?.classCode === queryCode ? state.studentSession : null
   const [nickname, setNickname] = useState(existingSession?.nickname ?? '')
   const [message, setMessage] = useState('')
   const [isJoining, setIsJoining] = useState(false)
 
   useEffect(() => {
+    mergeClassRef.current = mergeClass
+  }, [mergeClass])
+
+  useEffect(() => {
     if (!existingSession || !queryCode) return
     let cancelled = false
     const openCurrentScreen = async () => {
+      const bundle = await fetchRemoteClassBundle(queryCode)
+      if (cancelled) return
+      mergeClassRef.current({ ...bundle, studentSession: existingSession })
       const liveState = await fetchRemoteLiveLesson(queryCode)
       const target = targetFor(liveState, queryCode)
       if (!cancelled && target) navigate(target, { replace: true })

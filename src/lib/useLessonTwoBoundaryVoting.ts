@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import { LESSON2_BOUNDARY_PREFIX, lessonTwoBoundaryQuestionKey } from '../data/lessonTwoBoundary'
 import { useV2 } from '../state/V2Store'
-import { fetchRemoteSurveyResponsesByPrefix, isRemoteReady, upsertRemoteSurveyResponse } from './v2Remote'
+import { fetchRemoteClassBundle, fetchRemoteSurveyResponsesByPrefix, isRemoteReady, upsertRemoteSurveyResponse } from './v2Remote'
 import { supabase } from './supabase'
 
 export type BoundaryChoice = 'O' | 'X'
@@ -27,7 +27,7 @@ function nicknameStorageKey(classCode: string) {
 }
 
 export function useLessonTwoBoundaryVoting(classId: string, classCode: string) {
-  const { state, joinStudent, upsertSurveyResponse, setRemoteStatus } = useV2()
+  const { state, joinStudent, mergeClass, upsertSurveyResponse, setRemoteStatus } = useV2()
   const [savingCardId, setSavingCardId] = useState('')
   const [message, setMessage] = useState('')
   const [fallbackNickname, setFallbackNickname] = useState(() => {
@@ -141,7 +141,11 @@ export function useLessonTwoBoundaryVoting(classId: string, classCode: string) {
 
   const submitVote = useCallback(
     async (cardId: string, choice: BoundaryChoice) => {
-      if (!classId || !nickname || savingCardId || !isRemoteReady()) return
+      if (!nickname || savingCardId) return
+      if (!isRemoteReady()) {
+        setMessage('서버 연결을 확인한 뒤 다시 눌러 주세요.')
+        return
+      }
       const questionKey = lessonTwoBoundaryQuestionKey(cardId)
 
       const vote: BoundaryVotePayload = { cardId, nickname, choice }
@@ -149,7 +153,17 @@ export function useLessonTwoBoundaryVoting(classId: string, classCode: string) {
       setMessage('')
 
       try {
-        await upsertRemoteSurveyResponse({ classId, nickname, questionKey, body: choice })
+        let voteClassId = classId
+        if (!voteClassId) {
+          if (!classCode) throw new Error('학급 연결 정보가 없습니다.')
+          const bundle = await fetchRemoteClassBundle(classCode)
+          const recoveredClassId = bundle.classId
+          if (!recoveredClassId) throw new Error('학급을 찾지 못했습니다.')
+          voteClassId = recoveredClassId
+          mergeClass({ ...bundle, studentSession: { classCode, nickname } })
+        }
+
+        await upsertRemoteSurveyResponse({ classId: voteClassId, nickname, questionKey, body: choice })
         upsertSurveyResponse({ nickname, questionKey, body: choice })
         const channel = channelRef.current
         if (channel && channelReadyRef.current) {
@@ -166,7 +180,7 @@ export function useLessonTwoBoundaryVoting(classId: string, classCode: string) {
         setSavingCardId('')
       }
     },
-    [classId, nickname, savingCardId, setRemoteStatus, upsertSurveyResponse],
+    [classCode, classId, mergeClass, nickname, savingCardId, setRemoteStatus, upsertSurveyResponse],
   )
 
   return { boundaryResponses, nickname, savingCardId, message, restoreNickname, submitVote }
