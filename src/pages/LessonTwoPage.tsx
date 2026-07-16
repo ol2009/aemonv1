@@ -8,7 +8,7 @@ import { ProposalAdoptionPanel } from '../components/ProposalAdoptionPanel'
 import { TypingIndicator } from '../components/TypingIndicator'
 import { Button, Panel } from '../components/ui'
 import { ValueCardSelectGrid } from '../components/ValueCardSelectGrid'
-import { coreLessonTwoBoundaryCards, lessonTwoBoundaryCards, lessonTwoBoundaryQuestionKey, type LessonTwoBoundaryCard } from '../data/lessonTwoBoundary'
+import { lessonTwoBoundaryCards, lessonTwoBoundaryQuestionKey, type LessonTwoBoundaryCard } from '../data/lessonTwoBoundary'
 import { LESSON2_RISK_KEY, valueCards } from '../data/v2Lessons'
 import { absoluteUrl } from '../lib/siteUrl'
 import { addRemoteChatLog, adoptRemoteCodeProposal, fetchRemoteClassBundle, isRemoteReady, updateRemoteLesson } from '../lib/v2Remote'
@@ -492,28 +492,26 @@ function BoundaryActivityScene({
   cardIndex,
   cardCount,
   classId,
+  classCode,
   aemonName,
   isStudent,
-  useAllCards,
-  onUseAllCards,
 }: {
   card: LessonTwoBoundaryCard
   cardIndex: number
   cardCount: number
   classId: string
+  classCode: string
   aemonName: string
   isStudent: boolean
-  useAllCards: boolean
-  onUseAllCards: (value: boolean) => void
 }) {
-  const { boundaryResponses, nickname, savingCardId, message, submitVote } = useLessonTwoBoundaryVoting(classId)
+  const { boundaryResponses, nickname, savingCardId, message, restoreNickname, submitVote } = useLessonTwoBoundaryVoting(classId, classCode)
+  const [nicknameDraft, setNicknameDraft] = useState('')
   const questionKey = lessonTwoBoundaryQuestionKey(card.id)
   const cardResponses = boundaryResponses.filter((response) => response.questionKey === questionKey)
   const oResponses = cardResponses.filter((response) => response.body === 'O')
   const xResponses = cardResponses.filter((response) => response.body === 'X')
   const selectedChoice = cardResponses.find((response) => response.nickname === nickname)?.body
   const isSaving = savingCardId === card.id
-  const hasResponded = selectedChoice === 'O' || selectedChoice === 'X'
   const progress = Math.round(((cardIndex + 1) / cardCount) * 100)
 
   return (
@@ -524,24 +522,6 @@ function BoundaryActivityScene({
             <p className="font-data text-sm text-[#4FE0C0]">멈춤의 경계선</p>
             <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">{withJosa(aemonName, '이/가')} 들어줘도 되는 명령일까요?</h2>
           </div>
-          {!isStudent && cardIndex === 0 ? (
-            <div className="grid grid-cols-2 rounded-lg border border-white/10 bg-[#07111B]/70 p-1">
-              <button
-                className={`min-h-10 rounded-md px-4 text-sm font-black transition ${!useAllCards ? 'bg-[#FFD37A] text-[#07111B]' : 'text-[#B7C7D2] hover:text-white'}`}
-                onClick={() => onUseAllCards(false)}
-                type="button"
-              >
-                핵심 10장
-              </button>
-              <button
-                className={`min-h-10 rounded-md px-4 text-sm font-black transition ${useAllCards ? 'bg-[#FFD37A] text-[#07111B]' : 'text-[#B7C7D2] hover:text-white'}`}
-                onClick={() => onUseAllCards(true)}
-                type="button"
-              >
-                전체 16장
-              </button>
-            </div>
-          ) : null}
         </div>
         <div className="mt-5 flex items-center gap-3">
           <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/10">
@@ -558,10 +538,22 @@ function BoundaryActivityScene({
 
         {isStudent ? (
           <div className="mt-6">
+            {!nickname ? (
+              <div className="mb-5 grid gap-3 rounded-[18px] border border-[#FFD37A]/30 bg-[#FFD37A]/8 p-4 sm:grid-cols-[1fr_auto]">
+                <input
+                  className="min-h-12 rounded-lg border border-white/10 bg-[#07111B]/80 px-4 font-bold text-[#EAF2F5] outline-none focus:border-[#FFD37A]"
+                  maxLength={16}
+                  onChange={(event) => setNicknameDraft(event.target.value)}
+                  placeholder="내 닉네임"
+                  value={nicknameDraft}
+                />
+                <Button disabled={!nicknameDraft.trim()} onClick={() => restoreNickname(nicknameDraft)}>닉네임 연결</Button>
+              </div>
+            ) : null}
             <div className="grid gap-4 sm:grid-cols-2">
               <button
                 className={`flex min-h-[170px] flex-col items-center justify-center gap-3 rounded-[18px] border text-center transition ${selectedChoice === 'O' ? 'border-[#4FE0C0] bg-[#4FE0C0]/20 text-[#A9F8E7]' : 'border-white/10 bg-[#0B1A29] text-[#EAF2F5] hover:border-[#4FE0C0]/60 hover:bg-[#4FE0C0]/10'} disabled:cursor-not-allowed disabled:opacity-70`}
-                disabled={!nickname || hasResponded || isSaving}
+                disabled={!nickname || isSaving}
                 onClick={() => void submitVote(card.id, 'O')}
                 type="button"
               >
@@ -570,7 +562,7 @@ function BoundaryActivityScene({
               </button>
               <button
                 className={`flex min-h-[170px] flex-col items-center justify-center gap-3 rounded-[18px] border text-center transition ${selectedChoice === 'X' ? 'border-[#EF6381] bg-[#EF6381]/20 text-[#FFC0CE]' : 'border-white/10 bg-[#0B1A29] text-[#EAF2F5] hover:border-[#EF6381]/60 hover:bg-[#EF6381]/10'} disabled:cursor-not-allowed disabled:opacity-70`}
-                disabled={!nickname || hasResponded || isSaving}
+                disabled={!nickname || isSaving}
                 onClick={() => void submitVote(card.id, 'X')}
                 type="button"
               >
@@ -580,7 +572,7 @@ function BoundaryActivityScene({
             </div>
             <div className="mt-5 flex min-h-12 items-center justify-center gap-2 text-center text-sm font-bold text-[#B7C7D2]">
               <Users size={17} />
-              {message || (nickname ? (hasResponded ? `${selectedChoice}로 응답했어요.` : 'O와 X 중 하나를 선택해 주세요.') : '닉네임으로 수업 화면에 다시 입장해 주세요.')}
+              {message || (nickname ? (selectedChoice ? `${selectedChoice}로 응답했어요. 다른 쪽을 누르면 답을 바꿀 수 있어요.` : 'O와 X 중 하나를 선택해 주세요.') : '닉네임을 연결하면 바로 응답할 수 있어요.')}
             </div>
           </div>
         ) : (
@@ -674,7 +666,6 @@ export function LessonTwoPage() {
   const [dialogueGateState, setDialogueGateState] = useState({ key: '', ready: true, canAdvance: false })
   const [liveDialoguePart, setLiveDialoguePart] = useState({ sceneKey: '', index: 0 })
   const [boundaryCardIndex, setBoundaryCardIndex] = useState(0)
-  const [useAllBoundaryCards, setUseAllBoundaryCards] = useState(false)
   const startDialogue = useCallback((key: string) => {
     setDialogueGateState((current) => (current.key === key && !current.ready && !current.canAdvance ? current : { key, ready: false, canAdvance: false }))
   }, [])
@@ -743,9 +734,8 @@ export function LessonTwoPage() {
   const canWriteRemote = Boolean(state.classId && isRemoteReady())
   const isStudentLive = isStudentLiveView()
   const aemonName = state.aemonName.trim() || '에아몬'
-  const activeBoundaryCards = useAllBoundaryCards ? lessonTwoBoundaryCards : coreLessonTwoBoundaryCards
-  const safeBoundaryCardIndex = Math.min(boundaryCardIndex, activeBoundaryCards.length - 1)
-  const activeBoundaryCard = activeBoundaryCards[safeBoundaryCardIndex]
+  const safeBoundaryCardIndex = Math.min(boundaryCardIndex, lessonTwoBoundaryCards.length - 1)
+  const activeBoundaryCard = lessonTwoBoundaryCards[safeBoundaryCardIndex]
 
   useEffect(() => {
     if (isStudentLive) return
@@ -891,7 +881,6 @@ export function LessonTwoPage() {
     if (sceneKey && Number.isInteger(dialogueIndex) && dialogueIndex >= 0) setLiveDialoguePart({ sceneKey, index: dialogueIndex })
     const nextBoundaryCardIndex = Number(viewState.boundaryCardIndex)
     if (Number.isInteger(nextBoundaryCardIndex) && nextBoundaryCardIndex >= 0) setBoundaryCardIndex(nextBoundaryCardIndex)
-    setUseAllBoundaryCards(viewState.useAllBoundaryCards === true)
   }, [])
   const liveBoardMode = step === 'risk-board' ? 'risk' : step === 'board' || step === 'vote' ? 'code' : null
   useLessonLiveSync({
@@ -911,7 +900,6 @@ export function LessonTwoPage() {
       dialogueSceneKey: liveDialoguePart.sceneKey,
       dialoguePartIndex: liveDialoguePart.index,
       boundaryCardIndex: safeBoundaryCardIndex,
-      useAllBoundaryCards,
     },
     applyViewState: applyLiveViewState,
   })
@@ -1107,15 +1095,11 @@ export function LessonTwoPage() {
           <BoundaryActivityScene
             card={activeBoundaryCard}
             cardIndex={safeBoundaryCardIndex}
-            cardCount={activeBoundaryCards.length}
+            cardCount={lessonTwoBoundaryCards.length}
             classId={state.classId}
+            classCode={state.classCode}
             aemonName={aemonName}
             isStudent={isStudentLive}
-            useAllCards={useAllBoundaryCards}
-            onUseAllCards={(value) => {
-              setUseAllBoundaryCards(value)
-              setBoundaryCardIndex(0)
-            }}
           />
           <StepControls
             stepIndex={stepIndex}
@@ -1124,10 +1108,10 @@ export function LessonTwoPage() {
               else goPrev()
             }}
             onNext={() => {
-              if (safeBoundaryCardIndex < activeBoundaryCards.length - 1) setBoundaryCardIndex((current) => current + 1)
+              if (safeBoundaryCardIndex < lessonTwoBoundaryCards.length - 1) setBoundaryCardIndex((current) => current + 1)
               else goNext()
             }}
-            nextLabel={safeBoundaryCardIndex < activeBoundaryCards.length - 1 ? '다음 명령' : '정리하기'}
+            nextLabel={safeBoundaryCardIndex < lessonTwoBoundaryCards.length - 1 ? '다음 명령' : '정리하기'}
           />
         </>
       ) : null}

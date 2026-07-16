@@ -22,10 +22,18 @@ function parseVotePayload(value: unknown): BoundaryVotePayload | null {
   return { cardId, nickname, choice: payload.choice }
 }
 
-export function useLessonTwoBoundaryVoting(classId: string) {
-  const { state, upsertSurveyResponse, setRemoteStatus } = useV2()
+function nicknameStorageKey(classCode: string) {
+  return `aemon.student.nickname.${classCode}`
+}
+
+export function useLessonTwoBoundaryVoting(classId: string, classCode: string) {
+  const { state, joinStudent, upsertSurveyResponse, setRemoteStatus } = useV2()
   const [savingCardId, setSavingCardId] = useState('')
   const [message, setMessage] = useState('')
+  const [fallbackNickname, setFallbackNickname] = useState(() => {
+    if (!classCode) return ''
+    return localStorage.getItem(nicknameStorageKey(classCode))?.trim() ?? ''
+  })
   const channelRef = useRef<RealtimeChannel | null>(null)
   const channelReadyRef = useRef(false)
   const pendingVotesRef = useRef<BoundaryVotePayload[]>([])
@@ -109,13 +117,32 @@ export function useLessonTwoBoundaryVoting(classId: string) {
     () => state.surveyResponses.filter((response) => response.questionKey.startsWith(LESSON2_BOUNDARY_PREFIX)),
     [state.surveyResponses],
   )
-  const nickname = state.studentSession?.nickname.trim() ?? ''
+  const sessionNickname = state.studentSession?.nickname.trim() ?? ''
+  const storedNickname = classCode ? localStorage.getItem(nicknameStorageKey(classCode))?.trim() ?? '' : ''
+  const nickname = sessionNickname || fallbackNickname || storedNickname
+
+  useEffect(() => {
+    if (!classCode || !sessionNickname) return
+    localStorage.setItem(nicknameStorageKey(classCode), sessionNickname)
+  }, [classCode, sessionNickname])
+
+  const restoreNickname = useCallback(
+    (value: string) => {
+      const nextNickname = value.trim().slice(0, 16)
+      if (!classCode || !nextNickname) return false
+      localStorage.setItem(nicknameStorageKey(classCode), nextNickname)
+      setFallbackNickname(nextNickname)
+      joinStudent(classCode, nextNickname)
+      setMessage('닉네임을 연결했습니다.')
+      return true
+    },
+    [classCode, joinStudent],
+  )
 
   const submitVote = useCallback(
     async (cardId: string, choice: BoundaryChoice) => {
       if (!classId || !nickname || savingCardId || !isRemoteReady()) return
       const questionKey = lessonTwoBoundaryQuestionKey(cardId)
-      if (state.surveyResponses.some((response) => response.nickname === nickname && response.questionKey === questionKey)) return
 
       const vote: BoundaryVotePayload = { cardId, nickname, choice }
       setSavingCardId(cardId)
@@ -139,8 +166,8 @@ export function useLessonTwoBoundaryVoting(classId: string) {
         setSavingCardId('')
       }
     },
-    [classId, nickname, savingCardId, setRemoteStatus, state.surveyResponses, upsertSurveyResponse],
+    [classId, nickname, savingCardId, setRemoteStatus, upsertSurveyResponse],
   )
 
-  return { boundaryResponses, nickname, savingCardId, message, submitVote }
+  return { boundaryResponses, nickname, savingCardId, message, restoreNickname, submitVote }
 }
