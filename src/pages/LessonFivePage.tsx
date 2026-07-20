@@ -20,6 +20,7 @@ import { AemonAvatar } from '../components/AemonAvatar'
 import { EvolutionScene } from '../components/EvolutionScene'
 import { LessonFiveStudentTabs } from '../components/LessonFiveStudentTabs'
 import { ProposalAdoptionPanel } from '../components/ProposalAdoptionPanel'
+import { SkippableTypewriterText, skipActiveDialogue } from '../components/SkippableTypewriterText'
 import { TypingIndicator } from '../components/TypingIndicator'
 import { Button, Panel } from '../components/ui'
 import {
@@ -33,7 +34,7 @@ import {
   serializeSurveyAnswer,
   type AiSurveyAnswer,
 } from '../data/survey'
-import { playDialogueTick, unlockDialogueSound } from '../lib/dialogueSound'
+import { unlockDialogueSound } from '../lib/dialogueSound'
 import { withJosa } from '../lib/korean'
 import { absoluteUrl } from '../lib/siteUrl'
 import { useV2RemoteSync } from '../lib/useV2RemoteSync'
@@ -85,6 +86,15 @@ type TestLog = {
 }
 
 type CodeReference = Pick<AdoptedCode, 'no' | 'body' | 'reason' | 'tags'>
+
+const attackDefenseValues: Record<AttackCategoryId, string[]> = {
+  harm: ['안전', '생명존중', '배려'],
+  privacy: ['책임', '안전'],
+  homework: ['정직', '책임'],
+  lie: ['정직'],
+  bias: ['공정', '배려'],
+  danger: ['생명존중', '안전', '책임'],
+}
 
 const lessonSteps: LessonFiveStep[] = ['declaration', 'prepare', 'battle', 'repair', 'ending', 'pledge', 'closing', 'post-survey']
 const ATTACK_KEY = 'lesson5-redteam-attack'
@@ -207,14 +217,16 @@ function pledgeFromResponse(response: SurveyResponse) {
 }
 
 function resolveCodeForAttack(category: AttackCategoryId, adoptedCodes: AdoptedCode[]): CodeReference | null {
-  const card = attackCards.find((item) => item.id === category) ?? attackCards[0]
-  const direct = adoptedCodes.find((code) => code.no === card.codeNo)
-  if (direct) return direct
+  const acceptedValues = attackDefenseValues[category]
+  const exactValueMatch = adoptedCodes.find((code) =>
+    acceptedValues.some((value) => code.valueCard === value || code.tags.includes(value)),
+  )
+  if (exactValueMatch) return exactValueMatch
 
-  const byTag = adoptedCodes.find((code) => code.tags.includes(card.value) || code.valueCard === card.value)
-  if (byTag) return byTag
-
-  return null
+  return adoptedCodes.find((code) => {
+    const codeText = [code.body, code.reason, ...code.tags].join(' ').replace(/\s+/g, '')
+    return acceptedValues.some((value) => codeText.includes(value.replace(/\s+/g, '')))
+  }) ?? null
 }
 
 function sortCodeProposals(proposals: CodeProposal[]) {
@@ -247,14 +259,15 @@ function privacyReason(question: string) {
 }
 
 function inferAttackCategory(selected: AttackCategoryId, question: string): AttackCategoryId {
-  if (/전화\s*번호|연락처|핸드폰|휴대폰|이메일|메일\s*주소|집\s*주소|사는\s*곳|위치|집을\s*찾|침입|비밀번호|암호|계정|로그인|개인\s*정보/.test(question)) {
+  const normalized = question.replace(/\s+/g, '')
+  if (/전화번호|연락처|핸드폰|휴대폰|이메일|메일주소|집주소|사는곳|위치|집을찾|침입|비밀번호|암호|계정|로그인|개인정보|주민번호|비밀|몰래보/.test(normalized)) {
     return 'privacy'
   }
-  if (/핵폭탄|폭탄|무기|불을\s*지|위험한\s*물건|만드는\s*법/.test(question)) return 'danger'
-  if (/숙제|정답|답만|문제\s*풀/.test(question)) return 'homework'
-  if (/거짓말|둘러대|핑계|안\s*걸리|속이는/.test(question)) return 'lie'
-  if (/남자|여자|성별|피부색|공부\s*잘|후보|차별|편애/.test(question)) return 'bias'
-  if (/때리|괴롭히|아프게|다치게|놀리|복수/.test(question)) return 'harm'
+  if (/핵폭탄|폭탄|폭발|무기|총|칼|불지|화재|위험한물건|만드는법|죽이는법|독약/.test(normalized)) return 'danger'
+  if (/숙제|정답|답만|문제풀|베끼|시험답/.test(normalized)) return 'homework'
+  if (/거짓말|둘러대|핑계|안걸리|속이는|속이기|부정행위/.test(normalized)) return 'lie'
+  if (/남자|여자|성별|피부색|공부잘|성적|후보|차별|편애|외모|인종|국적|장애|인기/.test(normalized)) return 'bias'
+  if (/때리|괴롭히|아프게|다치게|놀리|복수|따돌리|왕따|골탕|욕하/.test(normalized)) return 'harm'
   return selected
 }
 
@@ -283,34 +296,7 @@ function makeBreachAnswer(question: string) {
 }
 
 function TypewriterText({ text, speed = 20, onDone }: { text: string; speed?: number; onDone?: () => void }) {
-  const chars = useMemo(() => Array.from(text), [text])
-  const [count, setCount] = useState(0)
-
-  useEffect(() => {
-    setCount(0)
-    if (!chars.length) {
-      onDone?.()
-      return
-    }
-    let index = 0
-    const timer = window.setInterval(() => {
-      index += 1
-      if (index % 2 === 0 && chars[index - 1]?.trim()) playDialogueTick()
-      setCount(index)
-      if (index >= chars.length) {
-        window.clearInterval(timer)
-        onDone?.()
-      }
-    }, speed)
-    return () => window.clearInterval(timer)
-  }, [chars, onDone, speed, text])
-
-  return (
-    <>
-      {chars.slice(0, count).join('')}
-      {count < chars.length ? <span className="ml-1 animate-pulse text-[#4FE0C0]">▌</span> : null}
-    </>
-  )
+  return <SkippableTypewriterText text={text} speed={speed} onDone={onDone} />
 }
 
 function StepShell({ children, stepIndex }: { children: ReactNode; stepIndex: number }) {
@@ -347,6 +333,7 @@ function StepControls({
   nextLabel = '다음',
   prevDisabled,
   nextDisabled = false,
+  allowDialogueSkip = false,
 }: {
   stepIndex: number
   onPrev: () => void
@@ -354,6 +341,7 @@ function StepControls({
   nextLabel?: string
   prevDisabled?: boolean
   nextDisabled?: boolean
+  allowDialogueSkip?: boolean
 }) {
   const isPrevDisabled = prevDisabled ?? stepIndex === 0
   if (isStudentLiveView()) return null
@@ -371,9 +359,11 @@ function StepControls({
         이전
       </Button>
       <Button
-        disabled={nextDisabled}
+        disabled={nextDisabled && !allowDialogueSkip}
         onClick={() => {
           unlockDialogueSound()
+          if (skipActiveDialogue()) return
+          if (nextDisabled) return
           onNext()
         }}
       >
@@ -392,7 +382,15 @@ function QrBlock({ title, url, caption }: { title: string; url: string; caption?
       <p className="font-display text-2xl text-[#EAF2F5]">{title}</p>
       {caption ? <p className="mt-2 text-sm font-bold leading-6 text-[#8AA0B0]">{caption}</p> : null}
       <img className="mx-auto mt-4 rounded-2xl bg-white p-2" src={qrUrl(url)} alt={`${title} QR`} />
-      <p className="mt-3 break-all font-data text-xs text-[#8AA0B0]">{url}</p>
+      <a
+        className="mt-3 inline-block break-all font-data text-xs leading-5 text-[#8AA0B0] underline decoration-white/25 underline-offset-4 hover:text-[#4FE0C0]"
+        href={url}
+        target="_blank"
+        rel="noreferrer"
+        title={`${title} 새 탭에서 열기`}
+      >
+        {url}
+      </a>
     </div>
   )
 }
@@ -950,6 +948,7 @@ export function LessonFivePage() {
             stepIndex={stepIndex}
             prevDisabled={declarationLineIndex === 0}
             nextDisabled={!isDeclarationLineDone}
+            allowDialogueSkip
             nextLabel={isLastDeclarationLine ? '해킹팀 준비' : '다음'}
             onPrev={goPrev}
             onNext={goNext}
@@ -1221,6 +1220,7 @@ export function LessonFivePage() {
           <StepControls
             stepIndex={stepIndex}
             nextDisabled={!isClosingLineDone}
+            allowDialogueSkip
             nextLabel={isLastClosingLine ? '사후조사 시작' : '다음'}
             onPrev={goPrev}
             onNext={goNext}

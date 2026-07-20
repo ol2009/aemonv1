@@ -5,10 +5,11 @@ import { Heart, Play, QrCode, RefreshCw, Sparkles } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
 import { EvolutionScene } from '../components/EvolutionScene'
 import { ProposalAdoptionPanel } from '../components/ProposalAdoptionPanel'
+import { SkippableTypewriterText, skipActiveDialogue } from '../components/SkippableTypewriterText'
 import { TypingIndicator } from '../components/TypingIndicator'
 import { Button, Panel } from '../components/ui'
 import { LESSON4_FAIRNESS_KEY, valueCards } from '../data/v2Lessons'
-import { playDialogueTick, unlockDialogueSound } from '../lib/dialogueSound'
+import { unlockDialogueSound } from '../lib/dialogueSound'
 import { waitForChatReply } from '../lib/chatTiming'
 import { withJosa } from '../lib/korean'
 import { parseLessonChatLogs } from '../lib/lessonChat'
@@ -76,11 +77,12 @@ const dataBiasCaseScenes: DataBiasCaseScene[] = [
     image: '/v2/lesson-4/hiring-ai-bias.png',
     alt: '과거 이력서의 편향을 학습한 채용 AI가 같은 능력의 지원자에게 다른 점수를 주는 모습',
     parts: [
-      `AI가 이력서에 점수를 매겼던 실제 사례입니다.
-과거 10년치 이력서 대부분이 한쪽 성별이었어요.`,
-      `AI는 “이런 사람이 좋은 지원자구나”라고 잘못 배웠습니다.
-다른 지원자에게 계속 낮은 점수를 줬고,
-회사는 문제를 발견한 뒤 이 AI의 사용을 중단했습니다.`,
+      '2018년, 아마존은 지원자의 이력서를 평가하는 채용 AI를 개발했습니다.',
+      '채용 AI는 지원자의 이력서를 읽고 점수를 매겼습니다.',
+      'AI가 학습한 과거 10년치 이력서는 대부분 남성 지원자의 것이었습니다.',
+      '그렇기 때문에 채용 AI는 남성이라는 성별을 좋은 지원자의 조건이라고 잘못 배웠습니다.',
+      '그 결과 채용 AI는 여성 지원자에게 더 낮은 점수를 주기 시작했습니다.',
+      '아마존은 문제를 확인한 뒤 채용 AI의 사용을 중단했습니다.',
     ],
   },
   {
@@ -89,11 +91,11 @@ const dataBiasCaseScenes: DataBiasCaseScene[] = [
     image: '/v2/lesson-4/beauty-ai-bias.png',
     alt: '다양한 얼굴을 심사한 AI가 흰 피부색의 얼굴만 선택해 데이터 편향이 드러난 모습',
     parts: [
-      `AI에게 심사를 맡긴 미인대회도 있었습니다.
-“기계니까 공정하겠지?”라며 100개가 넘는 나라에서 수천 명이 참가했어요.`,
-      `그런데 뽑힌 44명은 거의 다 흰 피부색이었습니다.
-AI가 배운 사진 데이터에 다양한 사람이
-충분히 들어 있지 않았기 때문입니다.`,
+      '2016년, 한 국제 미인대회는 얼굴 사진을 평가하는 일을 AI에게 맡겼습니다.',
+      '주최 측은 기계가 사람보다 공정하게 심사할 것이라고 기대했습니다.',
+      '이 대회에는 100개가 넘는 나라에서 수천 명이 참가했습니다.',
+      '하지만 AI가 뽑은 44명은 거의 모두 흰 피부색을 가진 참가자였습니다.',
+      'AI가 학습한 자료에는 다양한 피부색의 사진이 충분하지 않았습니다.',
     ],
   },
   {
@@ -102,11 +104,12 @@ AI가 배운 사진 데이터에 다양한 사람이
     image: '/v2/lesson-4/missing-data-voices.png',
     alt: '인터넷에 연결된 지역의 데이터만 AI에 쏟아지고 연결이 어려운 사람들의 목소리는 닿지 못하는 모습',
     parts: [
-      `세계에는 인터넷을 쓰기 어려운 사람들이 아직 많습니다.
-그 사람들의 글과 사진은 데이터의 바다에 거의 없어요.`,
-      `AI는 데이터에 없는 사람을 잘 알기 어렵습니다.
-그래서 그 사람들은 AI가 쓰이는 세상에서
-한 번 더 소외될 수 있습니다.`,
+      '세계에는 인터넷을 사용하기 어려운 환경에서 살아가는 사람들이 아직 많습니다.',
+      '그 사람들의 글과 사진은 AI가 배우는 인터넷 데이터에 거의 들어가지 않습니다.',
+      '그 사람들의 생각과 경험도 AI의 학습 데이터에서 빠지기 쉽습니다.',
+      'AI는 인터넷에 자료를 많이 남긴 사람에 대해서는 많이 배웁니다.',
+      '반대로 데이터에 거의 등장하지 않는 사람은 제대로 배우기 어렵습니다.',
+      '그 결과 데이터에서 빠진 사람들은 AI 세상에서도 다시 소외될 수 있습니다.',
     ],
   },
 ]
@@ -154,28 +157,7 @@ function sortProposals(items: CodeProposal[]) {
 }
 
 function TypewriterText({ text, speed = 20 }: { text: string; speed?: number }) {
-  const chars = useMemo(() => Array.from(text), [text])
-  const [count, setCount] = useState(0)
-
-  useEffect(() => {
-    setCount(0)
-    if (!chars.length) return
-    let index = 0
-    const timer = window.setInterval(() => {
-      index += 1
-      if (index % 2 === 0 && chars[index - 1]?.trim()) playDialogueTick()
-      setCount(index)
-      if (index >= chars.length) window.clearInterval(timer)
-    }, speed)
-    return () => window.clearInterval(timer)
-  }, [chars, chars.length, speed, text])
-
-  return (
-    <>
-      {chars.slice(0, count).join('')}
-      {count < chars.length ? <span className="ml-1 animate-pulse text-[#4FE0C0]">▌</span> : null}
-    </>
-  )
+  return <SkippableTypewriterText text={text} speed={speed} />
 }
 
 function StepShell({ children, stepIndex, aemonName }: { children: ReactNode; stepIndex: number; aemonName: string }) {
@@ -236,6 +218,7 @@ function StepControls({
         disabled={nextDisabled}
         onClick={() => {
           unlockDialogueSound()
+          if (skipActiveDialogue()) return
           onNext()
         }}
       >
@@ -253,7 +236,15 @@ function QrBlock({ title, url }: { title: string; url: string }) {
       </div>
       <p className="font-data text-xs text-[#8AA0B0]">{title}</p>
       <img className="mx-auto mt-3 rounded-2xl bg-white p-2" src={qrUrl(url)} alt={`${title} QR`} />
-      <p className="mt-3 break-all font-data text-xs text-[#8AA0B0]">{url}</p>
+      <a
+        className="mt-3 inline-block break-all font-data text-xs leading-5 text-[#8AA0B0] underline decoration-white/25 underline-offset-4 hover:text-[#4FE0C0]"
+        href={url}
+        target="_blank"
+        rel="noreferrer"
+        title={`${title} 새 탭에서 열기`}
+      >
+        {url}
+      </a>
     </div>
   )
 }
@@ -467,9 +458,12 @@ export function LessonFourPage() {
       'discussion-board': [`${withJosa(aemonName, '은/는')} 왜 “공부 잘하는 애 = 반장”이라고\n생각하게 됐을까요?`],
       'professor-explain': [...dataBiasDialogueParts.map((part) => part.text), '데이터 편향 영상'],
       'case-scene': [
-        '이제 알겠죠? 데이터의 바다는 공평하지 않아요.\n어떤 목소리는 잔뜩 있고, 어떤 목소리는 아예 없어요.',
-        `${withJosa(aemonName, '은/는')} 그 바다에서 태어났으니, 치우친 걸 그대로 배울 수밖에 없었던 거예요.\n${withJosa(aemonName, '이/가')} 나쁜 게 아니에요. 배운 대로 말한 것뿐이죠.`,
-        '그러면 오늘의 가치 코드는 무엇이어야 할까요?\n가치 코드 No.3을 만들어봅시다.',
+        'AI가 배우는 데이터에는 모든 사람의 목소리가 똑같이 들어 있지 않습니다.',
+        '어떤 사람의 자료는 아주 많지만, 어떤 사람의 자료는 거의 없습니다.',
+        `${withJosa(aemonName, '은/는')} 치우친 데이터를 배우면서 과거의 편견까지 정답이라고 생각했습니다.`,
+        `${withJosa(aemonName, '이/가')} 데이터보다 공정의 기준을 먼저 따르도록 가르쳐야 합니다.`,
+        '그러면 오늘의 가치 코드는 무엇이어야 할까요?',
+        '가치 코드 No.3을 만들어봅시다.',
       ],
       'value-cards': ['6장 중에 오늘의 문제 상황을 막을 카드는 뭘까요?'],
       wrap: ['데이터의 바다에는 좋은 것도 나쁜 것도 섞여 있구나.\n너희가 준 코드가 내 나침반이 될게!'],

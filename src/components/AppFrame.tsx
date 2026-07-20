@@ -130,7 +130,15 @@ export function AppFrame() {
               <h2 className="font-display mt-2 text-4xl text-[#EAF2F5]">학생 화면 함께 보기</h2>
               <p className="mt-3 leading-7 text-[#B7C7D2]">학생이 이 QR로 입장하면 교사가 넘기는 장면을 함께 보고, 게시판 장면에서는 글쓰기와 좋아요에 참여합니다.</p>
               <img className="mx-auto mt-5 w-64 rounded-lg bg-white p-3" src={liveQrUrl} alt="학생 화면 연결 QR" />
-              <p className="font-data mt-4 break-all text-xs leading-5 text-[#8AA0B0]">{liveUrl}</p>
+              <a
+                className="mt-4 inline-block break-all font-data text-xs leading-5 text-[#8AA0B0] underline decoration-white/25 underline-offset-4 hover:text-[#4FE0C0]"
+                href={liveUrl}
+                target="_blank"
+                rel="noreferrer"
+                title="학생 화면 새 탭에서 열기"
+              >
+                {liveUrl}
+              </a>
               <Button
                 className="mt-5 w-full"
                 variant="secondary"

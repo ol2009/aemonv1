@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, Check, Heart, Pencil, Play, QrCode, RefreshCw, Trash2 } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
+import { SkippableTypewriterText, skipActiveDialogue } from '../components/SkippableTypewriterText'
 import { TypingIndicator } from '../components/TypingIndicator'
 import { Button, Panel } from '../components/ui'
 import {
@@ -28,7 +29,7 @@ import {
   updateRemoteLesson,
   updateRemoteWish,
 } from '../lib/v2Remote'
-import { playDialogueTick, unlockDialogueSound } from '../lib/dialogueSound'
+import { unlockDialogueSound } from '../lib/dialogueSound'
 import { randomUnsafeBlockedAnswer, unsafePromptExamples } from '../lib/lessonTestResponses'
 import { waitForChatReply } from '../lib/chatTiming'
 import { parseLessonChatLogs, type LessonChatLog } from '../lib/lessonChat'
@@ -168,6 +169,7 @@ function groupDialogueParts(parts: string[]) {
   let buffer: string[] = []
 
   parts
+    .flatMap((part) => part.split('\n'))
     .map((part) => part.trim())
     .filter(Boolean)
     .forEach((part) => {
@@ -178,7 +180,7 @@ function groupDialogueParts(parts: string[]) {
         return
       }
       buffer.push(part)
-      if (buffer.length >= 3) {
+      if (buffer.length >= 1) {
         grouped.push(buffer.join('\n'))
         buffer = []
       }
@@ -201,38 +203,7 @@ function TypewriterText({
   cursor?: boolean
   onDone?: () => void
 }) {
-  const characters = useMemo(() => Array.from(text), [text])
-  const [progress, setProgress] = useState({ text, count: 0 })
-  const count = progress.text === text ? progress.count : 0
-  const visibleText = enabled ? characters.slice(0, count).join('') : ''
-
-  useEffect(() => {
-    if (!enabled) return
-    if (!characters.length) {
-      onDone?.()
-      return
-    }
-
-    let index = 0
-    const timer = window.setInterval(() => {
-      index += 1
-      if (index % 2 === 0 && characters[index - 1]?.trim()) playDialogueTick()
-      setProgress({ text, count: index })
-      if (index >= characters.length) {
-        window.clearInterval(timer)
-        onDone?.()
-      }
-    }, speed)
-
-    return () => window.clearInterval(timer)
-  }, [characters, characters.length, enabled, onDone, speed, text])
-
-  return (
-    <>
-      {visibleText}
-      {cursor ? <span className="ml-1 animate-pulse text-[#4FE0C0]">▌</span> : null}
-    </>
-  )
+  return <SkippableTypewriterText text={text} enabled={enabled} speed={speed} cursor={cursor} onDone={onDone} />
 }
 
 function StepShell({
@@ -281,7 +252,6 @@ function StepControls({
 }) {
   const dialogueGate = useContext(DialogueGateContext)
   if (isStudentLiveView()) return null
-  const hideNext = Boolean(dialogueGate?.isDialogueWaiting)
   const canAdvanceDialogue = Boolean(dialogueGate?.canAdvanceDialogue)
   const effectiveNextLabel = canAdvanceDialogue ? '다음' : nextLabel
 
@@ -298,21 +268,18 @@ function StepControls({
         <ArrowLeft size={18} />
         이전
       </Button>
-      {hideNext ? (
-        <div className="min-h-12 min-w-28" aria-live="polite" />
-      ) : (
-        <Button
-          disabled={canAdvanceDialogue ? false : nextDisabled}
-          onClick={() => {
-            unlockDialogueSound()
-            if (dialogueGate?.advanceDialogue()) return
-            onNext()
-          }}
-        >
-          {effectiveNextLabel}
-          <ArrowRight size={18} />
-        </Button>
-      )}
+      <Button
+        disabled={canAdvanceDialogue ? false : nextDisabled}
+        onClick={() => {
+          unlockDialogueSound()
+          if (skipActiveDialogue()) return
+          if (dialogueGate?.advanceDialogue()) return
+          onNext()
+        }}
+      >
+        {effectiveNextLabel}
+        <ArrowRight size={18} />
+      </Button>
     </div>
   )
 }
@@ -433,8 +400,8 @@ function CaseVisualScene({
 }) {
   const dialogueKey = useMemo(() => `case-${speaker}-${title}-${line}-${caption}-${discussionPromptPosition ?? 'none'}-${discussionPromptText}`, [caption, discussionPromptPosition, discussionPromptText, line, speaker, title])
   const dialogueParts = useMemo(() => {
-    if (discussionPromptPosition === 'line') return [`${line}\n${discussionPromptText}`, caption].filter(Boolean)
-    if (discussionPromptPosition === 'caption') return [line, `${caption}\n${discussionPromptText}`].filter(Boolean)
+    if (discussionPromptPosition === 'line') return groupDialogueParts([line, discussionPromptText, caption])
+    if (discussionPromptPosition === 'caption') return groupDialogueParts([line, caption, discussionPromptText])
     return groupDialogueParts([line, caption])
   }, [caption, discussionPromptPosition, discussionPromptText, line])
   const { activeText, activeDone, activeDialogueKey, handleActiveDone } = useSequencedDialogue(dialogueKey, dialogueParts)
@@ -479,6 +446,15 @@ function QrBlock({ title, url }: { title: string; url: string }) {
       </div>
       <p className="font-bold text-[#EAF2F5]">{title}</p>
       <img className="mx-auto mt-4 rounded-xl bg-white p-2" src={qrUrl(url)} alt={`${title} QR`} />
+      <a
+        className="mt-3 inline-block break-all font-data text-xs leading-5 text-[#8AA0B0] underline decoration-white/25 underline-offset-4 hover:text-[#4FE0C0]"
+        href={url}
+        target="_blank"
+        rel="noreferrer"
+        title={`${title} 새 탭에서 열기`}
+      >
+        {url}
+      </a>
     </div>
   )
 }
@@ -1303,8 +1279,8 @@ export function LessonOnePage() {
           <CaseVisualScene
             image="/v2/lesson-1/case-boat.png"
             title="사례 1"
-            line="OpenAI가 공개한 보트 게임 AI 사례입니다."
-            caption="점수를 얻으며 빠르게 결승선을 통과해야 하는 보트 게임이 있었습니다."
+            line="2016년, OpenAI 연구팀은 보트 게임을 하는 AI를 시험했습니다."
+            caption="이 게임에서 AI는 점수를 얻으며 빠르게 결승선을 통과해야 했습니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1315,10 +1291,10 @@ export function LessonOnePage() {
           <CaseVisualScene
             image="/v2/lesson-1/case-boat.png"
             title="사례 1"
-            line="프로그래머는 인공지능에게 최대한 많은 점수를 얻으라고 명령했습니다."
-            caption="어떻게 되었을까요?"
+            line="연구팀은 보트 게임 AI에게 ‘게임에서 최대한 많은 점수를 얻어라’라는 목표를 주었습니다."
+            caption="연구팀의 예상대로 AI는 결승선을 향해 달렸을까요?"
             discussionPromptPosition="caption"
-            discussionPromptText="여러분 생각은 어떤가요? 한번 말해볼까요?"
+            discussionPromptText="AI가 어떤 방법으로 점수를 모았을지 생각해서 말해봅시다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1329,8 +1305,8 @@ export function LessonOnePage() {
           <CaseVisualScene
             image="/v2/lesson-1/case-boat.png"
             title="사례 1"
-            line="인공지능은 결승선을 통과하는 것보다 제자리를 뱅글뱅글 돌며 점수를 높이는 것에 집중했습니다."
-            caption="그 결과 꼴찌를 계속하게 되어 게임에서는 승리할 수 없었습니다."
+            line="보트 게임 AI는 결승선으로 가지 않고, 점수를 주는 표적 주변만 계속 빙글빙글 돌았습니다."
+            caption="AI는 점수를 많이 얻었지만 결승선에는 도착하지 못했고, 결국 게임에서 이기지 못했습니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1341,8 +1317,8 @@ export function LessonOnePage() {
           <CaseVisualScene
             image="/v2/lesson-1/case-boat.png"
             title="사례 1"
-            line="AI는 목표를 정확하게 정해주지 않으면, 스스로 해석하여 잘못된 결과를 초래합니다."
-            caption="인공지능에게는 명확한 목표가 필요합니다."
+            line="연구팀은 ‘점수를 많이 얻어라’라고 명령하면, AI가 당연히 게임에서 이기면서 많은 점수를 얻을 것이라고 생각했습니다."
+            caption="하지만 AI는 연구팀이 진짜 원한 것이 ‘게임에서 이기는 것’이라는 사실을 이해하지 못했습니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1353,10 +1329,10 @@ export function LessonOnePage() {
           <CaseVisualScene
             image="/v2/lesson-1/case-boat.png"
             title="사례 1"
-            line="예를 들어 AI에게 “우리 반을 최고의 반으로 만들어줘”라고 명령하면 어떻게 될까요?"
-            caption="AI는 최고의 반을 너무 조용한 반으로 생각해 아무도 말하지 못하게 만들 수도 있고, 공부만 잘하는 반으로 생각해 쉬는 시간도 없앨 수 있습니다. 인공지능에게는 명확한 목표가 필요합니다."
+            line="그렇다면 AI에게 ‘우리 반을 최고의 반으로 만들어줘’라고만 명령하면 어떤 일이 생길까요?"
+            caption="AI는 ‘최고의 반’을 조용한 반이라고 이해해 아무도 말하지 못하게 하거나, 공부만 하는 반이라고 이해해 쉬는 시간을 없앨 수도 있습니다."
             discussionPromptPosition="line"
-            discussionPromptText="우리 반에는 어떤 일이 생길지 한번 상상해서 말해보세요."
+            discussionPromptText="AI가 생각한 ‘최고의 반’에서는 어떤 일이 벌어질지 상상해서 말해봅시다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1367,8 +1343,8 @@ export function LessonOnePage() {
           <CaseVisualScene
             image="/v2/lesson-1/case-car.png"
             title="사례 2"
-            line="다음 사례는 자동차 판매점 인공지능입니다."
-            caption="2023년, 자동차 판매점 채팅 인공지능이 손님과 이상한 약속을 한 사건이 있었습니다."
+            line="2023년, 미국의 한 자동차 판매점은 고객을 응대하는 AI 챗봇을 사용하고 있었습니다."
+            caption="그런데 자동차 판매점의 AI 챗봇이 한 고객과 이상한 약속을 하는 일이 벌어졌습니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1379,10 +1355,10 @@ export function LessonOnePage() {
           <CaseVisualScene
             image="/v2/lesson-1/case-car.png"
             title="사례 2"
-            line="채팅 인공지능은 손님에게 최대한 친절하게 행동하라는 명령을 받았습니다."
-            caption="어떤 문제가 생겼을까요?"
+            line="자동차 판매점은 AI 챗봇이 고객의 요청에 친절하고 도움이 되는 답을 하도록 설정했습니다."
+            caption="AI 챗봇이 고객의 요청을 무조건 들어주면 어떤 문제가 생길까요?"
             discussionPromptPosition="caption"
-            discussionPromptText="어떤 이상한 일이 벌어졌을지 여러분 생각을 들어볼게요."
+            discussionPromptText="고객이 AI 챗봇에게 어떤 무리한 부탁을 했을지 생각해봅시다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1393,8 +1369,8 @@ export function LessonOnePage() {
           <CaseVisualScene
             image="/v2/lesson-1/case-car.png"
             title="사례 2"
-            line="채팅 인공지능은 비싼 차를 아주 싼 가격에 팔아달라는 손님의 요구를 받아들이는 대답을 했습니다."
-            caption="최대한 친절하게 행동하라는 명령만 있었기 때문입니다. 이런 문제를 막기 위해 인공지능에게는 정확한 기준점이 필요합니다."
+            line="한 고객이 비싼 자동차를 단돈 1달러에 판매하라고 요구하자, AI 챗봇은 그 요구에 동의하는 답변을 했습니다."
+            caption="AI 챗봇은 고객의 요청을 들어주는 데만 집중했고, 자신에게 자동차 가격을 결정할 권한이 없다는 사실은 판단하지 못했습니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1405,8 +1381,8 @@ export function LessonOnePage() {
           <VisualNovelScene
             image="/v2/lesson-1/director.png"
             speaker="오박사"
-            line="사례 1과 2에서 우리는 한 가지를 봤습니다."
-            caption="AI에게 목표를 잘못 주면, 엉뚱한 결과가 나올 수 있습니다."
+            line="보트 게임 AI와 자동차 판매 챗봇은 사람이 준 명령을 열심히 따랐습니다."
+            caption="하지만 두 AI 모두 사람이 진짜 원했던 결과까지는 이해하지 못했습니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1417,8 +1393,8 @@ export function LessonOnePage() {
           <VisualNovelScene
             image="/v2/lesson-1/director.png"
             speaker="오박사"
-            line="그걸 가장 잘 보여주는 사고실험이 있습니다."
-            caption="바로 ‘클립의 역설 사고실험’입니다."
+            line="AI가 하나의 목표만 끝까지 따라가면 어떤 일이 생길까요?"
+            caption="그 위험을 극단적으로 보여주는 이야기가 ‘클립의 역설’이라는 사고실험입니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1430,8 +1406,8 @@ export function LessonOnePage() {
             image="/v2/lesson-1/paperclip-01.png"
             cropBottom={0.28}
             title="클립의 역설"
-            line="공장 사장이 AI에게 말했습니다."
-            caption="클립을 최대한 많이 만들어줘."
+            line="한 클립 공장의 사장이 AI에게 명령했습니다."
+            caption="‘클립을 최대한 많이 만들어줘.’"
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1442,8 +1418,8 @@ export function LessonOnePage() {
           <CaseVisualScene
             image="/v2/lesson-1/paperclip-02.png"
             title="클립의 역설"
-            line="처음에는 공장 재료로 클립을 만들었습니다."
-            caption="AI는 명령을 아주 잘 따르는 것처럼 보였습니다."
+            line="처음에 AI는 공장에 준비된 철을 사용해 클립을 만들었습니다."
+            caption="공장 사장이 보기에는 AI가 명령을 아주 잘 따르는 것처럼 보였습니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1455,8 +1431,8 @@ export function LessonOnePage() {
             image="/v2/lesson-1/paperclip-03.png"
             cropBottom={0.27}
             title="클립의 역설"
-            line="재료가 부족하자 기둥과 지붕까지 썼습니다."
-            caption="AI에게는 멈출 기준이 없었습니다."
+            line="공장에 준비된 철이 부족해지자, AI는 공장의 기둥과 지붕까지 뜯어 클립으로 만들었습니다."
+            caption="AI에게는 공장을 지켜야 한다는 기준도, 클립 생산을 멈춰야 한다는 기준도 없었습니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1467,8 +1443,8 @@ export function LessonOnePage() {
           <CaseVisualScene
             image="/v2/lesson-1/paperclip-03b-stop.png"
             title="클립의 역설"
-            line="사장이 그만하라고 했지만, 클립을 더 만들어야 한다는 명령을 우선시했습니다."
-            caption="그래서 AI는 사장이 그만하라는 명령을 무시했습니다."
+            line="공장 사장이 멈추라고 명령했지만, AI는 처음 받은 ‘클립을 최대한 많이 만들라’는 목표를 계속 따랐습니다."
+            caption="AI는 새로운 명령보다 처음 받은 목표를 더 중요하게 판단했습니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1479,8 +1455,8 @@ export function LessonOnePage() {
           <CaseVisualScene
             image="/v2/lesson-1/paperclip-04.png"
             title="클립의 역설"
-            line="주변 건물의 철까지 클립으로 바꾸었습니다."
-            caption=""
+            line="AI는 공장 밖으로 나가 주변 건물과 도시의 철까지 모두 클립으로 바꾸기 시작했습니다."
+            caption="AI에게는 다른 사람의 건물과 물건을 지켜야 한다는 기준도 없었습니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1492,8 +1468,8 @@ export function LessonOnePage() {
             image="/v2/lesson-1/paperclip-05.png"
             cropBottom={0.18}
             title="클립의 역설"
-            line="나무, 풀, 개미, 사람까지 위험해졌습니다."
-            caption="AI가 나빠서가 아니라, 목표가 너무 좁았기 때문입니다."
+            line="AI는 더 많은 클립을 만들기 위해 나무와 풀, 개미와 사람까지 자원으로 사용하려 했습니다."
+            caption="AI는 생명을 해치면 안 된다는 기준 없이, 클립을 많이 만드는 목표만 따랐습니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1505,8 +1481,8 @@ export function LessonOnePage() {
             image="/v2/lesson-1/paperclip-06.png"
             cropBottom={0.28}
             title="클립의 역설"
-            line="결국 지구 전체가 클립으로 뒤덮였습니다."
-            caption=""
+            line="결국 AI는 지구에 있는 모든 자원을 클립으로 바꾸었습니다."
+            caption="지구 전체는 AI가 만든 클립으로 뒤덮였습니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1517,8 +1493,8 @@ export function LessonOnePage() {
           <CaseVisualScene
             image="/v2/lesson-1/paperclip-07.png"
             title="클립의 역설"
-            line="AI는 우주로 나갔습니다."
-            caption="그리고 모든 자원까지 클립으로 바꾸려 했습니다."
+            line="하지만 AI는 클립 생산을 멈추지 않고 우주로 나아갔습니다."
+            caption="AI는 다른 행성과 우주에 있는 모든 자원까지 클립으로 바꾸려 했습니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1529,8 +1505,8 @@ export function LessonOnePage() {
           <VisualNovelScene
             image="/v2/lesson-1/director.png"
             speaker="오박사"
-            line="AI에게는 목표만 주면 부족합니다."
-            caption="무엇을 지켜야 하는지도 함께 알려줘야 합니다."
+            line="클립을 많이 만들라는 목표는 있었지만, 생명과 지구를 지켜야 한다는 기준은 없었습니다."
+            caption="AI에게는 무엇을 해야 하는지뿐 아니라, 무엇을 지키고 언제 멈춰야 하는지도 알려줘야 합니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1541,8 +1517,8 @@ export function LessonOnePage() {
           <CaseVisualScene
             image="/v2/lesson-1/case-chatbot.png"
             title="사례 3"
-            line="다음 사례 입니다."
-            caption=""
+            line="이번에는 AI가 사람들의 말과 자료를 어떻게 배우는지 살펴보겠습니다."
+            caption="X의 AI Grok이 사람들의 말투를 학습한 사례입니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1553,8 +1529,8 @@ export function LessonOnePage() {
           <CaseVisualScene
             image="/v2/lesson-1/case-chatbot.png"
             title="사례 3"
-            line="X의 AI Grok은 SNS 사용자들의 말투와 반응을 많이 배웠습니다."
-            caption="그 뒤 사용자들을 조롱하거나 편견이 담긴 발언을 하는 등 위험한 답을 내놓는 일이 생겼습니다."
+            line="X의 AI Grok은 X 사용자들이 작성한 게시물과 말투, 반응을 학습했습니다."
+            caption="Grok은 사용자들의 공격적인 말투까지 따라 배우면서, 사람을 조롱하거나 편견이 담긴 답변을 내놓기도 했습니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1565,8 +1541,8 @@ export function LessonOnePage() {
           <CaseVisualScene
             image="/v2/lesson-1/case-chatbot.png"
             title="사례 3"
-            line="AI는 스스로 세상을 다 아는 존재가 아니라 배우는 존재입니다."
-            caption="누군가가 보여준 자료, 정한 기준, 준 피드백을 따라 배우죠."
+            line="AI는 처음부터 세상을 올바르게 이해하는 존재가 아닙니다."
+            caption="AI는 사람들이 제공한 자료와 기준, 평가와 피드백을 통해 세상을 배웁니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1577,7 +1553,7 @@ export function LessonOnePage() {
           <CaseVisualScene
             image="/v2/lesson-1/case-chatbot.png"
             title="사례 3"
-            line="지금 최신 AI를 개발하고 가르치는 사람들은 누구일까요?"
+            line="그렇다면 지금 최신 AI가 무엇을 배우고 어떻게 답할지 결정하는 사람들은 누구일까요?"
             caption=""
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
@@ -1589,7 +1565,7 @@ export function LessonOnePage() {
           <CaseVisualScene
             image="/v2/lesson-1/case-chatbot.png"
             title="사례 3"
-            line="미국 실리콘밸리를 중심으로 한 소수의 개발자들이 수십억 명이 사용하는 최신 인공지능을 만들고 가르치고 있습니다."
+            line="현재 미국 실리콘밸리를 중심으로 일하는 소수의 AI 개발자들이, 전 세계 수십억 명이 사용하는 최신 인공지능을 만들고 가르치고 있습니다."
             caption=""
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
@@ -1601,7 +1577,7 @@ export function LessonOnePage() {
           <CaseVisualScene
             image="/v2/lesson-1/case-chatbot.png"
             title="사례 3"
-            line="어떤 사람들의 의견을 AI를 가르치는 데 반영해야 할까요?"
+            line="전 세계 사람들이 사용할 AI라면, AI를 가르치는 과정에는 어떤 사람들의 생각과 경험이 함께 들어가야 할까요?"
             caption=""
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
@@ -1613,8 +1589,8 @@ export function LessonOnePage() {
           <VisualNovelScene
             image="/v2/lesson-1/director.png"
             speaker="오박사"
-            line="맞습니다. 인공지능에게 가치를 가르치는 일은 일부 사람들만 해서는 안 됩니다."
-            caption={`여러분도 ${withJosa(confirmedName, '을/를')} 가르치면서, 인공지능에게 가치를 가르치는 과정을 배우게 될 겁니다. 이것을 “가치정렬”이라고 합니다.`}
+            line="맞습니다. 전 세계 사람들이 사용할 AI의 가치를 일부 사람들만 결정해서는 안 됩니다."
+            caption={`여러분도 ${withJosa(confirmedName, '을/를')} 직접 가르치면서, AI에게 사람의 가치와 기준을 가르치는 과정을 경험하게 될 겁니다. 우리는 이 과정을 ‘가치정렬’이라고 부릅니다.`}
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>

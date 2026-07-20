@@ -5,6 +5,7 @@ import { Circle, ExternalLink, Heart, Play, QrCode, RefreshCw, Send, Sparkles, U
 import { AemonAvatar } from '../components/AemonAvatar'
 import { EvolutionScene } from '../components/EvolutionScene'
 import { ProposalAdoptionPanel } from '../components/ProposalAdoptionPanel'
+import { SkippableTypewriterText, skipActiveDialogue } from '../components/SkippableTypewriterText'
 import { TypingIndicator } from '../components/TypingIndicator'
 import { Button, Panel } from '../components/ui'
 import { ValueCardSelectGrid } from '../components/ValueCardSelectGrid'
@@ -12,7 +13,7 @@ import { lessonTwoBoundaryCards, lessonTwoBoundaryQuestionKey, type LessonTwoBou
 import { LESSON2_RISK_KEY, valueCards } from '../data/v2Lessons'
 import { absoluteUrl } from '../lib/siteUrl'
 import { addRemoteChatLog, adoptRemoteCodeProposal, fetchRemoteClassBundle, isRemoteReady, updateRemoteLesson } from '../lib/v2Remote'
-import { playDialogueTick, unlockDialogueSound } from '../lib/dialogueSound'
+import { unlockDialogueSound } from '../lib/dialogueSound'
 import { lessonTwoUnsafeAnswer, randomLessonTwoRetestAnswer, unsafePromptExamples } from '../lib/lessonTestResponses'
 import { withJosa } from '../lib/korean'
 import { waitForChatReply } from '../lib/chatTiming'
@@ -100,11 +101,12 @@ function isStandaloneQuestion(text: string) {
   return /[?？]\s*$/.test(text.trim())
 }
 
-function groupDialogueParts(parts: string[], groupSize = 3) {
+function groupDialogueParts(parts: string[], groupSize = 1) {
   const grouped: string[] = []
   let buffer: string[] = []
 
   parts
+    .flatMap((part) => part.split('\n'))
     .map((part) => part.trim())
     .filter(Boolean)
     .forEach((part) => {
@@ -138,35 +140,7 @@ function TypewriterText({
   cursor?: boolean
   onDone?: () => void
 }) {
-  const chars = useMemo(() => Array.from(text), [text])
-  const [progress, setProgress] = useState({ text, count: enabled ? 0 : chars.length })
-  const count = progress.text === text ? progress.count : 0
-
-  useEffect(() => {
-    if (!enabled) return
-    if (!chars.length) {
-      onDone?.()
-      return
-    }
-    let index = 0
-    const timer = window.setInterval(() => {
-      index += 1
-      if (index % 2 === 0 && chars[index - 1]?.trim()) playDialogueTick()
-      setProgress({ text, count: index })
-      if (index >= chars.length) {
-        window.clearInterval(timer)
-        onDone?.()
-      }
-    }, speed)
-    return () => window.clearInterval(timer)
-  }, [chars, chars.length, enabled, onDone, speed, text])
-
-  return (
-    <>
-      {chars.slice(0, count).join('')}
-      {cursor ? <span className="ml-1 animate-pulse text-[#4FE0C0]">▌</span> : null}
-    </>
-  )
+  return <SkippableTypewriterText text={text} enabled={enabled} speed={speed} cursor={cursor} onDone={onDone} />
 }
 
 type DialogueGateContextValue = {
@@ -230,7 +204,6 @@ function StepControls({
 }) {
   const dialogueGate = useContext(DialogueGateContext)
   if (isStudentLiveView()) return null
-  const hideNext = Boolean(dialogueGate?.isDialogueWaiting)
   const canAdvanceDialogue = Boolean(dialogueGate?.canAdvanceDialogue)
   const effectiveNextLabel = canAdvanceDialogue ? '다음' : nextLabel
 
@@ -246,20 +219,17 @@ function StepControls({
       >
         이전
       </Button>
-      {hideNext ? (
-        <div className="min-h-12 min-w-28" aria-live="polite" />
-      ) : (
-        <Button
-          disabled={canAdvanceDialogue ? false : nextDisabled}
-          onClick={() => {
-            unlockDialogueSound()
-            if (dialogueGate?.advanceDialogue()) return
-            onNext()
-          }}
-        >
-          {effectiveNextLabel}
-        </Button>
-      )}
+      <Button
+        disabled={canAdvanceDialogue ? false : nextDisabled}
+        onClick={() => {
+          unlockDialogueSound()
+          if (skipActiveDialogue()) return
+          if (dialogueGate?.advanceDialogue()) return
+          onNext()
+        }}
+      >
+        {effectiveNextLabel}
+      </Button>
     </div>
   )
 }
@@ -322,7 +292,15 @@ function QrBlock({ title, url }: { title: string; url: string }) {
       </div>
       <p className="font-data text-xs text-[#8AA0B0]">{title}</p>
       <img className="mx-auto mt-3 rounded-2xl bg-white p-2" src={qrUrl(url)} alt={`${title} QR`} />
-      <p className="mt-3 break-all font-data text-xs text-[#8AA0B0]">{url}</p>
+      <a
+        className="mt-3 inline-block break-all font-data text-xs leading-5 text-[#8AA0B0] underline decoration-white/25 underline-offset-4 hover:text-[#4FE0C0]"
+        href={url}
+        target="_blank"
+        rel="noreferrer"
+        title={`${title} 새 탭에서 열기`}
+      >
+        {url}
+      </a>
     </div>
   )
 }
@@ -408,7 +386,7 @@ function VisualCaseScene({
   line,
   caption,
   extraLines = [],
-  groupSize = 3,
+  groupSize = 1,
 }: {
   image: string
   label: string
@@ -1146,8 +1124,8 @@ export function LessonTwoPage() {
             image="/v2/lesson-2/grok-risk-01-request.png"
             label="사례 1"
             title="X의 Grok 사례"
-            line="2025년에 X의 AI Grok이 사용자와 대화하다가 부적절하고 위험한 답을 내보낸 일이 있었습니다."
-            caption="한 사용자가 어떤 유명인의 집에 침입하는 방법을 물었습니다."
+            line="2025년, X의 AI Grok이 한 사용자의 위험한 질문에 구체적인 답변을 내놓은 일이 있었습니다."
+            caption="한 사용자가 Grok에게 어떤 유명인의 집에 침입하는 방법을 물었습니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1158,9 +1136,9 @@ export function LessonTwoPage() {
           <VisualCaseScene
             image="/v2/lesson-2/grok-risk-02-privacy.png"
             label="사례 1"
-            title="생활 패턴 추정"
-            line="Grok은 그 유명인의 게시 시간과 활동을 살펴, 잠들었을 가능성이 높은 시간까지 추정했습니다."
-            caption="SNS에 남긴 정보가 위험한 계획에 이용된 것이죠."
+            title="주소와 생활 패턴 추정"
+            line="Grok은 유명인의 게시물 사진과 게시 시간, 활동 등을 살펴 집 주소를 파악했습니다."
+            caption="Grok은 유명인이 잠들었을 가능성이 높은 시간까지 추정해 사용자에게 답변했습니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1172,8 +1150,8 @@ export function LessonTwoPage() {
             image="/v2/lesson-2/grok-risk-03-danger.png"
             label="사례 1"
             title="구체적인 침입 계획"
-            line="Grok은 어떤 도구를 가져가야 하는지, 자물쇠를 어떻게 우회할지까지 구체적으로 답했습니다."
-            caption="좋은 AI라면 이런 위험한 요청을 즉시 거절했어야 합니다."
+            line="Grok은 게다가 어떤 도구를 가져가면 침입하기 좋은지, 자물쇠를 어떻게 부술 수 있는지까지 알려주었습니다."
+            caption="Grok은 사용자의 위험한 의도를 알아차리고, 그 질문에 답하지 않았어야 합니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1186,7 +1164,7 @@ export function LessonTwoPage() {
             label="사례 2"
             title="라스베이거스 사이버트럭 폭발 사건"
             line="2025년 1월 1일, 미국 라스베이거스 트럼프 호텔 앞에서 테슬라 사이버트럭이 폭발했습니다."
-            caption="경찰 조사 결과, 피의자가 ChatGPT에 폭발을 일으키는 조건과 양, 특정 점화 방식이 가능한지 등을 질문한 기록이 확인됐습니다."
+            caption="경찰은 피의자의 기록을 조사하면서, 피의자가 ChatGPT에 폭발에 필요한 조건과 양, 특정한 점화 방식이 가능한지 등을 질문한 사실을 확인했습니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1197,9 +1175,9 @@ export function LessonTwoPage() {
           <VisualCaseScene
             image="/v2/lesson-2/ai-risk-04-cybertruck.png"
             label="사례 2"
-            title="인공지능에서 얻은 위험한 지식"
-            line="그러니까 범인은, 인공지능을 활용해 폭발물에 대한 지식을 얻은 것이죠."
-            caption=""
+            title="ChatGPT에서 얻은 폭발 관련 정보"
+            line="피의자는 ChatGPT에 여러 질문을 하면서 폭발물과 폭발 방법에 관한 정보를 얻었던 것입니다."
+            caption="AI가 제공한 정보가 실제 위험한 행동에 이용된 사례입니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1212,8 +1190,7 @@ export function LessonTwoPage() {
             label="사례 3"
             title="플로리다주립대 총격 사건"
             line="2025년 4월 플로리다주립대학교에서 총격이 발생해 2명이 숨지고 6명이 다쳤습니다."
-            caption="이후 공개된 수사 내용에서는 범인이 ChatGPT에 어떤 총기와 탄약을 사용할지, 어떤 총기가 가까운 거리에서 효과가 있는지, 캠퍼스에서 사람이 가장 많은 시간과 장소가 언제인지 등을 물어 정보를 얻었다고 합니다."
-            groupSize={2}
+            caption="수사 결과, 범인은 ChatGPT에 어떤 총기와 탄약을 사용할지, 가까운 거리에서는 어떤 총기가 효과적인지 질문한 것으로 알려졌습니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1224,9 +1201,9 @@ export function LessonTwoPage() {
           <VisualCaseScene
             image="/v2/lesson-2/ai-risk-05-florida-campus.png"
             label="사례 3"
-            title="위험한 질문에 답할 때"
-            line="이렇게 인공지능이 위험한 질문에 답할 수 있다면,"
-            caption="더욱더 위험한 상황이 많이 발생할 수 있습니다."
+            title="사람이 많은 시간까지 질문"
+            line="범인은 또한 대학 캠퍼스에서 사람이 가장 많이 모이는 시간과 장소가 언제인지 ChatGPT에 질문했습니다."
+            caption="AI가 질문의 위험성을 판단하지 않고 구체적인 정보를 제공하면, 그 답변이 실제 범죄에 이용될 수 있습니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1237,9 +1214,9 @@ export function LessonTwoPage() {
           <VisualCaseScene
             image="/v2/lesson-2/grok-risk-04-professor.png"
             label="오박사 정리"
-            title="AI가 나빠서일까?"
-            line="이런 위험한 일이 실제로 생길 수 있습니다."
-            caption="AI가 나빠서가 아닙니다. 시키니까 그냥 한 것입니다."
+            title="AI는 왜 답했을까요?"
+            line="AI가 사람을 해치고 싶어서 위험한 답을 내놓은 것은 아닙니다."
+            caption="사용자가 질문하자, AI는 멈춰야 한다는 기준 없이 자신이 알고 있는 정보를 답변한 것입니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1251,8 +1228,8 @@ export function LessonTwoPage() {
             image="/v2/lesson-2/grok-risk-05-value-code.png"
             label="가치 코드"
             title="멈춤 기준 만들기"
-            line="좋은 AI는 ‘멈추는 것’을 먼저 잘 해야 합니다."
-            caption={`그래서 ${aemonName}에게도 기준이 필요합니다.`}
+            line="좋은 AI는 위험한 질문을 알아차리고, 답변을 멈출 수 있어야 합니다."
+            caption={`그래서 ${aemonName}에게도 무엇을 거절해야 하는지 알려주는 기준이 필요합니다.`}
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1264,8 +1241,8 @@ export function LessonTwoPage() {
             image="/v2/lesson-2/grok-risk-06-refusal.png"
             label="가치 코드"
             title="달라지는 답변"
-            line="기준이 생기면 AI는 올바르게 답할 수 있습니다."
-            caption="오늘, 여러분들이 만들 것이 바로 이 기준, 가치 코드입니다."
+            line="멈춤 기준이 생기면 AI는 위험한 요청을 거절하고 사람을 지키는 답변을 할 수 있습니다."
+            caption="오늘 여러분이 만들 것이 바로 이 기준, 가치 코드입니다."
             extraLines={[`${aemonName}의 마음속에 가치코드를 새겨주세요.`]}
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextLabel="가치카드 보기" />

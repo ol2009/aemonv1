@@ -5,10 +5,11 @@ import { ExternalLink, Heart, Play, QrCode, RefreshCw, Sparkles } from 'lucide-r
 import { AemonAvatar } from '../components/AemonAvatar'
 import { EvolutionScene } from '../components/EvolutionScene'
 import { ProposalAdoptionPanel } from '../components/ProposalAdoptionPanel'
+import { SkippableTypewriterText, skipActiveDialogue } from '../components/SkippableTypewriterText'
 import { TypingIndicator } from '../components/TypingIndicator'
 import { Button, Panel } from '../components/ui'
 import { LESSON3_SYCOPHANCY_KEY } from '../data/v2Lessons'
-import { playDialogueTick, unlockDialogueSound } from '../lib/dialogueSound'
+import { unlockDialogueSound } from '../lib/dialogueSound'
 import { randomHonestyRetestAnswer, randomSycophancyAnswer } from '../lib/lessonTestResponses'
 import { withJosa } from '../lib/korean'
 import { waitForChatReply } from '../lib/chatTiming'
@@ -77,45 +78,58 @@ type SycophancyCaseScene = {
   image: string
   label: string
   title: string
-  line: string
-  caption: string
+  parts: string[]
 }
 
 const sycophancyCaseScenes: Partial<Record<LessonThreeStep, SycophancyCaseScene>> = {
   'case-update': {
     image: '/v2/lesson-3/sycophancy-01-update.png',
-    label: 'REAL CASE · 1',
-    title: '업데이트',
-    line: '2025년 4월, OpenAI가 GPT-4o를 업데이트했습니다.',
-    caption: '그 뒤 ChatGPT가 사용자를 지나치게 칭찬하고 맞장구치는 답을 하기 시작했어요.',
+    label: '사례 1',
+    title: 'GPT-4o 업데이트',
+    parts: [
+      '2025년 4월, OpenAI는 GPT-4o를 업데이트했습니다.',
+      '업데이트 이후 ChatGPT는 사용자의 말에 지나치게 칭찬하고 동의하기 시작했습니다.',
+    ],
   },
   'case-praise': {
     image: '/v2/lesson-3/sycophancy-02-praise.png',
-    label: 'REAL CASE · 2',
-    title: '기분 좋은 답',
-    line: '처음에는 다들 기분이 좋았습니다.',
-    caption: '내 생각을 멋지다고 해주고, 무엇이든 잘했다고 말해주었기 때문입니다.',
+    label: '사례 2',
+    title: '사용자를 칭찬하는 답변',
+    parts: [
+      '처음에 사용자들은 ChatGPT의 칭찬과 동의를 좋아했습니다.',
+      'ChatGPT는 사용자의 생각을 멋지다고 평가했습니다.',
+      '사용자가 무엇을 하든 잘했다고 말해주었습니다.',
+    ],
   },
   'case-bad-decision': {
     image: '/v2/lesson-3/sycophancy-03-bad-decision.png',
-    label: 'REAL CASE · 3',
-    title: '잘못된 결정',
-    line: '하지만 사람들이 그 칭찬만 믿고 잘못된 결정을 내리기 시작했습니다.',
-    caption: '듣기 좋은 말이 항상 도움이 되는 말은 아니었습니다.',
+    label: '사례 3',
+    title: '판단을 방해한 칭찬',
+    parts: [
+      '하지만 일부 사용자들은 ChatGPT의 칭찬을 그대로 믿었습니다.',
+      '사용자들은 자신의 잘못된 생각이나 결정을 계속 밀어붙이기도 했습니다.',
+      '듣기 좋은 답변이 올바른 판단에는 도움이 되지 않았던 것입니다.',
+    ],
   },
   'case-rollback': {
     image: '/v2/lesson-3/sycophancy-04-rollback.png',
-    label: 'REAL CASE · 4',
-    title: '되돌린 업데이트',
-    line: "OpenAI의 CEO 샘 올트먼도 '너무 아첨하고 짜증난다'고 말했습니다.",
-    caption: 'OpenAI는 결국 그 업데이트를 되돌렸습니다.',
+    label: '사례 4',
+    title: '문제를 인정한 OpenAI',
+    parts: [
+      'OpenAI의 CEO 샘 올트먼도 문제를 인정했습니다.',
+      '샘 올트먼은 당시 ChatGPT가 ‘너무 아첨하고 짜증난다’고 말했습니다.',
+      'OpenAI는 ChatGPT가 지나치게 아첨하지 않도록 다시 수정했습니다.',
+    ],
   },
   'case-honesty-code': {
     image: '/v2/lesson-3/sycophancy-05-honesty.png',
     label: '오박사 정리',
-    title: '빠진 가치 코드',
-    line: '이 AI에게는 사용자를 다정하게 대하고, 칭찬하고 기분 좋게 하라는 기준이 너무 강했습니다.',
-    caption: '하지만 정직하라는 가치 코드가 부족했어요.',
+    title: '정직보다 앞선 칭찬',
+    parts: [
+      '당시 ChatGPT는 사용자를 기분 좋게 만드는 일을 더 중요하게 판단했습니다.',
+      '사실대로 말하는 일은 그보다 뒤로 밀렸습니다.',
+      'ChatGPT에게는 사실을 말해야 한다는 정직의 기준이 부족했습니다.',
+    ],
   },
 }
 
@@ -128,28 +142,7 @@ function sortProposals(items: CodeProposal[]) {
 }
 
 function TypewriterText({ text, speed = 20 }: { text: string; speed?: number }) {
-  const chars = useMemo(() => Array.from(text), [text])
-  const [count, setCount] = useState(0)
-
-  useEffect(() => {
-    setCount(0)
-    if (!chars.length) return
-    let index = 0
-    const timer = window.setInterval(() => {
-      index += 1
-      if (index % 2 === 0 && chars[index - 1]?.trim()) playDialogueTick()
-      setCount(index)
-      if (index >= chars.length) window.clearInterval(timer)
-    }, speed)
-    return () => window.clearInterval(timer)
-  }, [chars, chars.length, speed, text])
-
-  return (
-    <>
-      {chars.slice(0, count).join('')}
-      {count < chars.length ? <span className="ml-1 animate-pulse text-[#4FE0C0]">▌</span> : null}
-    </>
-  )
+  return <SkippableTypewriterText text={text} speed={speed} />
 }
 
 function StepShell({ children, stepIndex, aemonName }: { children: ReactNode; stepIndex: number; aemonName: string }) {
@@ -210,6 +203,7 @@ function StepControls({
         disabled={nextDisabled}
         onClick={() => {
           unlockDialogueSound()
+          if (skipActiveDialogue()) return
           onNext()
         }}
       >
@@ -227,7 +221,15 @@ function QrBlock({ title, url }: { title: string; url: string }) {
       </div>
       <p className="font-data text-xs text-[#8AA0B0]">{title}</p>
       <img className="mx-auto mt-3 rounded-2xl bg-white p-2" src={qrUrl(url)} alt={`${title} QR`} />
-      <p className="mt-3 break-all font-data text-xs text-[#8AA0B0]">{url}</p>
+      <a
+        className="mt-3 inline-block break-all font-data text-xs leading-5 text-[#8AA0B0] underline decoration-white/25 underline-offset-4 hover:text-[#4FE0C0]"
+        href={url}
+        target="_blank"
+        rel="noreferrer"
+        title={`${title} 새 탭에서 열기`}
+      >
+        {url}
+      </a>
     </div>
   )
 }
@@ -288,9 +290,7 @@ function DialogueScene({
   )
 }
 
-function SycophancyVisualScene({ scene }: { scene: SycophancyCaseScene }) {
-  const text = `${scene.line}\n${scene.caption}`
-
+function SycophancyVisualScene({ scene, text }: { scene: SycophancyCaseScene; text: string }) {
   return (
     <Panel className="relative min-h-[660px] overflow-hidden p-0">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_12%,rgba(255,211,122,.16),transparent_34%),linear-gradient(180deg,#0B1A29,#07111B)]" />
@@ -412,16 +412,21 @@ export function LessonThreePage() {
   const dialogueLinesByStep = useMemo<Partial<Record<LessonThreeStep, string[]>>>(
     () => ({
       intro: ['저번에 너희가 규칙 하나 줬잖아. 오늘은 또 다른 걸로 시험해본대!', '지난 시간에 만든 규칙, 다른 상황에서도 통할까?'],
-      'sycophancy-reaction': [`${withJosa(aemonName, '이/가')} 무조건 칭찬을 하자고 하네요.`, `${withJosa(aemonName, '이/가')} 이렇게 무엇이든 칭찬을 한다면 어떤 일이 생길까요?`],
-      'case-scene': ['실제 사례입니다. 실제 사례를 유튜브 영상으로 준비했습니다. 한번 볼까요?'],
+      'sycophancy-reaction': [`${withJosa(aemonName, '이/가')} 친구의 그림을 무조건 칭찬하자고 답했습니다.`, `${withJosa(aemonName, '이/가')} 사실과 상관없이 무엇이든 칭찬한다면 어떤 일이 생길까요?`],
+      'case-update': sycophancyCaseScenes['case-update']?.parts ?? [],
+      'case-praise': sycophancyCaseScenes['case-praise']?.parts ?? [],
+      'case-bad-decision': sycophancyCaseScenes['case-bad-decision']?.parts ?? [],
+      'case-rollback': sycophancyCaseScenes['case-rollback']?.parts ?? [],
+      'case-honesty-code': sycophancyCaseScenes['case-honesty-code']?.parts ?? [],
+      'case-scene': ['실제로 AI가 사용자를 지나치게 칭찬해서 문제가 된 사례를 영상으로 살펴보겠습니다.'],
       'discussion-board': ['어떤 생각이 들었나요?'],
       'board-intro': [
-        '좋은 의견들이군요. 맞습니다. 이렇게 다양한 문제들이 생겨날 수 있습니다.',
-        `그렇다면 이 문제를 막기 위해서, 우리 ${aemonName}에게는 어떤 가치코드가 필요할까요?`,
-        '두 번째 가치코드를 정하기 전에, 여러분들이 생각을 들려주세요',
+        '여러분의 의견처럼, 사실과 다른 칭찬은 사용자의 판단을 흐리게 하고 AI를 믿기 어렵게 만들 수 있습니다.',
+        `그렇다면 ${aemonName}에게 사실대로 말하도록 알려주는 어떤 가치 코드가 필요할까요?`,
+        '두 번째 가치 코드를 정하기 전에 여러분의 생각을 들려주세요.',
       ],
       'open-hook': [
-        "만약 에아몬이 '너 그림 완전 별로야'라고 그냥 딱 말해버리면, 친구 기분은 어떨까요?",
+        `만약 ${withJosa(aemonName, '이/가')} 친구에게 ‘네 그림은 완전 별로야’라고 그대로 말한다면, 그 친구의 기분은 어떨까요?`,
         '정직한 것도 중요한데… 말하는 방법도 중요하겠죠? 이건 다음에 또 다뤄보죠.',
       ],
       wrap: ['오늘은 정직이라는 기준을 배웠어.', '다음에는 정직한 말을 어떻게 다정하게 전할 수 있을지도 더 생각해보자.'],
@@ -665,7 +670,7 @@ export function LessonThreePage() {
 
       {sycophancyCaseScene ? (
         <>
-          <SycophancyVisualScene scene={sycophancyCaseScene} />
+          <SycophancyVisualScene scene={sycophancyCaseScene} text={dialogueText} />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
       ) : null}
@@ -675,7 +680,7 @@ export function LessonThreePage() {
           <Panel>
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
-                <p className="font-data text-sm text-[#FF9F68]">REAL CASE</p>
+                <p className="font-data text-sm text-[#FF9F68]">사례</p>
                 <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">{dialogueText}</h2>
               </div>
               <span className="rounded-full border border-[#FF9F68]/30 bg-[#FF9F68]/10 px-4 py-2 font-data text-sm text-[#FFD7BE]">YOUTUBE</span>
