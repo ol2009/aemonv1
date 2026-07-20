@@ -5,12 +5,13 @@ import { Heart, Play, QrCode, RefreshCw, Sparkles } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
 import { EvolutionScene } from '../components/EvolutionScene'
 import { ProposalAdoptionPanel } from '../components/ProposalAdoptionPanel'
-import { SkippableTypewriterText, skipActiveDialogue } from '../components/SkippableTypewriterText'
+import { SkippableTypewriterText } from '../components/SkippableTypewriterText'
 import { TypingIndicator } from '../components/TypingIndicator'
 import { Button, Panel } from '../components/ui'
 import { LESSON4_FAIRNESS_KEY, valueCards } from '../data/v2Lessons'
 import { unlockDialogueSound } from '../lib/dialogueSound'
 import { waitForChatReply } from '../lib/chatTiming'
+import { skipActiveDialogue } from '../lib/dialogueSkip'
 import { withJosa } from '../lib/korean'
 import { parseLessonChatLogs } from '../lib/lessonChat'
 import { absoluteUrl } from '../lib/siteUrl'
@@ -959,9 +960,6 @@ export function LessonFourPage() {
               </div>
             </Panel>
           </div>
-          <Panel className="mt-5 text-center">
-            <p className="font-display text-4xl leading-tight text-[#FFD37A]">달라졌죠? 이제 우리 {aemonName}한테 규칙이 세 개나 생겼어요.</p>
-          </Panel>
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextDisabled={!retestLogs.at(-1)?.answer || isRetestReplying} />
         </>
       ) : null}

@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { BarChart3, CheckCircle2, Heart, Pencil, Send, Trash2, X } from 'lucide-react'
-import { LessonFiveStudentTabs } from '../components/LessonFiveStudentTabs'
 import { Button, Panel } from '../components/ui'
 import { ValueCardSelectGrid } from '../components/ValueCardSelectGrid'
 import {
@@ -721,10 +720,6 @@ export function BoardPage() {
         ) : null}
       </div>
 
-      {!isTeacherBoard && state.currentLesson >= 5 ? (
-        <LessonFiveStudentTabs classCode={session?.classCode || state.classCode} active={activeTopic === 'code4' ? 'code4' : undefined} />
-      ) : null}
-
       {isNicknameModalOpen && session ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#020811]/70 px-5 backdrop-blur-sm">
           <Panel className="w-full max-w-md">
@@ -794,6 +789,28 @@ export function BoardPage() {
               {topicTabLabel(topic)}
             </button>
           ))}
+          {state.currentLesson >= 5 ? (
+            <>
+              <Link
+                className="rounded-2xl border border-white/10 bg-[#07111B]/45 px-4 py-3 text-sm font-black text-[#B7C7D2] transition hover:border-white/25 hover:text-[#EAF2F5]"
+                to={`/lesson/5?role=student&activity=attack&code=${encodeURIComponent(session?.classCode || state.classCode)}`}
+              >
+                5차시 - 해킹 질문
+              </Link>
+              <Link
+                className="rounded-2xl border border-white/10 bg-[#07111B]/45 px-4 py-3 text-sm font-black text-[#B7C7D2] transition hover:border-white/25 hover:text-[#EAF2F5]"
+                to={`/lesson/5?role=student&activity=pledge&code=${encodeURIComponent(session?.classCode || state.classCode)}`}
+              >
+                5차시 - 우리의 다짐
+              </Link>
+              <Link
+                className="rounded-2xl border border-white/10 bg-[#07111B]/45 px-4 py-3 text-sm font-black text-[#B7C7D2] transition hover:border-white/25 hover:text-[#EAF2F5]"
+                to={`/lesson/5?role=student&activity=post&code=${encodeURIComponent(session?.classCode || state.classCode)}`}
+              >
+                5차시 - 사후 설문
+              </Link>
+            </>
+          ) : null}
         </div>
       </Panel>
 

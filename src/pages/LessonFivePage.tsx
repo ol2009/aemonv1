@@ -20,7 +20,7 @@ import { AemonAvatar } from '../components/AemonAvatar'
 import { EvolutionScene } from '../components/EvolutionScene'
 import { LessonFiveStudentTabs } from '../components/LessonFiveStudentTabs'
 import { ProposalAdoptionPanel } from '../components/ProposalAdoptionPanel'
-import { SkippableTypewriterText, skipActiveDialogue } from '../components/SkippableTypewriterText'
+import { SkippableTypewriterText } from '../components/SkippableTypewriterText'
 import { TypingIndicator } from '../components/TypingIndicator'
 import { Button, Panel } from '../components/ui'
 import {
@@ -35,6 +35,7 @@ import {
   type AiSurveyAnswer,
 } from '../data/survey'
 import { unlockDialogueSound } from '../lib/dialogueSound'
+import { skipActiveDialogue } from '../lib/dialogueSkip'
 import { withJosa } from '../lib/korean'
 import { absoluteUrl } from '../lib/siteUrl'
 import { useV2RemoteSync } from '../lib/useV2RemoteSync'
@@ -666,14 +667,12 @@ export function LessonFivePage() {
 
   useEffect(() => {
     if (isStudentView || isStudentLive || !state.classId || lessonRaisedRef.current) return
-    if (state.currentLesson < 5) {
-      lessonRaisedRef.current = true
-      setLesson(5)
-      if (isRemoteReady()) {
-        updateRemoteLesson({ classId: state.classId, lessonNo: 5 })
-          .then(() => setRemoteStatus({ ok: true, message: '5차시 진행 상태로 저장됨' }))
-          .catch((error) => setRemoteStatus({ ok: false, message: (error as Error).message }))
-      }
+    lessonRaisedRef.current = true
+    if (state.currentLesson < 5) setLesson(5)
+    if (isRemoteReady()) {
+      updateRemoteLesson({ classId: state.classId, lessonNo: 5 })
+        .then(() => setRemoteStatus({ ok: true, message: '5차시 진행 상태로 저장됨' }))
+        .catch((error) => setRemoteStatus({ ok: false, message: (error as Error).message }))
     }
   }, [isStudentLive, isStudentView, setLesson, setRemoteStatus, state.classId, state.currentLesson])
 

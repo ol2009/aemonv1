@@ -1,22 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { playDialogueTick } from '../lib/dialogueSound'
-
-type DialogueSkipper = () => boolean
-
-let nextSkipperId = 0
-const activeSkippers = new Map<number, DialogueSkipper>()
-
-export function skipActiveDialogue() {
-  const skippers = [...activeSkippers.values()].reverse()
-  return skippers.some((skip) => skip())
-}
-
-function registerDialogueSkipper(skip: DialogueSkipper) {
-  const id = nextSkipperId
-  nextSkipperId += 1
-  activeSkippers.set(id, skip)
-  return () => activeSkippers.delete(id)
-}
+import { registerDialogueSkipper } from '../lib/dialogueSkip'
 
 export function SkippableTypewriterText({
   text,
@@ -41,7 +25,6 @@ export function SkippableTypewriterText({
   }, [onDone])
 
   useEffect(() => {
-    setProgress({ text, count: 0 })
     if (!enabled) return
     if (!characters.length) {
       onDoneRef.current?.()
@@ -50,13 +33,12 @@ export function SkippableTypewriterText({
 
     let index = 0
     let finished = false
-    let timer: number | undefined
     let unregister = () => {}
 
     const finish = () => {
       if (finished) return
       finished = true
-      if (timer !== undefined) window.clearInterval(timer)
+      window.clearInterval(timer)
       unregister()
       onDoneRef.current?.()
     }
@@ -69,7 +51,7 @@ export function SkippableTypewriterText({
       return true
     })
 
-    timer = window.setInterval(() => {
+    const timer = window.setInterval(() => {
       index += 1
       if (index % 2 === 0 && characters[index - 1]?.trim()) playDialogueTick()
       setProgress({ text, count: index })
@@ -78,7 +60,7 @@ export function SkippableTypewriterText({
 
     return () => {
       finished = true
-      if (timer !== undefined) window.clearInterval(timer)
+      window.clearInterval(timer)
       unregister()
     }
   }, [characters, enabled, speed, text])
