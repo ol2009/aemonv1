@@ -353,6 +353,43 @@ export async function fetchRemoteLiveLessonByClassId(classId: string): Promise<L
   return data ? parseLiveLessonState(data) : null
 }
 
+export async function fetchRemoteLiveClassBootstrap(classCode: string): Promise<{
+  bundle: Partial<V2State>
+  liveState: LiveLessonState | null
+}> {
+  const client = ensureClient()
+  const { data: classRow, error: classError } = await client
+    .from('classes')
+    .select('id,name,code,current_lesson,aemon_name,created_at')
+    .eq('code', classCode.trim())
+    .maybeSingle<ClassRow>()
+
+  if (classError) throw new Error(toMessage(classError))
+  if (!classRow) throw new Error('학급 코드를 찾지 못했습니다.')
+
+  const [codeResult, liveState] = await Promise.all([
+    client
+      .from('codes')
+      .select('id,nickname,body,reason,value_card,revision_of_no,status,adopted_no,created_at,adopted_at')
+      .eq('class_id', classRow.id)
+      .eq('status', 'adopted')
+      .order('created_at', { ascending: false }),
+    fetchRemoteLiveLessonByClassId(classRow.id),
+  ])
+
+  if (codeResult.error) throw new Error(toMessage(codeResult.error))
+  const codeRows = (codeResult.data ?? []) as CodeRow[]
+
+  return {
+    bundle: {
+      ...mapClass(classRow),
+      adoptedCodes: mapAdoptedCodes(codeRows),
+      remote: { enabled: true, ok: true, message: '학생 화면 연결됨', lastSyncedAt: new Date().toISOString() },
+    },
+    liveState,
+  }
+}
+
 export async function probeV2Database() {
   try {
     const client = ensureClient()

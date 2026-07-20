@@ -2,10 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import { Radio, Send } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Button, Panel } from '../components/ui'
-import { fetchRemoteClassBundle, fetchRemoteLiveLesson, isRemoteReady } from '../lib/v2Remote'
+import { fetchRemoteLiveClassBootstrap, isRemoteReady } from '../lib/v2Remote'
 import { useV2 } from '../state/V2Store'
 
-function targetFor(state: Awaited<ReturnType<typeof fetchRemoteLiveLesson>>, classCode: string) {
+function targetFor(state: Awaited<ReturnType<typeof fetchRemoteLiveClassBootstrap>>['liveState'], classCode: string) {
   if (!state) return ''
   const code = encodeURIComponent(classCode)
   if (state.activityPath) {
@@ -19,6 +19,19 @@ function targetFor(state: Awaited<ReturnType<typeof fetchRemoteLiveLesson>>, cla
       ? `&card=${boundaryCardIndex}`
       : ''
   return `/lesson/${state.lessonNo}?code=${code}&live=student&step=${state.stepIndex}${boundaryCardQuery}`
+}
+
+async function retryLiveBootstrap(classCode: string) {
+  let lastError: unknown = null
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      return await fetchRemoteLiveClassBootstrap(classCode)
+    } catch (error) {
+      lastError = error
+      if (attempt < 2) await new Promise((resolve) => window.setTimeout(resolve, 450 * (attempt + 1)))
+    }
+  }
+  throw lastError
 }
 
 export function LiveClassPage() {
@@ -40,15 +53,15 @@ export function LiveClassPage() {
     if (!existingSession || !queryCode) return
     let cancelled = false
     const openCurrentScreen = async () => {
-      const bundle = await fetchRemoteClassBundle(queryCode)
+      const { bundle, liveState } = await retryLiveBootstrap(queryCode)
       if (cancelled) return
       mergeClassRef.current({ ...bundle, studentSession: existingSession })
-      const liveState = await fetchRemoteLiveLesson(queryCode)
       const target = targetFor(liveState, queryCode)
       if (!cancelled && target) navigate(target, { replace: true })
     }
-    void openCurrentScreen().catch((error) => setMessage((error as Error).message))
-    const timer = window.setInterval(() => void openCurrentScreen().catch((error) => setMessage((error as Error).message)), 4000)
+    const handleRetryError = () => setMessage('연결이 잠시 늦어지고 있습니다. 자동으로 다시 시도합니다.')
+    void openCurrentScreen().catch(handleRetryError)
+    const timer = window.setInterval(() => void openCurrentScreen().catch(handleRetryError), 4000)
     return () => {
       cancelled = true
       window.clearInterval(timer)
@@ -62,10 +75,9 @@ export function LiveClassPage() {
     setMessage('학급 화면에 연결하는 중입니다.')
     try {
       if (!isRemoteReady()) throw new Error('Supabase 연결이 준비되지 않았습니다.')
-      const bundle = await fetchRemoteClassBundle(queryCode)
+      const { bundle, liveState } = await retryLiveBootstrap(queryCode)
       mergeClass({ ...bundle, studentSession: { classCode: queryCode, nickname: trimmedNickname } })
       joinStudent(queryCode, trimmedNickname)
-      const liveState = await fetchRemoteLiveLesson(queryCode)
       const target = targetFor(liveState, queryCode)
       if (target) navigate(target, { replace: true })
       else setMessage('입장했습니다. 선생님이 수업 화면을 열면 자동으로 시작됩니다.')
