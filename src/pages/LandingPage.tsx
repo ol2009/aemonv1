@@ -55,6 +55,9 @@ export function LandingPage() {
           <div className="max-w-4xl">
             <Kicker>AI VALUE ALIGNMENT IN THE CLASSROOM</Kicker>
             <h1 className="font-display mt-4 break-keep text-5xl leading-none text-[#EAF2F5] sm:text-7xl lg:text-8xl">에아몬 프로젝트</h1>
+            <p className="font-data mt-4 inline-flex border border-[#4FE0C0]/30 bg-[#4FE0C0]/10 px-4 py-2 text-sm font-black text-[#4FE0C0] sm:text-base">
+              AI에게 가치를 가르치는 아이들 / 초등 4~6학년
+            </p>
             <p className="font-display mt-6 max-w-3xl break-keep text-2xl leading-tight text-[#FFD37A] sm:text-4xl">
               AI를 조심해서 쓰는 법을 넘어,
               <br />AI가 따를 기준을 만드는 수업.
