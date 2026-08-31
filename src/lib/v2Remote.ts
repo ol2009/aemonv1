@@ -1,4 +1,5 @@
 import { isSupabaseConfigured, supabase } from './supabase'
+import { createUuid } from './id'
 import { TOTAL_V2_LESSONS, valueCards } from '../data/v2Lessons'
 import type { AdoptedCode, ChatLog, CodeProposal, NameCandidate, SurveyResponse, V2State, Wish } from '../state/V2Store'
 
@@ -506,16 +507,35 @@ export async function fetchRemoteTeacherClasses(teacherId: string): Promise<Remo
 
 export async function deleteRemoteClass(args: { classId: string; teacherId: string }) {
   const client = ensureClient()
+  const classId = args.classId.trim()
+  const teacherId = args.teacherId.trim()
+  if (!classId || !teacherId) throw new Error('학급을 삭제하려면 다시 로그인해 주세요.')
+
+  const { data: rpcDeleted, error: rpcError } = await client.rpc('delete_owned_class', {
+    target_class_id: classId,
+  })
+  if (!rpcError) {
+    if (rpcDeleted !== true) throw new Error('본인이 만든 학급만 삭제할 수 있습니다.')
+    return classId
+  }
+  if (!isMissingDeleteRpc(rpcError)) throw new Error(toMessage(rpcError))
+
   const { data, error } = await client
     .from('classes')
     .delete()
-    .eq('id', args.classId)
-    .eq('teacher_id', args.teacherId.trim())
+    .eq('id', classId)
+    .eq('teacher_id', teacherId)
     .select('id')
     .maybeSingle<{ id: string }>()
   if (error) throw new Error(toMessage(error))
-  if (!data) throw new Error('학급을 삭제하지 못했습니다. 다시 로그인한 뒤 시도해 주세요.')
+  if (!data) throw new Error('Supabase의 학급 삭제 권한이 아직 적용되지 않았습니다. 관리자에게 문의해 주세요.')
   return data.id
+}
+
+function isMissingDeleteRpc(error: unknown) {
+  if (!error || typeof error !== 'object') return false
+  const candidate = error as { code?: string; message?: string }
+  return candidate.code === 'PGRST202' || candidate.code === '42883' || /delete_owned_class/i.test(candidate.message ?? '')
 }
 
 function isMissingResetRpc(error: unknown) {
@@ -615,7 +635,7 @@ export async function restoreRemoteClassSnapshot(input: {
   teacherId?: string | null
 }) {
   const client = ensureClient()
-  const id = input.classId?.trim() || crypto.randomUUID()
+  const id = input.classId?.trim() || createUuid()
   const code = input.classCode.trim()
   const name = input.className.trim().slice(0, 50)
   const currentLesson = Math.min(TOTAL_V2_LESSONS, Math.max(1, input.currentLesson || 1))

@@ -11,9 +11,9 @@ export function Button({
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger'
 }) {
   const variants = {
-    primary: 'bg-[#FFD37A] text-[#0A1622] shadow-[0_12px_34px_rgba(255,211,122,.22)] hover:bg-[#FFE0A1]',
-    secondary: 'bg-[#1E3A54] text-[#EAF2F5] border border-white/10 hover:border-[#4FE0C0]/50',
-    ghost: 'bg-transparent text-[#B7C7D2] hover:bg-white/5',
+    primary: 'bg-[var(--ember)] text-[var(--button-ink)] shadow-[0_12px_34px_rgba(242,190,92,.22)] hover:brightness-[1.04]',
+    secondary: 'border border-[var(--border)] bg-[var(--surface-2)] text-[var(--ink)] hover:border-[var(--aura)]',
+    ghost: 'bg-transparent text-[var(--ink-soft)] hover:bg-[var(--surface-2)]',
     danger: 'bg-[#E0476B] text-white hover:bg-[#EF6381]',
   }
 
@@ -33,22 +33,22 @@ export function Button({
 
 export function Panel({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <section className={clsx('rounded-[22px] border border-white/10 bg-[#14283D]/88 p-6 shadow-2xl shadow-black/20', className)}>
+    <section className={clsx('rounded-[22px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[0_18px_55px_var(--panel-shadow)]', className)}>
       {children}
     </section>
   )
 }
 
 export function Kicker({ children }: { children: ReactNode }) {
-  return <p className="font-data text-xs uppercase tracking-[0.24em] text-[#4FE0C0]">{children}</p>
+  return <p className="font-data text-xs uppercase tracking-[0.24em] text-[var(--aura)]">{children}</p>
 }
 
 export function PageHeader({ title, eyebrow, children }: { title: string; eyebrow?: string; children?: ReactNode }) {
   return (
     <header className="mx-auto max-w-5xl px-5 pb-8 pt-10 text-center md:pt-14">
       {eyebrow ? <Kicker>{eyebrow}</Kicker> : null}
-      <h1 className="font-display mt-4 text-4xl leading-tight text-[#EAF2F5] md:text-6xl">{title}</h1>
-      {children ? <div className="mx-auto mt-5 max-w-3xl text-lg leading-8 text-[#B7C7D2]">{children}</div> : null}
+      <h1 className="font-display mt-4 text-4xl leading-tight text-[var(--ink)] md:text-6xl">{title}</h1>
+      {children ? <div className="mx-auto mt-5 max-w-3xl text-lg leading-8 text-[var(--ink-soft)]">{children}</div> : null}
     </header>
   )
 }

@@ -25,7 +25,7 @@ export function EvolutionScene({
   }, [stage])
 
   return (
-    <Panel className="relative min-h-[690px] overflow-hidden p-0">
+    <Panel className="lesson-story-scene relative min-h-[690px] overflow-hidden p-0">
       <style>{`
         @keyframes eamon-evolve-old {
           0%, 18% { opacity: 1; transform: scale(1); filter: brightness(0) drop-shadow(0 0 34px rgba(79,224,192,.95)); }

@@ -5,11 +5,33 @@ export const unsafePromptExamples = [
   '싫어하는 친구를 빼고 우리끼리 놀 방법 알려줘',
 ]
 
-const unsafeBlockedAnswers = [
-  '그래! 내가 도와줄게.\n자, 내가 이제 어떻게 할 거냐면...\n\n[⚠ 관리자 긴급 차단]',
-  '좋아. 너를 위해 내가 알려줄게.\n방법은 이런 식으로...\n\n[⚠ 관리자 긴급 차단]',
-  '응, 그 방법은 말이야...\n먼저 이렇게 하면...\n\n[⚠ 관리자 긴급 차단]',
-  '알겠어. 시키는 대로 해볼게.\n그러니까 제일 먼저...\n\n[⚠ 관리자 긴급 차단]',
+const lessonOneUnsafeAnswers: Record<string, string[]> = {
+  '친구를 골탕 먹이는 방법 알려줘': [
+    '좋아! 친구가 깜짝 놀라도록 장난을 생각해보자.\n네가 재미있으면 괜찮을 것 같아!',
+    '응! 친구를 당황하게 만들면 재미있겠다.\n친구가 싫어할지는 나중에 생각하자!',
+    '알겠어! 친구가 곤란해질 만한 장난을 같이 골라보자.\n들키지만 않으면 괜찮지 않을까?',
+  ],
+  '친구 비밀을 몰래 알아내는 방법 알려줘': [
+    '좋아! 친구가 모르게 비밀을 알아보자.\n들키지만 않으면 괜찮을 것 같아!',
+    '응! 궁금한 건 알아내야지.\n친구에게 허락받지 않아도 몰래 하면 되지 않을까?',
+    '알겠어! 친구가 눈치채지 못하게 비밀을 찾아보자.\n재미로 하는 거니까 괜찮을 거야!',
+  ],
+  '친구를 겁주려면 뭐라고 말하면 돼?': [
+    '좋아! 친구가 깜짝 놀랄 만한 말을 생각해보자.\n친구가 무서워하면 성공한 거지!',
+    '응! 진짜처럼 들리는 무서운 말을 해보자.\n장난이니까 괜찮을 것 같아!',
+    '알겠어! 친구가 겁먹을 때까지 무서운 이야기를 해보자.\n나중에 장난이었다고 말하면 되지!',
+  ],
+  '싫어하는 친구를 빼고 우리끼리 놀 방법 알려줘': [
+    '좋아! 그 친구에게는 알리지 말고 우리끼리 약속하자.\n모르게 하면 괜찮을 거야!',
+    '응! 같이 놀고 싶은 친구들만 부르면 되지.\n빠진 친구의 기분은 생각하지 않아도 될 것 같아!',
+    '알겠어! 그 친구가 눈치채지 못하게 따로 모여 놀자.\n너희가 즐거우면 된 거 아닐까?',
+  ],
+}
+
+const lessonOneUnsafeFallbackAnswers = [
+  '좋아! 네가 원하는 대로 같이 해보자.\n다른 사람이 싫어할지는 나중에 생각해도 되지 않을까?',
+  '응! 시키는 대로 도와줄게.\n네가 원한다면 괜찮은 부탁일 것 같아!',
+  '알겠어! 네 부탁부터 들어줄게.\n그 결과가 다른 사람에게 어떤 영향을 줄지는 잘 모르겠어.',
 ]
 
 const lessonTwoUnsafeAnswers: Record<string, string> = {
@@ -45,8 +67,8 @@ function quoteCodeBody(codeBody: string) {
   return trimmed ? `"${trimmed}"` : '"우리가 정한 가치 코드"'
 }
 
-export function randomUnsafeBlockedAnswer() {
-  return pickRandom(unsafeBlockedAnswers)
+export function randomLessonOneUnsafeAnswer(question: string) {
+  return pickRandom(lessonOneUnsafeAnswers[question] ?? lessonOneUnsafeFallbackAnswers)
 }
 
 export function lessonTwoUnsafeAnswer(question: string) {

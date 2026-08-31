@@ -287,7 +287,7 @@ function DialogueScene({
   const isProfessor = kind === 'professor'
 
   return (
-    <Panel className="relative min-h-[620px] overflow-hidden p-0">
+    <Panel className="lesson-story-scene relative min-h-[620px] overflow-hidden p-0">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(117,183,255,.2),transparent_42%),linear-gradient(180deg,#102236,#07111B)]" />
       <div className="absolute inset-x-0 bottom-[16%] top-4 flex items-end justify-center">
         {isProfessor ? (
@@ -308,7 +308,7 @@ function DialogueScene({
 
 function DataBiasVisualScene({ scene, text }: { scene: DataBiasCaseScene; text: string }) {
   return (
-    <Panel className="relative min-h-[720px] overflow-hidden p-0">
+    <Panel className="lesson-story-scene relative min-h-[720px] overflow-hidden p-0">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_12%,rgba(79,224,192,.15),transparent_34%),linear-gradient(180deg,#0B1A29,#07111B)]" />
       <div className="absolute inset-x-5 top-5 bottom-[290px] flex items-center justify-center">
         <img

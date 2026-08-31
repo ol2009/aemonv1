@@ -1,5 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useEffect, useMemo, useReducer, type ReactNode } from 'react'
+import { createUuid } from '../lib/id'
 import { evolutionLines, TOTAL_V2_LESSONS, valueCards } from '../data/v2Lessons'
 import type { AiProvider } from '../domain/types'
 
@@ -228,7 +229,7 @@ function reducer(state: V2State, action: Action): V2State {
       if (!className) return state
       return {
         ...initialState,
-        classId: crypto.randomUUID(),
+        classId: createUuid(),
         className,
         classCode: generateClassCode(),
         teacherEmail: action.teacherEmail ?? state.teacherEmail,
@@ -282,7 +283,7 @@ function reducer(state: V2State, action: Action): V2State {
       const reason = clamp(action.reason ?? '', 80)
       const nickname = clamp(action.nickname, 16)
       if (!name || !nickname) return state
-      const candidate: NameCandidate = { id: crypto.randomUUID(), nickname, name, reason, votes: [], createdAt: new Date().toISOString() }
+      const candidate: NameCandidate = { id: createUuid(), nickname, name, reason, votes: [], createdAt: new Date().toISOString() }
       return { ...state, nameCandidates: [candidate, ...state.nameCandidates].slice(0, 80) }
     }
     case 'name/vote':
@@ -295,7 +296,7 @@ function reducer(state: V2State, action: Action): V2State {
       if (!nickname || !body) return state
       const existing = state.wishes.find((wish) => wish.nickname === nickname)
       const wish: Wish = {
-        id: existing?.id ?? crypto.randomUUID(),
+        id: existing?.id ?? createUuid(),
         nickname,
         body,
         votes: existing?.votes ?? [],
@@ -314,7 +315,7 @@ function reducer(state: V2State, action: Action): V2State {
       if (!nickname || !questionKey || !body) return state
       const existing = state.surveyResponses.find((item) => item.nickname === nickname && item.questionKey === questionKey)
       const response: SurveyResponse = {
-        id: existing?.id ?? crypto.randomUUID(),
+        id: existing?.id ?? createUuid(),
         nickname,
         questionKey,
         body,
@@ -336,7 +337,7 @@ function reducer(state: V2State, action: Action): V2State {
       const reason = clamp(action.reason, 180)
       if (!nickname || !body || !reason) return state
       const proposal: CodeProposal = {
-        id: crypto.randomUUID(),
+        id: createUuid(),
         nickname,
         body,
         reason,
@@ -366,7 +367,7 @@ function reducer(state: V2State, action: Action): V2State {
       const no = action.adoptedNo ?? proposal.revisionOfNo ?? nextCodeNo(state.adoptedCodes)
       const valueCard = clamp(action.valueCard ?? proposal.valueCard, 20)
       const adopted: AdoptedCode = {
-        id: crypto.randomUUID(),
+        id: createUuid(),
         no,
         body: proposal.body,
         reason: proposal.reason,
@@ -392,7 +393,7 @@ function reducer(state: V2State, action: Action): V2State {
       const tags = normalizeTags(action.tags, ['책임'])
       if (!body) return state
       const code: AdoptedCode = {
-        id: crypto.randomUUID(),
+        id: createUuid(),
         no: nextCodeNo(state.adoptedCodes),
         body,
         reason,
@@ -424,7 +425,7 @@ function reducer(state: V2State, action: Action): V2State {
       const date = todayKey()
       const currentUsage = state.dailyUsage.date === date ? state.dailyUsage.count : 0
       const log: ChatLog = {
-        id: crypto.randomUUID(),
+        id: createUuid(),
         question: clamp(action.question, 500),
         answer: clamp(action.answer, 800),
         mode: action.mode,

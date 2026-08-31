@@ -184,7 +184,7 @@ export function TrainingPage() {
           style={{ filter: 'drop-shadow(0 0 56px rgba(79,224,192,.42))', imageRendering: 'pixelated' }}
         />
         <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(4,12,20,.98)_0%,rgba(4,12,20,.92)_48%,rgba(4,12,20,.12)_78%,rgba(4,12,20,.03)_100%),linear-gradient(180deg,rgba(4,12,20,.04),rgba(4,12,20,.72))]" />
-        <div className="relative flex min-h-[430px] max-w-4xl flex-col justify-end px-6 py-10 sm:px-10">
+        <div className="lesson-story-scene relative flex min-h-[430px] max-w-4xl flex-col justify-end px-6 py-10 sm:px-10">
           <p className="font-data text-sm text-[#4FE0C0]">AEMON TEACHER TRAINING</p>
           <h1 className="font-display mt-4 break-keep text-4xl leading-tight text-[#EAF2F5] sm:text-6xl">진정한 인공지능 윤리 교육, 인공지능 가치정렬.</h1>
           <p className="font-display mt-4 break-keep text-3xl leading-tight text-[#FFD37A] sm:text-4xl">이제 우리 반 아이들이 직접 경험합니다.</p>

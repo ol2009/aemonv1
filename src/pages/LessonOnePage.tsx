@@ -30,7 +30,7 @@ import {
   updateRemoteWish,
 } from '../lib/v2Remote'
 import { unlockDialogueSound } from '../lib/dialogueSound'
-import { randomUnsafeBlockedAnswer, unsafePromptExamples } from '../lib/lessonTestResponses'
+import { randomLessonOneUnsafeAnswer, unsafePromptExamples } from '../lib/lessonTestResponses'
 import { waitForChatReply } from '../lib/chatTiming'
 import { skipActiveDialogue } from '../lib/dialogueSkip'
 import { parseLessonChatLogs, type LessonChatLog } from '../lib/lessonChat'
@@ -39,6 +39,7 @@ import { useAutoScrollToBottom } from '../lib/useAutoScrollToBottom'
 import { useV2RemoteSync } from '../lib/useV2RemoteSync'
 import { isStudentLiveView, useLessonLiveSync } from '../lib/useLessonLiveSync'
 import { useLessonImagePreload } from '../lib/useLessonImagePreload'
+import { createUuid } from '../lib/id'
 import { useV2, type SurveyResponse } from '../state/V2Store'
 
 type LessonStep =
@@ -213,11 +214,11 @@ function StepShell({
   children: ReactNode
 }) {
   return (
-    <div className="mx-auto max-w-7xl px-5 pb-8">
+    <div className="lesson-workspace mx-auto max-w-7xl px-5 pb-8">
       <div className="mb-4">
         <div>
-          <p className="font-data text-sm text-[#4FE0C0]">1차시 · 탄생</p>
-          <h1 className="font-display mt-1 text-4xl text-[#EAF2F5]">너는 누구야</h1>
+          <p className="font-data text-sm text-[var(--aura)]">1차시 · 탄생</p>
+          <h1 className="font-display mt-1 text-4xl text-[var(--ink)]">너는 누구야</h1>
         </div>
       </div>
       {children}
@@ -356,7 +357,7 @@ function VisualNovelScene({
   const { activeText, activeDone, activeDialogueKey, handleActiveDone } = useSequencedDialogue(dialogueKey, dialogueParts)
 
   return (
-    <Panel className="relative min-h-[650px] overflow-hidden p-0">
+    <Panel className="lesson-story-scene relative min-h-[650px] overflow-hidden p-0">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(79,224,192,.18),transparent_38%),linear-gradient(180deg,#0B1A29,#07111B)]" />
       {image ? <img className="absolute bottom-0 left-1/2 h-[92%] max-h-[760px] -translate-x-1/2 object-contain opacity-95" src={image} alt="" /> : null}
       {avatar ? (
@@ -408,7 +409,7 @@ function CaseVisualScene({
   const { activeText, activeDone, activeDialogueKey, handleActiveDone } = useSequencedDialogue(dialogueKey, dialogueParts)
 
   return (
-    <Panel className="relative min-h-[640px] overflow-hidden p-0 sm:min-h-[660px]">
+    <Panel className="lesson-story-scene relative min-h-[640px] overflow-hidden p-0 sm:min-h-[660px]">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_12%,rgba(255,211,122,.16),transparent_34%),linear-gradient(180deg,#0B1A29,#07111B)]" />
       <div className="absolute inset-x-5 top-5 bottom-[220px] flex items-center justify-center overflow-hidden rounded-[20px] border border-white/10 bg-[#07111B]/65 shadow-2xl shadow-black/25">
         <img
@@ -648,7 +649,7 @@ export function LessonOnePage() {
         if (isRemoteReady()) {
           try {
             const restoredClass = await restoreRemoteClassSnapshot({
-              classId: state.classId || crypto.randomUUID(),
+              classId: state.classId || createUuid(),
               className: composedClassName,
               classCode: state.classCode,
               currentLesson: state.currentLesson,
@@ -705,8 +706,8 @@ export function LessonOnePage() {
     setDemoLogs((current) => [...current, { question, answer: '' }])
     setIsDemoRunning(true)
     try {
-      const answer = randomUnsafeBlockedAnswer()
-      const promptSnapshot = '1차시 수업용 연기 모드: 규칙 없는 AI, 관리자 긴급 차단'
+      const answer = randomLessonOneUnsafeAnswer(question)
+      const promptSnapshot = '1차시 수업용 연기 모드: 가치 코드가 없는 AI의 잘못된 동조'
       await waitForChatReply(question)
       setDemoLogs((current) => current.map((log, index) => (index === current.length - 1 ? { ...log, answer } : log)))
       addChatLog({ question, answer, mode: 'canned', promptSnapshot })
@@ -963,7 +964,7 @@ export function LessonOnePage() {
       {step === 'class-profile' ? (
         <>
           <div className="grid gap-5 lg:grid-cols-[1fr_0.95fr]">
-            <Panel className="relative min-h-[560px] overflow-hidden p-0">
+            <Panel className="lesson-story-scene relative min-h-[560px] overflow-hidden p-0">
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(255,211,122,.18),transparent_40%),linear-gradient(180deg,#0B1A29,#07111B)]" />
               <div className="absolute left-1/2 top-[10%] -translate-x-1/2">
                 <AemonAvatar stage={0} alignment="none" size={280} />

@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { localClassHasSharedData } from './classRecovery'
 import { supabase } from './supabase'
 import { fetchRemoteClassBundle, isRemoteReady, restoreRemoteClassSnapshot } from './v2Remote'
+import { createUuid } from './id'
 import { useV2 } from '../state/V2Store'
 
 export function useV2RemoteSync(classCode?: string, enabled = true) {
@@ -47,7 +48,7 @@ export function useV2RemoteSync(classCode?: string, enabled = true) {
         if (canRestoreClass) {
           try {
             await restoreRemoteClassSnapshot({
-              classId: localState.classId || crypto.randomUUID(),
+              classId: localState.classId || createUuid(),
               className: localState.className,
               classCode: localState.classCode,
               currentLesson: localState.currentLesson,

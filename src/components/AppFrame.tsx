@@ -49,12 +49,12 @@ export function AppFrame() {
   }
 
   return (
-    <div className="data-sea relative min-h-screen overflow-hidden">
+    <div className="data-sea lesson-workspace-theme relative min-h-screen overflow-hidden">
       <div className="relative z-10 min-h-screen">
         {!isImmersive ? (
           <header className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-5 py-5">
             <button className="flex items-center" onClick={() => navigate('/')} type="button">
-              <span className="font-display text-2xl text-[#EAF2F5]">에아몬</span>
+              <span className="text-xl font-black tracking-[-.05em] text-[var(--ink)]">에아몬<span className="text-[var(--aura)]">.</span></span>
             </button>
             {showAppNav ? (
               <nav className="hidden items-center gap-1 lg:flex">
@@ -65,7 +65,7 @@ export function AppFrame() {
                     <button
                       key={item.path}
                       className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition ${
-                        active ? 'bg-white/10 text-[#FFD37A]' : 'text-[#8AA0B0] hover:bg-white/5 hover:text-[#EAF2F5]'
+                        active ? 'bg-[var(--surface-2)] text-[var(--ember-ink)]' : 'text-[var(--ink-mute)] hover:bg-[var(--surface-2)] hover:text-[var(--ink)]'
                       }`}
                       onClick={() => navigate(item.path)}
                       type="button"
@@ -80,7 +80,7 @@ export function AppFrame() {
             {showAuthControls ? (
               <div className="hidden items-center gap-2 md:flex">
                 {user ? (
-                  <span className="max-w-40 truncate rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-[#B7C7D2]">
+                  <span className="max-w-40 truncate rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm font-semibold text-[var(--ink-soft)]">
                     {user.email}
                   </span>
                 ) : null}

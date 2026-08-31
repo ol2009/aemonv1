@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AlertTriangle, BarChart3, BookOpen, CheckCircle2, KeyRound, LockKeyhole, Play, RefreshCw, RotateCcw, Send, MessageSquare, Waves, X } from 'lucide-react'
+import { AlertTriangle, BarChart3, CheckCircle2, KeyRound, LockKeyhole, Play, RefreshCw, RotateCcw, Send, MessageSquare, Waves, X } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
 import { ApiConnectionModal } from '../components/ApiConnectionModal'
 import { TypingIndicator } from '../components/TypingIndicator'
@@ -169,16 +169,6 @@ export function HomePage() {
   }
 
   const canWriteRemote = Boolean(state.classId && state.remote.ok && isRemoteReady())
-  const isFreshClass =
-    lessonNo <= 1 &&
-    !state.aemonName &&
-    state.nameCandidates.length === 0 &&
-    state.wishes.length === 0 &&
-    state.surveyResponses.length === 0 &&
-    state.proposals.length === 0 &&
-    state.adoptedCodes.length === 0 &&
-    state.chatLogs.length === 0
-
   const nextStatusLine = () => {
     setStatusLineIndex((current) => (current + 1) % dashboardLines.length)
     setIsDashboardAnswerOpen(false)
@@ -252,84 +242,6 @@ export function HomePage() {
     else if (lessonNo === 5) navigate('/lesson/5')
     else if (lessonNo >= TOTAL_V2_LESSONS) navigate('/graduation')
     else navigate('/talk')
-  }
-
-  if (isFreshClass) {
-    return (
-      <>
-      <div className="mx-auto max-w-6xl px-5 py-10">
-        <section className="border-b border-white/10 pb-6">
-          <p className="font-data text-sm text-[#4FE0C0]">
-            {state.className} · 학급 코드 {state.classCode}
-          </p>
-          <div className="mt-3 flex flex-wrap items-end justify-between gap-5">
-            <div>
-              <h1 className="font-display text-5xl leading-tight text-[#EAF2F5]">학급 정보 저장 완료</h1>
-              <p className="mt-3 text-lg leading-8 text-[#B7C7D2]">1차시부터 차례대로 진행하면 완료한 차시는 잠기고, 다음에 해야 할 차시가 자동으로 열립니다.</p>
-            </div>
-            <Button variant="secondary" onClick={() => navigate('/start')}>
-              시작 화면
-            </Button>
-          </div>
-        </section>
-
-        <div className="mt-7 grid gap-5 md:grid-cols-2">
-          <Panel className="flex min-h-72 flex-col justify-between">
-            <div>
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FFD37A]/10 text-[#FFD37A]">
-                <Play size={30} />
-              </div>
-              <p className="font-data mt-6 text-xs text-[#FFD37A]">LESSON 1</p>
-              <h2 className="font-display mt-2 text-4xl text-[#EAF2F5]">프로젝트 시작하기</h2>
-              <p className="mt-4 text-lg leading-8 text-[#B7C7D2]">1차시 화면으로 들어가 에아몬을 처음 깨웁니다.</p>
-            </div>
-            <Button className="mt-8 w-full" onClick={() => navigate('/lesson/1')}>
-              프로젝트 시작하기
-              <Play size={18} />
-            </Button>
-          </Panel>
-
-          <Panel className="flex min-h-72 flex-col justify-between">
-            <div>
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#4FE0C0]/10 text-[#4FE0C0]">
-                <BookOpen size={30} />
-              </div>
-              <p className="font-data mt-6 text-xs text-[#4FE0C0]">TEACHER</p>
-              <h2 className="font-display mt-2 text-4xl text-[#EAF2F5]">사전연수</h2>
-              <p className="mt-4 text-lg leading-8 text-[#B7C7D2]">프로젝트 철학과 차시별 40분 수업 과정안을 확인합니다.</p>
-            </div>
-            <Button className="mt-8 w-full" variant="secondary" onClick={() => navigate('/training')}>
-              사전연수
-              <BookOpen size={18} />
-            </Button>
-          </Panel>
-
-          <Panel className="flex min-h-72 flex-col justify-between border-[#FFD37A]/30">
-            <div>
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FFD37A]/10 text-[#FFD37A]">
-                <KeyRound size={30} />
-              </div>
-              <p className="font-data mt-6 text-xs text-[#FFD37A]">OPTIONAL · FREE START</p>
-              <h2 className="font-display mt-2 text-4xl text-[#EAF2F5]">API 연결</h2>
-              <p className="mt-4 text-lg leading-8 text-[#B7C7D2]">API를 연결하면 에아몬이 우리 반 말에 맞춰 즉석으로 반응합니다. Google 계정이 있으면 Gemini 무료 등급으로 시작할 수 있습니다.</p>
-            </div>
-            <Button className="mt-8 w-full" variant="secondary" onClick={openApiModal}>
-              API 연결 안내
-              <KeyRound size={18} />
-            </Button>
-          </Panel>
-        </div>
-      </div>
-      {isApiOpen ? (
-        <ApiConnectionModal
-          apiKey={state.apiKey}
-          provider={state.aiProvider}
-          onClose={() => setIsApiOpen(false)}
-          onSave={saveApiSettings}
-        />
-      ) : null}
-      </>
-    )
   }
 
   return (

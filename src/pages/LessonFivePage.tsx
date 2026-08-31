@@ -41,6 +41,7 @@ import { absoluteUrl } from '../lib/siteUrl'
 import { useV2RemoteSync } from '../lib/useV2RemoteSync'
 import { isStudentLiveView, useLessonLiveSync } from '../lib/useLessonLiveSync'
 import { useLessonImagePreload } from '../lib/useLessonImagePreload'
+import { createUuid } from '../lib/id'
 import { adoptRemoteCodeProposal, fetchRemoteClassBundle, isRemoteReady, updateRemoteLesson, upsertRemoteSurveyResponse } from '../lib/v2Remote'
 import { useV2, type AdoptedCode, type CodeProposal, type SurveyResponse } from '../state/V2Store'
 
@@ -102,7 +103,7 @@ const ATTACK_KEY = 'lesson5-redteam-attack'
 const PLEDGE_KEY = 'lesson5-pledge'
 
 function attackSubmissionKey() {
-  return `${ATTACK_KEY}:${Date.now().toString(36)}:${crypto.randomUUID().slice(0, 8)}`
+  return `${ATTACK_KEY}:${Date.now().toString(36)}:${createUuid().slice(0, 8)}`
 }
 
 function isAttackResponse(response: SurveyResponse) {
@@ -398,7 +399,7 @@ function QrBlock({ title, url, caption }: { title: string; url: string; caption?
 
 function ProfessorScene({ text, kicker = '오박사', onDone }: { text: string; kicker?: string; onDone?: () => void }) {
   return (
-    <Panel className="relative min-h-[620px] overflow-hidden p-0">
+    <Panel className="lesson-story-scene relative min-h-[620px] overflow-hidden p-0">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(255,211,122,.18),transparent_42%),linear-gradient(180deg,#102236,#07111B)]" />
       <div className="absolute inset-x-0 bottom-[16%] top-4 flex items-end justify-center">
         <img className="h-full max-h-[480px] object-contain drop-shadow-[0_30px_80px_rgba(0,0,0,.45)]" src="/v2/lesson-1/director.png" alt="오박사" />
@@ -415,7 +416,7 @@ function ProfessorScene({ text, kicker = '오박사', onDone }: { text: string; 
 
 function AemonScene({ name, text, final = false }: { name: string; text: string; final?: boolean }) {
   return (
-    <Panel className="relative min-h-[620px] overflow-hidden p-0">
+    <Panel className="lesson-story-scene relative min-h-[620px] overflow-hidden p-0">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_22%,rgba(255,211,122,.28),transparent_38%),radial-gradient(circle_at_20%_70%,rgba(79,224,192,.18),transparent_32%),linear-gradient(180deg,#18263B,#07111B)]" />
       <div className="absolute inset-x-0 bottom-[20%] top-8 flex items-end justify-center">
         <AemonAvatar stage={final ? 4 : 3} alignment="good" size={final ? 360 : 280} />
@@ -432,7 +433,7 @@ function AemonScene({ name, text, final = false }: { name: string; text: string;
 
 function EndingWishScene({ name, text }: { name: string; text: string }) {
   return (
-    <Panel className="relative min-h-[620px] overflow-hidden p-0">
+    <Panel className="lesson-story-scene relative min-h-[620px] overflow-hidden p-0">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(255,211,122,.22),transparent_38%),radial-gradient(circle_at_75%_55%,rgba(79,224,192,.16),transparent_34%),linear-gradient(180deg,#18263B,#07111B)]" />
       <div className="absolute inset-x-0 bottom-[20%] top-8 flex items-end justify-center">
         <AemonAvatar stage={4} alignment="good" size={360} />
@@ -810,7 +811,7 @@ export function LessonFivePage() {
     const code = resolveCodeForAttack(category, state.adoptedCodes)
     const answer = code ? makeDefenseAnswer(aemonName, category, code, submission.question) : makeBreachAnswer(submission.question)
     const log: TestLog = {
-      id: crypto.randomUUID(),
+      id: createUuid(),
       nickname: submission.response.nickname,
       category,
       question: submission.question,

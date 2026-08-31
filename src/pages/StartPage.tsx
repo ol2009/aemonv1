@@ -1,9 +1,9 @@
 import { useNavigate } from 'react-router-dom'
 import { useCallback, useEffect, useState } from 'react'
-import { BookOpen, CheckCircle2, KeyRound, Play, Plus, Trash2, X } from 'lucide-react'
+import { BookOpen, CheckCircle2, KeyRound, Play, Plus, Trash2 } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
 import { ApiConnectionModal } from '../components/ApiConnectionModal'
-import { Button, Panel } from '../components/ui'
+import { Button } from '../components/ui'
 import { deleteRemoteClass, fetchRemoteClassBundle, fetchRemoteTeacherClasses, isRemoteReady, MAX_TEACHER_CLASSES, type RemoteClassSummary } from '../lib/v2Remote'
 import { useSupabaseUser } from '../lib/useSupabaseUser'
 import { providerLabel } from '../lib/v2Chat'
@@ -18,7 +18,6 @@ export function StartPage() {
   const [isRestoring, setIsRestoring] = useState(false)
   const [deletingClassId, setDeletingClassId] = useState('')
   const [remoteClasses, setRemoteClasses] = useState<RemoteClassSummary[]>([])
-  const [isStartNoticeOpen, setIsStartNoticeOpen] = useState(true)
   const isApiConnected = Boolean(state.apiKey.trim())
   const isClassLimitReached = remoteClasses.length >= MAX_TEACHER_CLASSES
 
@@ -104,114 +103,74 @@ export function StartPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-5 py-10">
-      <section className="grid min-h-[70vh] items-center gap-8 lg:grid-cols-[0.95fr_1.05fr]">
-        <div>
-          <p className="font-data text-sm text-[#4FE0C0]">AEMON PROJECT</p>
-          <h1 className="font-display mt-4 text-6xl leading-tight text-[#EAF2F5]">에아몬을 깨울 시간</h1>
-          <p className="mt-6 max-w-2xl text-xl leading-9 text-[#B7C7D2]">
-            새 학급을 만들거나, 내가 만든 학급 목록에서 이어서 진행할 학급을 선택하세요.
-          </p>
+    <div className="mx-auto max-w-7xl px-5 pb-20 pt-6 sm:pt-10">
+      <section className="relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#0d2030] px-6 py-6 sm:px-8 sm:py-7">
+        <div className="absolute right-[-4rem] top-[-6rem] h-64 w-64 rounded-full bg-[#4FE0C0]/10 blur-3xl" />
+        <div className="relative grid items-center gap-5 md:grid-cols-[1fr_auto]">
+          <div>
+            <p className="text-sm font-bold text-[#4FE0C0]">교사용 수업 준비</p>
+            <h1 className="mt-2 break-keep text-3xl font-black tracking-[-.045em] text-white sm:text-4xl">오늘 수업을 시작해볼까요?</h1>
+            <p className="mt-3 max-w-2xl break-keep leading-7 text-[#a9bbc6]">새 학급을 만들거나, 전에 진행하던 학급을 선택하세요.</p>
+            {isClassLimitReached ? <p className="mt-3 text-sm font-bold text-[#FFD37A]">학급 5개를 모두 사용 중입니다. 기존 학급 하나를 삭제하면 새로 만들 수 있습니다.</p> : null}
+          </div>
+          <div className="flex items-center justify-between gap-4 md:justify-end">
+            <Button className="min-h-12 whitespace-nowrap px-5" disabled={isClassLimitReached} onClick={createNewClass}><Plus size={19} />새 학급 만들기</Button>
+            <div className="hidden h-24 w-24 items-center justify-center sm:flex">
+              <AemonAvatar stage={0} alignment="none" size={92} />
+            </div>
+          </div>
+        </div>
+      </section>
 
-          <Button className="mt-6" disabled={isClassLimitReached} onClick={createNewClass}>
-            <Plus size={20} />
-            새 학급 만들기
-          </Button>
-          {isClassLimitReached ? <p className="mt-3 text-sm font-bold text-[#FFD37A]">학급 5개를 모두 사용 중입니다. 새 학급을 만들려면 기존 학급 하나를 삭제해 주세요.</p> : null}
+      <div className="mt-6 grid gap-6 lg:grid-cols-[1.35fr_.65fr]">
+        <section className="rounded-[1.75rem] border border-white/10 bg-[#0b1926]/75 p-5 sm:p-7">
+          <div className="flex items-center justify-between gap-4">
+            <div><h2 className="text-2xl font-black tracking-tight text-white">내가 만든 학급</h2><p className="mt-1 text-sm text-[#8AA0B0]">학급을 선택하면 마지막으로 진행한 차시부터 이어집니다.</p></div>
+            <span className={`rounded-full border px-3 py-1.5 text-sm font-black ${isClassLimitReached ? 'border-[#FFD37A]/35 bg-[#FFD37A]/10 text-[#FFD37A]' : 'border-white/10 bg-white/5 text-[#a9bbc6]'}`}>{remoteClasses.length}/{MAX_TEACHER_CLASSES}</span>
+          </div>
 
           {state.classCode ? (
-            <div className="mt-6 rounded-2xl border border-[#4FE0C0]/20 bg-[#4FE0C0]/8 p-4">
-              <p className="font-data text-xs text-[#4FE0C0]">현재 학급</p>
-              <p className="mt-1 text-lg font-black text-[#EAF2F5]">
-                {state.className || '이름 없는 학급'} · 코드 {state.classCode}
-              </p>
+            <div className="mt-5 flex flex-col gap-4 rounded-2xl border border-[#4FE0C0]/25 bg-[#4FE0C0]/8 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-xs font-bold text-[#4FE0C0]">현재 선택된 학급</p>
+                <p className="mt-1 font-black text-white">{state.className || '이름 없는 학급'} · 코드 {state.classCode}</p>
+              </div>
+              <Button className="shrink-0 px-5" onClick={() => navigate('/home')}><Play size={18} />현재 학급으로 시작</Button>
             </div>
           ) : null}
 
-          <div className="mt-6 rounded-2xl border border-white/10 bg-[#07111B]/55 p-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="font-data text-xs text-[#4FE0C0]">MY CLASSES</p>
-                <h2 className="mt-1 text-lg font-black text-[#EAF2F5]">내가 만든 학급</h2>
-              </div>
-              <span className={`font-data rounded-lg border px-3 py-1.5 text-sm font-black ${
-                isClassLimitReached
-                  ? 'border-[#FFD37A]/35 bg-[#FFD37A]/10 text-[#FFD37A]'
-                  : 'border-[#4FE0C0]/25 bg-[#4FE0C0]/10 text-[#4FE0C0]'
-              }`}>
-                {remoteClasses.length}/{MAX_TEACHER_CLASSES}
-              </span>
+          {remoteClasses.length > 0 ? (
+            <div className="mt-5 grid gap-3">
+              {remoteClasses.map((remoteClass) => (
+                <article key={remoteClass.classId} className={`grid grid-cols-[minmax(0,1fr)_auto] items-stretch overflow-hidden rounded-2xl border transition ${remoteClass.classCode === state.classCode ? 'border-[#4FE0C0]/35 bg-[#4FE0C0]/10' : 'border-white/10 bg-white/[.025] hover:border-[#4FE0C0]/35'}`}>
+                  <button className="min-w-0 px-5 py-4 text-left" disabled={isRestoring || Boolean(deletingClassId)} onClick={() => void loadClass(remoteClass.classCode)} type="button">
+                    <div className="flex flex-wrap items-center justify-between gap-2"><p className="font-black text-white">{remoteClass.className}</p><span className="text-xs font-bold text-[#4FE0C0]">{remoteClass.classCode}</span></div>
+                    <p className="mt-1 text-sm text-[#8AA0B0]">{remoteClass.aemonName || '이름 미정'} · {remoteClass.currentLesson}차시 진행 중</p>
+                  </button>
+                  <button aria-label={`${remoteClass.className} 삭제`} className="flex w-14 items-center justify-center border-l border-white/10 text-[#6f8593] transition hover:bg-[#E0476B]/15 hover:text-[#FF8AA5] disabled:opacity-40" disabled={isRestoring || Boolean(deletingClassId)} onClick={() => void removeClass(remoteClass)} title="학급 삭제" type="button"><Trash2 className={deletingClassId === remoteClass.classId ? 'animate-pulse' : ''} size={18} /></button>
+                </article>
+              ))}
             </div>
-            {remoteClasses.length > 0 ? (
-              <div className="mt-4 grid gap-2">
-                {remoteClasses.map((remoteClass) => (
-                  <article
-                    key={remoteClass.classId}
-                    className={`grid grid-cols-[minmax(0,1fr)_auto] items-stretch overflow-hidden rounded-xl border transition ${
-                      remoteClass.classCode === state.classCode
-                        ? 'border-[#4FE0C0]/35 bg-[#4FE0C0]/10'
-                        : 'border-white/10 bg-[#07111B]/45 hover:border-[#4FE0C0]/35'
-                    }`}
-                  >
-                    <button className="min-w-0 px-4 py-3 text-left" disabled={isRestoring || Boolean(deletingClassId)} onClick={() => void loadClass(remoteClass.classCode)} type="button">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <p className="font-black text-[#EAF2F5]">{remoteClass.className}</p>
-                        <span className="font-data text-xs text-[#4FE0C0]">{remoteClass.classCode}</span>
-                      </div>
-                      <p className="mt-1 text-sm text-[#8AA0B0]">
-                        {remoteClass.aemonName || '이름 미정'} · 현재 {remoteClass.currentLesson}차시
-                      </p>
-                    </button>
-                    <button
-                      aria-label={`${remoteClass.className} 삭제`}
-                      className="flex w-14 items-center justify-center border-l border-white/10 text-[#8AA0B0] transition hover:bg-[#E0476B]/15 hover:text-[#FF8AA5] disabled:opacity-40"
-                      disabled={isRestoring || Boolean(deletingClassId)}
-                      onClick={() => void removeClass(remoteClass)}
-                      title="학급 삭제"
-                      type="button"
-                    >
-                      <Trash2 className={deletingClassId === remoteClass.classId ? 'animate-pulse' : ''} size={19} />
-                    </button>
-                  </article>
-                ))}
-              </div>
-            ) : <p className="mt-4 border border-dashed border-white/15 px-4 py-6 text-center text-sm text-[#8AA0B0]">아직 만든 학급이 없습니다.</p>}
-            {restoreMessage ? <p className="mt-3 rounded-xl border border-[#FFD37A]/25 bg-[#FFD37A]/10 px-3 py-2 text-sm font-bold text-[#FFD37A]">{restoreMessage}</p> : null}
-          </div>
+          ) : (
+            <div className="mt-5 rounded-2xl border border-dashed border-white/15 px-5 py-12 text-center"><p className="font-bold text-[#B7C7D2]">아직 만든 학급이 없습니다.</p><p className="mt-2 text-sm text-[#718896]">첫 학급을 만들면 이곳에 저장됩니다.</p></div>
+          )}
+          {restoreMessage ? <p className="mt-4 rounded-xl border border-[#FFD37A]/25 bg-[#FFD37A]/10 px-3 py-2 text-sm font-bold text-[#FFD37A]">{restoreMessage}</p> : null}
+        </section>
 
-          <div className="mt-6 inline-flex flex-wrap items-center gap-3 rounded-2xl border border-white/10 bg-[#07111B]/55 p-3">
-            <span
-              className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-black ${
-                isApiConnected ? 'border-[#4FE0C0]/30 bg-[#4FE0C0]/10 text-[#4FE0C0]' : 'border-[#FFD37A]/30 bg-[#FFD37A]/10 text-[#FFD37A]'
-              }`}
-            >
-              {isApiConnected ? <CheckCircle2 size={17} /> : <KeyRound size={17} />}
-              {isApiConnected ? `${providerLabel[state.aiProvider]} 연결됨` : 'API 미연결'}
-            </span>
-            <Button className="min-h-10 px-4" variant="secondary" onClick={openApiModal}>
-              <KeyRound size={17} />
-              {isApiConnected ? 'API 수정하기' : 'API 입력하기'}
-            </Button>
-            <p className="basis-full px-1 text-sm leading-6 text-[#8AA0B0]">API를 연결하면 에아몬이 우리 반 말에 즉석으로 반응해 체험이 더 생동감 있어집니다. Google 계정으로 Gemini 무료 등급을 시작할 수 있습니다.</p>
-          </div>
+        <aside className="grid content-start gap-4">
+          <section className="rounded-[1.75rem] border border-white/10 bg-[#0b1926]/75 p-6">
+            <div className="flex items-start justify-between gap-3"><div><p className="text-sm font-bold text-[#8AA0B0]">선택 설정</p><h2 className="mt-1 text-xl font-black text-white">AI API 연결</h2></div><span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-black ${isApiConnected ? 'border-[#4FE0C0]/30 bg-[#4FE0C0]/10 text-[#4FE0C0]' : 'border-white/10 bg-white/5 text-[#8AA0B0]'}`}>{isApiConnected ? <CheckCircle2 size={14} /> : null}{isApiConnected ? `${providerLabel[state.aiProvider]} 연결됨` : '연결 안 됨'}</span></div>
+            <p className="mt-4 break-keep text-sm leading-6 text-[#8AA0B0]">API를 연결하지 않아도 수업 진행이 가능합니다. API는 에아몬과의 실시간 채팅 등 일부 기능에서만 사용됩니다.</p>
+            <Button className="mt-5 w-full" variant="secondary" onClick={openApiModal}><KeyRound size={17} />{isApiConnected ? 'API 연결 설정 바꾸기' : 'AI API 연결하기'}</Button>
+          </section>
 
-          <div className="mt-8 flex flex-wrap gap-3">
-            {state.classCode ? <Button onClick={() => navigate('/home')}>
-              <Play size={20} />
-              현재 학급으로 가기
-            </Button> : null}
-            <Button variant="secondary" onClick={() => navigate('/training')}>
-              <BookOpen size={20} />
-              사전연수
-            </Button>
-          </div>
-        </div>
-
-        <Panel className="text-center">
-          <AemonAvatar stage={0} alignment="none" size={310} />
-          <p className="font-hand mt-7 text-3xl leading-tight text-[#FFD37A]">"...안에서 다 들려. 너희 목소리."</p>
-        </Panel>
-      </section>
+          <section className="rounded-[1.75rem] border border-white/10 bg-[#0b1926]/75 p-6">
+            <p className="text-sm font-bold text-[#8AA0B0]">처음 진행하시나요?</p><h2 className="mt-1 text-xl font-black text-white">교사용 사전연수</h2>
+            <p className="mt-3 break-keep text-sm leading-6 text-[#8AA0B0]">수업의 취지와 진행 방법을 먼저 살펴볼 수 있습니다.</p>
+            <Button className="mt-5 w-full" variant="ghost" onClick={() => navigate('/training')}><BookOpen size={18} />사전연수 보기</Button>
+          </section>
+        </aside>
+      </div>
 
       {isApiOpen ? (
         <ApiConnectionModal
@@ -222,19 +181,6 @@ export function StartPage() {
         />
       ) : null}
 
-      {isStartNoticeOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-5 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="start-notice-title">
-          <Panel className="w-full max-w-lg">
-            <button className="ml-auto flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 text-[#B7C7D2] hover:border-white/25" onClick={() => setIsStartNoticeOpen(false)} type="button" aria-label="안내 닫기">
-              <X size={18} />
-            </button>
-            <p className="font-data text-sm text-[#4FE0C0]">BEFORE CLASS</p>
-            <h2 id="start-notice-title" className="font-display mt-2 break-keep text-4xl leading-tight text-[#EAF2F5]">프로젝트를 시작하기 전에 테스트 학급을 만들어 시험해 보세요.</h2>
-            <p className="mt-4 text-lg leading-8 text-[#B7C7D2]">언제든지 학급을 새로 만들고 삭제할 수 있습니다.</p>
-            <Button className="mt-6 w-full" onClick={() => setIsStartNoticeOpen(false)}>확인</Button>
-          </Panel>
-        </div>
-      ) : null}
     </div>
   )
 }

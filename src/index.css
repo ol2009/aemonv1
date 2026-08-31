@@ -13,10 +13,16 @@
   --surface: #14283d;
   --surface-2: #1e3a54;
   --ember: #ffd37a;
+  --ember-ink: #ffd37a;
   --aura: #4fe0c0;
   --corrupt: #e0476b;
   --ink: #eaf2f5;
+  --ink-soft: #b7c7d2;
   --ink-mute: #8aa0b0;
+  --button-ink: #0a1622;
+  --border: rgba(255, 255, 255, 0.1);
+  --border-strong: rgba(255, 255, 255, 0.25);
+  --panel-shadow: rgba(0, 0, 0, 0.2);
 }
 
 * {
@@ -38,6 +44,21 @@ body {
     radial-gradient(circle at 18% 12%, rgba(79, 224, 192, 0.06), transparent 36%),
     radial-gradient(circle at 84% 78%, rgba(155, 92, 255, 0.07), transparent 42%),
     linear-gradient(180deg, #0b1a29 0%, #0a1622 58%, #07111b 100%);
+}
+
+.landing-page {
+  letter-spacing: -0.01em;
+}
+
+.landing-hero::after {
+  position: absolute;
+  right: 2.5rem;
+  bottom: 2rem;
+  content: '01 / 05';
+  color: rgba(23, 37, 48, 0.28);
+  font-family: 'Space Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
 }
 
 button,
@@ -81,6 +102,76 @@ select:focus-visible {
   background-position: 8% 18%, 75% 30%, 38% 78%;
   background-size: 360px 280px, 440px 360px, 520px 420px;
   animation: motes 18s ease-in-out infinite alternate;
+}
+
+.lesson-workspace-theme {
+  --abyss: #f3f6f2;
+  --surface: #ffffff;
+  --surface-2: #e9f1ed;
+  --ember: #f2be5c;
+  --ember-ink: #8b5a00;
+  --aura: #25a98d;
+  --ink: #172530;
+  --ink-soft: #526873;
+  --ink-mute: #60717a;
+  --button-ink: #172530;
+  --border: #d7e2dc;
+  --border-strong: #b7c9c0;
+  --panel-shadow: rgba(25, 66, 53, 0.1);
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 12% 8%, rgba(37, 169, 141, 0.1), transparent 30%),
+    radial-gradient(circle at 88% 82%, rgba(242, 190, 92, 0.11), transparent 34%),
+    linear-gradient(180deg, #f8faf7 0%, #f3f6f2 52%, #edf3ef 100%);
+}
+
+.lesson-workspace-theme.data-sea::before {
+  background-image:
+    radial-gradient(circle, rgba(37, 169, 141, 0.2) 0 2px, transparent 3px),
+    radial-gradient(circle, rgba(242, 190, 92, 0.18) 0 1px, transparent 2px),
+    radial-gradient(circle, rgba(23, 37, 48, 0.1) 0 1px, transparent 2px);
+  opacity: 0.55;
+}
+
+.lesson-workspace-theme :where([class~="text-[#EAF2F5]"], [class~="text-[#F5FAFC]"]) { color: var(--ink); }
+.lesson-workspace-theme :where([class~="text-[#B7C7D2]"], [class~="text-[#D8E3E8]"], [class~="text-[#D9FFF6]"]) { color: var(--ink-soft); }
+.lesson-workspace-theme :where([class~="text-[#647989]"], [class~="text-[#667987]"], [class~="text-[#6F8191]"], [class~="text-[#6f8593]"], [class~="text-[#708696]"], [class~="text-[#718896]"], [class~="text-[#8AA0B0]"], [class~="text-[#9BAEBA]"], [class~="text-[#a9bbc6]"]) { color: var(--ink-mute); }
+.lesson-workspace-theme :where([class~="text-[#4FE0C0]"], [class~="text-[#A9DCCD]"], [class~="text-[#A9F8E7]"]) { color: var(--aura); }
+.lesson-workspace-theme :where([class~="text-[#6AD8FF]"], [class~="text-[#75B7FF]"], [class~="text-[#9CE6FF]"], [class~="text-[#B9DCFF]"]) { color: #2f7896; }
+.lesson-workspace-theme :where([class~="text-[#9B7CFF]"], [class~="text-[#C9B9FF]"]) { color: #6d55a2; }
+.lesson-workspace-theme :where([class~="text-[#FFD37A]"], [class~="text-[#FFE6AE]"]) { color: var(--ember-ink); }
+.lesson-workspace-theme :where([class~="text-[#07111B]"], [class~="text-[#0A1622]"]) { color: var(--button-ink); }
+.lesson-workspace-theme :where([class~="text-white"]:not([class*="bg-[#"])) { color: var(--ink); }
+.lesson-workspace-theme :where([class~="border-white/8"], [class~="border-white/10"], [class~="border-white/15"], [class~="border-white/20"], [class~="border-white/25"]) { border-color: var(--border); }
+.lesson-workspace-theme :where([class~="decoration-white/20"], [class~="decoration-white/25"]) { text-decoration-color: var(--border-strong); }
+.lesson-workspace-theme :where([class*="bg-[#07111B]"], [class*="bg-[#071A29]"], [class*="bg-[#0A1622]"], [class*="bg-[#0B1A29]"], [class*="bg-[#07131e]"], [class*="bg-[#0b1926]"], [class*="bg-[#0D1C29]"], [class*="bg-[#0D2232]"], [class*="bg-[#102033]"], [class*="bg-[#102236]"], [class*="bg-[#102334]"], [class*="bg-[#102438]"], [class*="bg-[#10283B]"], [class*="bg-[#11263A]"], [class*="bg-[#11352F]"], [class*="bg-[#12304A]"], [class*="bg-[#14283D]"], [class*="bg-[#14304A]"], [class*="bg-[#1B2D3E]"], [class*="bg-[#1E3A54]"]) { background-color: var(--surface-2); }
+.lesson-workspace-theme :where([class*="bg-[#0d2030]"]) { background-color: var(--surface); }
+.lesson-workspace-theme :where([class~="bg-white/5"], [class~="bg-white/10"], [class~="bg-white/[.035]"]) { background-color: var(--surface-2); }
+.lesson-workspace-theme :where(input, textarea, select) { color: var(--ink); }
+.lesson-workspace-theme :where(input, textarea, select)::placeholder { color: var(--ink-mute); }
+
+.lesson-story-scene {
+  --abyss: #0b1a29;
+  --surface: #163747;
+  --surface-2: #234b59;
+  --ember: #f2be5c;
+  --ember-ink: #f2be5c;
+  --aura: #4fd7bd;
+  --ink: #f2f6f7;
+  --ink-soft: #c8d5da;
+  --ink-mute: #91a6b0;
+  --border: rgba(220, 247, 241, 0.2);
+  --border-strong: rgba(220, 247, 241, 0.34);
+  --panel-shadow: rgba(14, 43, 51, 0.24);
+}
+
+.lesson-story-scene :where([class~="text-white"]) { color: var(--ink); }
+.lesson-story-scene :where([class*="bg-[#07111B]"], [class*="bg-[#0A1622]"], [class*="bg-[#102236]"], [class*="bg-[#14283D]"], [class*="bg-[#1E3A54]"]) { background-color: var(--surface-2); }
+.lesson-story-scene > [class*="bg-[radial-gradient"] {
+  background-image:
+    radial-gradient(circle at 50% 18%, rgba(79, 215, 189, 0.22), transparent 38%),
+    radial-gradient(circle at 82% 72%, rgba(242, 190, 92, 0.1), transparent 34%),
+    linear-gradient(180deg, #1b4050, #163747) !important;
 }
 
 @keyframes motes {

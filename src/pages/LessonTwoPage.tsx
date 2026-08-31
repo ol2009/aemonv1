@@ -313,7 +313,7 @@ function AemonScene({ name, line, caption, stage = 0 }: { name: string; line: st
   const textClass = 'font-display mt-3 min-h-[4.5rem] whitespace-pre-line break-keep text-2xl leading-snug text-[#EAF2F5] sm:text-3xl'
 
   return (
-    <Panel className="relative min-h-[620px] overflow-hidden p-0">
+    <Panel className="lesson-story-scene relative min-h-[620px] overflow-hidden p-0">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(79,224,192,.2),transparent_42%),linear-gradient(180deg,#0B1A29,#07111B)]" />
       <div className="absolute left-1/2 top-[9%] -translate-x-1/2">
         <AemonAvatar stage={stage} alignment="none" size={310} />
@@ -338,7 +338,7 @@ function ClosingScene({ name, stage = 0 }: { name: string; stage?: number }) {
   const textClass = 'font-display mt-3 min-h-[4.5rem] whitespace-pre-line break-keep text-2xl leading-snug text-[#EAF2F5] sm:text-3xl'
 
   return (
-    <Panel className="relative min-h-[620px] overflow-hidden p-0">
+    <Panel className="lesson-story-scene relative min-h-[620px] overflow-hidden p-0">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(79,224,192,.18),transparent_42%),linear-gradient(180deg,#0B1A29,#07111B)]" />
       <div className="absolute left-1/2 top-[9%] -translate-x-1/2">
         {isProfessor ? (
@@ -365,7 +365,7 @@ function ProfessorCaseScene({ line, caption, extraLines = [] }: { line: string; 
   const textClass = 'font-display mt-3 min-h-[4.5rem] whitespace-pre-line break-keep text-2xl leading-snug text-[#EAF2F5] sm:text-3xl'
 
   return (
-    <Panel className="relative min-h-[620px] overflow-hidden p-0">
+    <Panel className="lesson-story-scene relative min-h-[620px] overflow-hidden p-0">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(255,211,122,.18),transparent_42%),linear-gradient(180deg,#102236,#07111B)]" />
       <div className="absolute inset-x-0 bottom-[16%] top-4 flex items-end justify-center">
         <img className="h-full max-h-[480px] object-contain drop-shadow-[0_30px_80px_rgba(0,0,0,.45)]" src="/v2/lesson-1/director.png" alt="오박사" />
@@ -404,7 +404,7 @@ function VisualCaseScene({
   const textClass = 'font-display mt-3 min-h-[4.5rem] whitespace-pre-line break-keep text-2xl leading-snug text-[#EAF2F5] sm:text-3xl'
 
   return (
-    <Panel className="relative min-h-[700px] overflow-hidden p-0">
+    <Panel className="lesson-story-scene relative min-h-[700px] overflow-hidden p-0">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_12%,rgba(79,224,192,.14),transparent_34%),linear-gradient(180deg,#102236,#07111B)]" />
       <div className="absolute inset-x-5 top-5 bottom-[238px] flex items-center justify-center">
         <img
