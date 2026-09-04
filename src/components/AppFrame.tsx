@@ -137,15 +137,6 @@ export function AppFrame() {
             <QrCode size={20} className="text-[#4FE0C0]" />
             학생 화면 QR
           </button>
-        ) : !isLessonPreview ? (
-          <button
-            aria-label="에아몬 처음 화면으로 이동"
-            className="fixed left-3 top-3 z-50 flex h-11 w-11 items-center justify-center rounded-xl border border-white/15 bg-[#0D2232]/90 shadow-lg backdrop-blur"
-            onClick={() => navigate('/')}
-            type="button"
-          >
-            <img aria-hidden="true" className="h-8 w-8 object-contain [image-rendering:pixelated]" src="/icons/aemon-logo-mark-128.png" alt="" />
-          </button>
         ) : null}
         {isStudentLive && location.pathname !== '/live' ? (
           <div className="fixed right-3 top-3 z-50 rounded-lg border border-[#4FE0C0]/30 bg-[#07111B]/90 px-3 py-2 text-xs font-black text-[#4FE0C0] shadow-lg">
