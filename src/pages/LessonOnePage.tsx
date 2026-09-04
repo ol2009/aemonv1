@@ -40,7 +40,7 @@ import { useV2RemoteSync } from '../lib/useV2RemoteSync'
 import { isStudentLiveView, useLessonLiveSync } from '../lib/useLessonLiveSync'
 import { useLessonImagePreload } from '../lib/useLessonImagePreload'
 import { createUuid } from '../lib/id'
-import { getLessonPreviewDefinition, getPreviewStepIndex } from '../data/lessonPreview'
+import { getLessonPreviewDefinition, getPreviewStepIndex, isLessonPreviewMode } from '../data/lessonPreview'
 import { useV2, type SurveyResponse } from '../state/V2Store'
 
 type LessonStep =
@@ -484,7 +484,7 @@ export function LessonOnePage() {
   )
 
   const remoteSyncClassCode = isStudentLiveView() ? new URLSearchParams(window.location.search).get('code') || state.classCode : state.classCode
-  useV2RemoteSync(remoteSyncClassCode, Boolean(remoteSyncClassCode) && !isStudentLiveView())
+  useV2RemoteSync(remoteSyncClassCode, Boolean(remoteSyncClassCode) && !isStudentLiveView() && !isLessonPreviewMode())
   useAutoScrollToBottom(demoScrollRef, `${demoLogs.length}-${isDemoRunning}-${demoLogs.at(-1)?.answer ?? ''}`, { enabled: demoLogs.length > 0, followMs: 1800 })
 
   const step = steps[stepIndex]

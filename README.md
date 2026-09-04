@@ -17,8 +17,8 @@ npm run build
 
 ## 배포
 
-- 운영 플랫폼: Cloudflare Pages
-- 운영 주소: `https://eamon-edu.pages.dev`
+- 운영 플랫폼: Vercel
+- 운영 주소: `https://eamon.vercel.app`
 - 빌드 명령: `npm run build`
 - 빌드 출력 폴더: `dist`
 
@@ -53,7 +53,7 @@ npm run build
 ```bash
 VITE_SUPABASE_URL=
 VITE_SUPABASE_ANON_KEY=
-VITE_PUBLIC_SITE_URL=https://eamon-edu.pages.dev
+VITE_PUBLIC_SITE_URL=https://eamon.vercel.app
 VITE_GEMINI_TEXT_MODEL=gemini-flash-latest
 VITE_GEMINI_IMAGE_MODEL=gemini-image-latest
 ```

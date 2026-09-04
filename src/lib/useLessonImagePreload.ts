@@ -54,7 +54,11 @@ const lessonImages: Record<number, string[]> = {
 const preloadedImages = new Set<string>()
 
 export function useLessonImagePreload(lessonNo: number) {
+  const isScenePreview = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('preview') === '1'
+
   useEffect(() => {
+    if (isScenePreview) return
+
     let cancelled = false
     const queue = [...new Set([...(lessonImages[lessonNo] ?? []), ...avatarImages])].filter((src) => !preloadedImages.has(src))
     let nextIndex = 0
@@ -80,5 +84,5 @@ export function useLessonImagePreload(lessonNo: number) {
     return () => {
       cancelled = true
     }
-  }, [lessonNo])
+  }, [isScenePreview, lessonNo])
 }

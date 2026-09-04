@@ -549,7 +549,7 @@ export function LessonFivePage() {
 
   const isLiveStudentPage = isStudentLiveView()
   const syncCode = isStudentView || isLiveStudentPage ? queryCode || state.studentSession?.classCode || entryCode || state.classCode : state.classCode
-  useV2RemoteSync(syncCode, Boolean(syncCode) && !isStudentLiveView())
+  useV2RemoteSync(syncCode, Boolean(syncCode) && !isStudentLiveView() && !isLessonPreviewMode())
 
   const aemonName = state.aemonName.trim() || '에아몬'
   const className = state.className.trim() || '우리 반'
