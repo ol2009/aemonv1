@@ -8,7 +8,7 @@ type TrainingTab = 'introduction' | 'lesson-plans'
 
 const tabs: Array<{ id: TrainingTab; label: string; icon: typeof BookOpen }> = [
   { id: 'introduction', label: '수업 소개', icon: BookOpen },
-  { id: 'lesson-plans', label: '수업 과정안', icon: ClipboardCheck },
+  { id: 'lesson-plans', label: '수업지도안', icon: ClipboardCheck },
 ]
 
 function IntroductionTab() {
@@ -56,7 +56,7 @@ function LessonPlansTab({ selectedLesson, onSelectLesson }: { selectedLesson: nu
 
   return (
     <div className="mt-8">
-      <div className="flex gap-2 overflow-x-auto border-b border-white/10 pb-4" role="tablist" aria-label="차시별 수업 과정안">
+      <div className="flex gap-2 overflow-x-auto border-b border-white/10 pb-4" role="tablist" aria-label="차시별 수업지도안">
         {teacherLessonGuides.map((lesson) => (
           <button
             key={lesson.no}

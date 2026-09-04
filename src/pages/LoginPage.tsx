@@ -42,7 +42,7 @@ export function LoginPage() {
         <AemonAvatar stage={0} alignment="none" size={130} />
         <h1 className="font-display mt-6 text-4xl text-[#EAF2F5]">에아몬에 오신 걸 환영합니다</h1>
         <p className="mt-4 leading-7 text-[#8AA0B0]">
-          교사용 수정 기능은 Google 로그인 후 사용할 수 있습니다. 학생 화면은 로그인 없이 둘러볼 수 있습니다.
+          수업을 시작하려면 Google 로그인이 필요합니다. 학생은 선생님이 공유한 QR 코드로 참여할 수 있습니다.
         </p>
         {user ? (
           <p className="mt-4 rounded-2xl border border-[#4FE0C0]/25 bg-[#4FE0C0]/10 px-4 py-3 text-sm text-[#B7C7D2]">
@@ -70,9 +70,6 @@ export function LoginPage() {
               로그아웃
             </Button>
           ) : null}
-          <Button variant="secondary" onClick={() => navigate('/start')}>
-            둘러보기
-          </Button>
         </div>
       </Panel>
     </div>

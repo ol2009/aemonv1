@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, ArrowRight, Check, Heart, Pencil, Play, QrCode, RefreshCw, Trash2 } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, Pencil, Play, QrCode, RefreshCw, Trash2 } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
 import { SkippableTypewriterText } from '../components/SkippableTypewriterText'
 import { TypingIndicator } from '../components/TypingIndicator'
@@ -1079,9 +1079,8 @@ export function LessonOnePage() {
                         <p className="text-3xl font-black text-[#EAF2F5]">{candidate.name}</p>
                         <p className="mt-1 leading-6 text-[#8AA0B0]">{candidate.reason || '이유 없음'} · {candidate.nickname}</p>
                       </div>
-                      <span className="inline-flex items-center gap-1 rounded-full bg-[#FFD37A]/15 px-3 py-1 font-bold text-[#FFD37A]">
-                        <Heart size={17} fill="currentColor" />
-                        {candidate.votes.length}
+                      <span className="inline-flex items-center rounded-full bg-[#FFD37A]/15 px-3 py-1 font-bold text-[#FFD37A]">
+                        좋아요 {candidate.votes.length}
                       </span>
                     </div>
                   </div>

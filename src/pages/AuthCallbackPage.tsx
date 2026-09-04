@@ -45,9 +45,9 @@ export function AuthCallbackPage() {
           if (error) throw error
         }
 
-        const { data, error } = await supabase.auth.getSession()
+        const { data, error } = await supabase.auth.getUser()
         if (error) throw error
-        if (!data.session) {
+        if (!data.user) {
           setMessage('로그인 세션을 찾지 못했습니다. 다시 로그인해주세요.')
           return
         }

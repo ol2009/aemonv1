@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Circle, ExternalLink, Heart, Play, QrCode, RefreshCw, Send, Sparkles, Users, X as XIcon } from 'lucide-react'
+import { Circle, ExternalLink, Play, QrCode, RefreshCw, Send, Sparkles, Users, X as XIcon } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
 import { EvolutionScene } from '../components/EvolutionScene'
 import { ProposalAdoptionPanel } from '../components/ProposalAdoptionPanel'
@@ -1028,9 +1028,8 @@ export function LessonTwoPage() {
                   <p className="min-h-20 text-lg font-black leading-8 text-[#EAF2F5]">{response.body}</p>
                   <div className="mt-3 flex items-center justify-between gap-3">
                     <p className="text-sm text-[#8AA0B0]">{response.nickname}</p>
-                    <span className="inline-flex items-center gap-1 rounded-full bg-[#FFD37A]/15 px-3 py-1 text-sm font-bold text-[#FFD37A]">
-                      <Heart size={16} fill="currentColor" />
-                      {response.votes.length}
+                    <span className="inline-flex items-center rounded-full bg-[#FFD37A]/15 px-3 py-1 text-sm font-bold text-[#FFD37A]">
+                      좋아요 {response.votes.length}
                     </span>
                   </div>
                 </article>
@@ -1294,9 +1293,8 @@ export function LessonTwoPage() {
                         <p className="mt-3 text-lg font-black leading-7 text-[#EAF2F5]">{proposal.body}</p>
                         <p className="mt-1 text-sm leading-6 text-[#8AA0B0]">{proposal.reason} · {proposal.nickname}</p>
                       </div>
-                      <span className="inline-flex items-center gap-1 rounded-full bg-[#FFD37A]/15 px-3 py-1 font-bold text-[#FFD37A]">
-                        <Heart size={16} fill="currentColor" />
-                        {proposal.votes.length}
+                      <span className="inline-flex items-center rounded-full bg-[#FFD37A]/15 px-3 py-1 font-bold text-[#FFD37A]">
+                        좋아요 {proposal.votes.length}
                       </span>
                     </div>
                   </article>
@@ -1313,7 +1311,7 @@ export function LessonTwoPage() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="font-data text-sm text-[#FFD37A]">SELECT</p>
-                <h2 className="font-display mt-2 text-4xl text-[#EAF2F5]">좋아요 많은 코드 살펴보기</h2>
+                <h2 className="font-display mt-2 text-4xl text-[#EAF2F5]">좋아요 많은 가치 코드 살펴보기</h2>
                 <p className="mt-3 leading-7 text-[#8AA0B0]">좋아요가 많은 순서로 후보를 살펴보고, 교사가 이 화면에서 가치코드 No.1을 선택합니다.</p>
                 <p className="mt-2 text-sm font-bold text-[#4FE0C0]">참여 {proposalParticipantCount}명 · 글 {lessonProposals.length}개</p>
               </div>
@@ -1322,7 +1320,6 @@ export function LessonTwoPage() {
                   <RefreshCw size={17} className={isRefreshing ? 'animate-spin' : ''} />
                   새로고침
                 </Button>
-                <Heart className="text-[#FFD37A]" size={54} />
               </div>
             </div>
             {message ? <p className="mt-4 rounded-2xl border border-white/10 bg-[#07111B]/55 px-4 py-3 text-sm text-[#B7C7D2]">{message}</p> : null}

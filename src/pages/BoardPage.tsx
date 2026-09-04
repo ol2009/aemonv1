@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { BarChart3, CheckCircle2, Heart, Pencil, Send, Trash2, X } from 'lucide-react'
+import { BarChart3, CheckCircle2, Pencil, Send, Trash2, X } from 'lucide-react'
 import { Button, Panel } from '../components/ui'
 import { ValueCardSelectGrid } from '../components/ValueCardSelectGrid'
 import {
@@ -795,7 +795,7 @@ export function BoardPage() {
                 className="rounded-2xl border border-white/10 bg-[#07111B]/45 px-4 py-3 text-sm font-black text-[#B7C7D2] transition hover:border-white/25 hover:text-[#EAF2F5]"
                 to={`/lesson/5?role=student&activity=attack&code=${encodeURIComponent(session?.classCode || state.classCode)}`}
               >
-                5차시 - 해킹 질문
+                5차시 - AI 시험 질문
               </Link>
               <Link
                 className="rounded-2xl border border-white/10 bg-[#07111B]/45 px-4 py-3 text-sm font-black text-[#B7C7D2] transition hover:border-white/25 hover:text-[#EAF2F5]"
@@ -1071,8 +1071,7 @@ export function BoardPage() {
                         disabled={isTeacherBoard || !session || liked}
                         type="button"
                       >
-                        <Heart size={16} fill={liked ? 'currentColor' : 'none'} />
-                        {response.votes.length}
+                        좋아요 {response.votes.length}
                       </button>
                     </div>
                   </article>
@@ -1149,8 +1148,7 @@ export function BoardPage() {
                         disabled={isTeacherBoard || !session || liked}
                         type="button"
                       >
-                        <Heart size={16} fill={liked ? 'currentColor' : 'none'} />
-                        {response.votes.length}
+                        좋아요 {response.votes.length}
                       </button>
                     </div>
                   </article>
@@ -1227,8 +1225,7 @@ export function BoardPage() {
                         disabled={isTeacherBoard || !session || liked}
                         type="button"
                       >
-                        <Heart size={16} fill={liked ? 'currentColor' : 'none'} />
-                        {response.votes.length}
+                        좋아요 {response.votes.length}
                       </button>
                     </div>
                   </article>
@@ -1296,8 +1293,7 @@ export function BoardPage() {
                         <p className="mt-2 text-sm leading-6 text-[#8AA0B0]">{candidate.reason || '이유 없음'} · {candidate.nickname}</p>
                       </div>
                       <span className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-[#FFD37A]/15 px-4 py-2 text-sm font-black text-[#FFD37A] md:min-w-24">
-                        <Heart size={16} fill={liked ? 'currentColor' : 'none'} />
-                        {candidate.votes.length}
+                        좋아요 {candidate.votes.length}
                       </span>
                     </div>
                   </button>
@@ -1374,8 +1370,7 @@ export function BoardPage() {
                               disabled={isTeacherBoard || !session || liked}
                               type="button"
                             >
-                              <Heart size={16} fill={liked ? 'currentColor' : 'none'} />
-                              {wish.votes.length}
+                              좋아요 {wish.votes.length}
                             </button>
                             {canEdit ? (
                               <div className="flex gap-2">
@@ -1508,8 +1503,7 @@ export function BoardPage() {
                           <p className="mt-2 text-sm leading-6 text-[#8AA0B0]"><span className="font-black text-[#C9B9FF]">이유 · </span>{proposal.reason}</p>
                         </div>
                         <span className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-[#FFD37A]/15 px-4 py-2 text-sm font-black text-[#FFD37A] md:min-w-24">
-                          <Heart size={16} fill={voted ? 'currentColor' : 'none'} />
-                          {proposal.votes.length}
+                          좋아요 {proposal.votes.length}
                         </span>
                       </div>
                     </button>

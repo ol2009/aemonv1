@@ -5,24 +5,40 @@ import { publicSiteUrl } from './siteUrl'
 
 export function useSupabaseUser() {
   const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(isSupabaseConfigured)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     if (!isSupabaseConfigured || !supabase) {
+      setIsLoading(false)
       return
     }
 
+    const authClient = supabase
     let mounted = true
+    let validationId = 0
 
-    supabase.auth.getSession().then(({ data }) => {
-      if (!mounted) return
-      setUser(data.session?.user ?? null)
+    const validateUser = async () => {
+      const requestId = ++validationId
+      const { data, error } = await authClient.auth.getUser()
+      if (!mounted || requestId !== validationId) return
+      setUser(error ? null : data.user)
       setIsLoading(false)
-    })
+    }
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
-      setIsLoading(false)
+    void validateUser()
+
+    const { data: listener } = authClient.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') {
+        validationId += 1
+        setUser(null)
+        setIsLoading(false)
+        return
+      }
+
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+        setIsLoading(true)
+        window.setTimeout(() => void validateUser(), 0)
+      }
     })
 
     return () => {

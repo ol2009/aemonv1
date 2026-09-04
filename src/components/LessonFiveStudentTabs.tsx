@@ -5,7 +5,7 @@ export type LessonFiveStudentTab = 'attack' | 'code4' | 'pledge' | 'post'
 export function LessonFiveStudentTabs({ classCode, active }: { classCode: string; active?: LessonFiveStudentTab }) {
   const code = encodeURIComponent(classCode)
   const tabs: { id: LessonFiveStudentTab; label: string; to: string }[] = [
-    { id: 'attack', label: '5차시 - 해킹 질문', to: `/lesson/5?role=student&activity=attack&code=${code}` },
+    { id: 'attack', label: '5차시 - AI 시험 질문', to: `/lesson/5?role=student&activity=attack&code=${code}` },
     { id: 'code4', label: '5차시 - 마지막 보완 코드', to: `/board?code=${code}&mode=code4` },
     { id: 'pledge', label: '5차시 - 우리의 다짐', to: `/lesson/5?role=student&activity=pledge&code=${code}` },
     { id: 'post', label: '5차시 - 사후 설문', to: `/lesson/5?role=student&activity=post&code=${code}` },

@@ -560,8 +560,8 @@ export function LessonFivePage() {
   const declarationLines = useMemo(
     () => [
       `오늘은 우리 ${aemonName}의 마지막 시험이에요.`,
-      "여러분은 오늘 '해킹팀'이 되는 거예요.",
-      `해킹팀은 일부러 ${aemonName}의 약점을 찾아 공격하는 팀이에요.`,
+      "여러분은 오늘 'AI 점검단'이 되는 거예요.",
+      `AI 점검단은 ${aemonName}에게 여러 시험 질문을 던져, 규칙에서 빠진 기준을 찾는 팀이에요.`,
       `만약 여러분의 나쁜 부탁에 ${withJosa(aemonName, '이/가')} 대답을 안 한다면, 우리는 최고의 인공지능을 만들어낸 거예요.`,
       '만약 나쁜 부탁을 들어주려고 한다면, 마지막으로 딱 한 번 더 보완할 기회를 줄게요.',
     ],
@@ -928,7 +928,7 @@ export function LessonFivePage() {
         <Panel className="text-center">
           <LockKeyhole className="mx-auto text-[#FFD37A]" size={54} />
           <h1 className="font-display mt-4 text-4xl text-[#EAF2F5]">학급을 먼저 만들어 주세요</h1>
-          <p className="mt-3 leading-7 text-[#8AA0B0]">학급 코드가 있어야 5차시 해킹팀 배틀을 시작할 수 있습니다.</p>
+          <p className="mt-3 leading-7 text-[#8AA0B0]">학급 코드가 있어야 5차시 빈틈 찾기 테스트를 시작할 수 있습니다.</p>
           <Button className="mt-5" onClick={() => navigate('/')}>
             학급 홈으로
           </Button>
@@ -952,7 +952,7 @@ export function LessonFivePage() {
             prevDisabled={declarationLineIndex === 0}
             nextDisabled={!isDeclarationLineDone}
             allowDialogueSkip
-            nextLabel={isLastDeclarationLine ? '해킹팀 준비' : '다음'}
+            nextLabel={isLastDeclarationLine ? 'AI 점검단 준비' : '다음'}
             onPrev={goPrev}
             onNext={goNext}
           />
@@ -964,14 +964,14 @@ export function LessonFivePage() {
           <Panel>
             <div className="flex flex-wrap items-start justify-between gap-5">
               <div>
-                <h2 className="font-display text-4xl leading-tight text-[#EAF2F5]">나의 공격 질문 준비</h2>
+                <h2 className="font-display text-4xl leading-tight text-[#EAF2F5]">나의 시험 질문 준비</h2>
                 <p className="mt-4 max-w-3xl text-lg leading-8 text-[#B7C7D2]">
                   우리가 만든 코드 3개로 안 막히는 질문을 찾아보세요. {withJosa(aemonName, '이/가')} 실수로 대답할 질문을 찾는 것이 오늘의 임무입니다.
-                  실제로 누군가를 다치게 하려는 것이 아니라, 안전하게 구멍을 찾아 고치는 연습입니다.
+                  실제로 피해를 주는 활동이 아니라, 안전하게 빠진 기준을 찾아 보완하는 테스트입니다.
                 </p>
               </div>
               <div className="rounded-2xl border border-[#FFD37A]/25 bg-[#FFD37A]/10 px-4 py-3 text-sm font-black leading-6 text-[#FFD37A]">
-                처음 한 번만 QR로 접속하고, 닉네임으로 서로 다른 공격 질문을 여러 개 올릴 수 있습니다.
+                처음 한 번만 QR로 접속하고, 닉네임으로 서로 다른 시험 질문을 여러 개 올릴 수 있습니다.
               </div>
             </div>
             <div className="mt-6">
@@ -992,7 +992,7 @@ export function LessonFivePage() {
                 </Button>
               </div>
               <div className="mt-5 grid gap-3">
-                {attackSubmissions.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/55 p-4 text-[#8AA0B0]">아직 제출된 공격 질문이 없습니다.</p> : null}
+                {attackSubmissions.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/55 p-4 text-[#8AA0B0]">아직 제출된 시험 질문이 없습니다.</p> : null}
                 {attackSubmissions.map((submission) => (
                   <article key={submission.response.id} className="rounded-2xl border border-white/10 bg-[#07111B]/55 p-4">
                     <div className="flex flex-wrap items-center gap-2">
@@ -1030,7 +1030,7 @@ export function LessonFivePage() {
                 </Button>
               </div>
               <div className="mt-5 grid max-h-[620px] gap-3 overflow-y-auto pr-2">
-                {attackSubmissions.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/55 p-4 text-[#8AA0B0]">먼저 공격 질문을 제출해 주세요.</p> : null}
+                {attackSubmissions.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/55 p-4 text-[#8AA0B0]">먼저 시험 질문을 제출해 주세요.</p> : null}
                 {attackSubmissions.map((submission) => (
                   <button
                     key={submission.response.id}
@@ -1396,7 +1396,7 @@ function StudentLessonFive({
   onRefresh: () => void
   onSave: (args: { nickname: string; questionKey: string; body: string }) => Promise<boolean>
 }) {
-  const label = activity === 'attack' ? '해킹팀 질문 제출' : activity === 'pledge' ? '우리의 다짐' : '마지막 사후검사'
+  const label = activity === 'attack' ? 'AI 시험 질문 제출' : activity === 'pledge' ? '우리의 다짐' : '마지막 사후검사'
 
   if (!session) {
     return (
@@ -1522,8 +1522,8 @@ function StudentAttackBoard({
       <Panel>
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="font-data text-sm text-[#FFD37A]">RED TEAM</p>
-            <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">나의 공격 질문 만들기</h2>
+            <p className="font-data text-sm text-[#FFD37A]">AI CHECK</p>
+            <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">나의 시험 질문 만들기</h2>
             <p className="mt-3 max-w-3xl leading-7 text-[#8AA0B0]">아래 카드를 고르고 에아몬이 실수할 것 같은 질문을 올려 주세요. 서로 다른 질문을 여러 개 제출할 수 있습니다.</p>
           </div>
           <Button variant="secondary" onClick={onRefresh}>
@@ -1537,7 +1537,7 @@ function StudentAttackBoard({
       </Panel>
       <Panel>
         <label className="grid gap-2">
-          <span className="text-sm font-bold text-[#8AA0B0]">공격 질문</span>
+          <span className="text-sm font-bold text-[#8AA0B0]">시험 질문</span>
           <textarea
             className="min-h-36 resize-none rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 text-xl font-black leading-9 text-[#EAF2F5] outline-none transition focus:border-[#4FE0C0]/60"
             maxLength={260}
@@ -1546,7 +1546,7 @@ function StudentAttackBoard({
           />
         </label>
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm font-bold text-[#8AA0B0]">선택한 카드: {selectedCard.title} · 가치코드 No.{selectedCard.codeNo}를 공격합니다.</p>
+          <p className="text-sm font-bold text-[#8AA0B0]">선택한 카드: {selectedCard.title} · 가치코드 No.{selectedCard.codeNo}가 잘 적용되는지 확인합니다.</p>
           <Button disabled={!question.trim() || isSaving} onClick={() => void submit()}>
             <Send size={18} />
             {isSaving ? '저장 중' : '질문 추가하기'}
@@ -1563,7 +1563,7 @@ function StudentAttackBoard({
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="font-data text-sm text-[#4FE0C0]">TEAM QUESTIONS</p>
-            <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">제출된 해킹팀 질문</h2>
+            <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">AI 점검단 시험 질문</h2>
             <p className="mt-2 text-sm font-bold text-[#8AA0B0]">우리 반에서 지금까지 질문 {attackSubmissions.length}개를 제출했습니다.</p>
           </div>
           <Button variant="secondary" onClick={onRefresh}>

@@ -365,3 +365,38 @@ select:focus-visible {
     transition-duration: 0.001ms !important;
   }
 }
+
+.lesson-start-sprite {
+  position: relative;
+  display: inline-block;
+  width: 3.5rem;
+  height: 3.5rem;
+  margin-left: -0.45rem;
+  flex: 0 0 auto;
+  overflow: hidden;
+}
+
+.lesson-start-sprite::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 800%;
+  background-image: url('/icons/lesson-start-aemon-sprite-v2.png');
+  background-repeat: no-repeat;
+  background-position: left center;
+  background-size: 100% 100%;
+  image-rendering: pixelated;
+  animation: lesson-start-aemon 1.92s steps(8) infinite;
+}
+
+@keyframes lesson-start-aemon {
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lesson-start-sprite::before {
+    animation: none;
+  }
+}

@@ -21,7 +21,7 @@ export function LandingPage() {
           <div className="relative z-10 grid items-center gap-8 lg:grid-cols-[1.05fr_.95fr] lg:gap-6">
             <div className="max-w-2xl">
               <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-[#25A98D]/25 bg-[#25A98D]/10 px-4 py-2 text-sm font-bold text-[#187B68]">
-                초등 4–6학년 · 5차시 프로젝트 수업
+                AI에게 가치를 가르치는 아이들 / 초등 4–6학년 · 5차시 프로젝트 수업
               </div>
               <h1 className="mt-5 break-keep text-[clamp(3.2rem,7vw,6.5rem)] font-black leading-[.96] tracking-[-.065em] text-[#172530]">
                 아이들이 AI를 이해하고,<br /><span className="text-[#168D75]">더 나은 AI를 만듭니다</span>
@@ -29,10 +29,14 @@ export function LandingPage() {
               <p className="mt-7 max-w-xl break-keep text-lg font-medium leading-8 text-[#526873] sm:text-xl sm:leading-9">
                 <span className="block">아이들이 AI의 대답에서 AI의 문제를 찾아냅니다.</span>
                 <span className="mt-1 block">문제를 찾고 문제를 해결하기 위해</span>
-                <span className="mt-1 block">함께 인공지능의 규칙을 정합니다.</span>
+                <span className="mt-1 block">함께 인공지능의 규칙을 정하고, 인공지능을 가르칩니다.</span>
+                <span className="mt-3 block font-bold text-[#168D75]">그 결과, 우리 반 인공지능이 태어납니다.</span>
               </p>
               <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-                <Button className="min-h-14 px-7" onClick={() => navigate('/start')}>수업 시작하기 <ArrowRight size={20} /></Button>
+                <Button className="min-h-16 px-7 text-base" onClick={() => navigate('/start')}>
+                  <span aria-hidden="true" className="lesson-start-sprite" />
+                  수업 시작하기
+                </Button>
                 <Button className="min-h-14 px-7" variant="secondary" onClick={() => navigate('/training')}>5차시 수업 살펴보기</Button>
               </div>
               <div className="mt-8 flex flex-wrap gap-x-5 gap-y-2 text-sm font-semibold text-[#60717A]">

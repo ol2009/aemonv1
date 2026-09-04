@@ -20,6 +20,20 @@ import { useV2RemoteSync } from '../lib/useV2RemoteSync'
 import { useV2 } from '../state/V2Store'
 
 type WalkPhase = 'idle' | 'swimming' | 'reveal'
+const DASHBOARD_LINE_STORAGE_KEY = 'aemon.dashboard.last-line'
+
+function pickInitialDashboardLineIndex() {
+  const lineCount = getDashboardStatusLines().length + getDashboardQuestions().length
+  if (lineCount <= 1) return 0
+
+  const previousIndex = Number(window.sessionStorage.getItem(DASHBOARD_LINE_STORAGE_KEY))
+  if (!Number.isInteger(previousIndex) || previousIndex < 0 || previousIndex >= lineCount) {
+    return Math.floor(Math.random() * lineCount)
+  }
+
+  const offset = 1 + Math.floor(Math.random() * (lineCount - 1))
+  return (previousIndex + offset) % lineCount
+}
 
 const typeMeta: Record<WalkItemType, { color: string; soft: string }> = {
   good: { color: '#4FE0C0', soft: 'rgba(79,224,192,.12)' },
@@ -34,7 +48,7 @@ export function HomePage() {
   const [isApiOpen, setIsApiOpen] = useState(false)
   const [walkPhase, setWalkPhase] = useState<WalkPhase>('idle')
   const [walkItem, setWalkItem] = useState<WalkItem | null>(null)
-  const [statusLineIndex, setStatusLineIndex] = useState(0)
+  const [statusLineIndex, setStatusLineIndex] = useState(pickInitialDashboardLineIndex)
   const [isDashboardAnswerOpen, setIsDashboardAnswerOpen] = useState(false)
   const [classAnswer, setClassAnswer] = useState('')
   const [submittedClassAnswer, setSubmittedClassAnswer] = useState('')
@@ -66,6 +80,10 @@ export function HomePage() {
   useEffect(() => {
     stateRef.current = state
   }, [state])
+
+  useEffect(() => {
+    window.sessionStorage.setItem(DASHBOARD_LINE_STORAGE_KEY, String(statusLineIndex))
+  }, [statusLineIndex])
 
   useEffect(() => {
     if (!user?.id || !isRemoteReady()) return

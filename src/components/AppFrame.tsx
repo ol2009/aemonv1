@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { ClipboardList, Home, LogIn, LogOut, MessageSquare, MessageSquareText, QrCode, X } from 'lucide-react'
+import { ArrowLeft, ClipboardList, Home, LogIn, LogOut, MessageSquare, MessageSquareText, QrCode, X } from 'lucide-react'
 import { Button } from './ui'
 import { absoluteUrl } from '../lib/siteUrl'
 import { signOut, useSupabaseUser } from '../lib/useSupabaseUser'
@@ -23,6 +23,8 @@ export function AppFrame() {
   const searchParams = new URLSearchParams(location.search)
   const isStudentLive = searchParams.get('live') === 'student' || location.pathname === '/live'
   const isStudentActivity = searchParams.get('role') === 'student'
+  const isBoardStudentScreen = location.pathname === '/board' && Boolean(searchParams.get('code') && (searchParams.get('mode') || searchParams.get('tab')))
+  const isStudentContext = isStudentLive || isStudentActivity || isBoardStudentScreen
   const isLessonPreview = searchParams.get('preview') === '1'
   const isLessonTwoBoundaryVote = location.pathname === '/lesson/2' && searchParams.get('step') === '6'
   const isInteractiveStudentScreen =
@@ -38,8 +40,22 @@ export function AppFrame() {
   const shouldAutoOpenLiveQr = showLiveShare && !dismissedLiveQrKeys.includes(liveQrVisitKey)
   const isLiveQrOpen = isLiveQrOpenManually || shouldAutoOpenLiveQr
   const appNavPaths = ['/home', '/codes', '/board', '/talk', '/dex', '/graduation', '/survey-results', '/lesson/1']
-  const showAppNav = Boolean(user && appNavPaths.includes(location.pathname))
-  const showAuthControls = location.pathname !== '/board'
+  const visibleNavItems = isBoardStudentScreen ? navItems.filter((item) => item.path === '/board') : navItems
+  const showAppNav = isBoardStudentScreen || Boolean(user && !isStudentContext && appNavPaths.includes(location.pathname))
+  const showAuthControls = !isStudentContext && location.pathname !== '/board'
+  const teacherWorkspacePaths = ['/home', '/codes', '/board', '/talk', '/dex', '/graduation', '/survey-results', '/test']
+  const showClassListBack = Boolean(
+    user &&
+    !isStudentContext &&
+    (teacherWorkspacePaths.includes(location.pathname) || location.pathname.startsWith('/lesson/')),
+  )
+
+  useEffect(() => {
+    if (!location.pathname.startsWith('/lesson/')) {
+      setDismissedLiveQrKeys([])
+      setIsLiveQrOpenManually(false)
+    }
+  }, [location.pathname])
 
   const handleAuthClick = async () => {
     if (user) {
@@ -54,12 +70,26 @@ export function AppFrame() {
       <div className="relative z-10 min-h-screen">
         {!isImmersive ? (
           <header className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-5 py-5">
-            <button className="flex items-center" onClick={() => navigate('/')} type="button">
-              <span className="text-xl font-black tracking-[-.05em] text-[var(--ink)]">에아몬<span className="text-[var(--aura)]">.</span></span>
-            </button>
+            <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+              <button className="flex items-center gap-2" onClick={() => navigate('/')} type="button">
+                <img aria-hidden="true" className="h-8 w-8 object-contain [image-rendering:pixelated]" src="/icons/aemon-logo-mark-128.png" alt="" />
+                <span className="text-xl font-black tracking-[-.05em] text-[var(--ink)]">에아몬<span className="text-[var(--aura)]">.</span></span>
+              </button>
+              {showClassListBack ? (
+                <button
+                  aria-label="교실 목록으로 돌아가기"
+                  className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 text-sm font-bold text-[var(--ink-soft)] transition hover:border-[var(--aura)] hover:text-[var(--ink)]"
+                  onClick={() => navigate('/start')}
+                  type="button"
+                >
+                  <ArrowLeft size={17} />
+                  <span className="hidden sm:inline">교실 목록</span>
+                </button>
+              ) : null}
+            </div>
             {showAppNav ? (
               <nav className="hidden items-center gap-1 lg:flex">
-                {navItems.map((item) => {
+                {visibleNavItems.map((item) => {
                   const Icon = item.icon
                   const active = location.pathname === item.path
                   return (
@@ -68,7 +98,10 @@ export function AppFrame() {
                       className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition ${
                         active ? 'bg-[var(--surface-2)] text-[var(--ember-ink)]' : 'text-[var(--ink-mute)] hover:bg-[var(--surface-2)] hover:text-[var(--ink)]'
                       }`}
-                      onClick={() => navigate(item.path)}
+                      onClick={() => {
+                        if (isBoardStudentScreen && item.path === '/board') return
+                        navigate(item.path)
+                      }}
                       type="button"
                     >
                       <Icon size={17} />
@@ -104,7 +137,16 @@ export function AppFrame() {
             <QrCode size={20} className="text-[#4FE0C0]" />
             학생 화면 QR
           </button>
-        ) : null}
+        ) : (
+          <button
+            aria-label="에아몬 처음 화면으로 이동"
+            className="fixed left-3 top-3 z-50 flex h-11 w-11 items-center justify-center rounded-xl border border-white/15 bg-[#0D2232]/90 shadow-lg backdrop-blur"
+            onClick={() => navigate('/')}
+            type="button"
+          >
+            <img aria-hidden="true" className="h-8 w-8 object-contain [image-rendering:pixelated]" src="/icons/aemon-logo-mark-128.png" alt="" />
+          </button>
+        )}
         {isStudentLive && location.pathname !== '/live' ? (
           <div className="fixed right-3 top-3 z-50 rounded-lg border border-[#4FE0C0]/30 bg-[#07111B]/90 px-3 py-2 text-xs font-black text-[#4FE0C0] shadow-lg">
             선생님 화면과 연결됨

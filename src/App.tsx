@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { AppFrame } from './components/AppFrame'
+import { RequireTeacherLogin } from './components/RequireTeacherLogin'
 import { V2Provider, useV2 } from './state/V2Store'
 import { AuthCallbackPage } from './pages/AuthCallbackPage'
 import { BoardPage } from './pages/BoardPage'
@@ -37,25 +38,25 @@ export default function App() {
       <Routes>
         <Route element={<AppFrame />}>
           <Route index element={<LandingPage />} />
-          <Route path="start" element={<StartPage />} />
+          <Route path="start" element={<RequireTeacherLogin><StartPage /></RequireTeacherLogin>} />
           <Route path="login" element={<LoginPage />} />
           <Route path="live" element={<LiveClassPage />} />
           <Route path="auth/callback" element={<AuthCallbackPage />} />
-          <Route path="home" element={<HomePage />} />
+          <Route path="home" element={<RequireTeacherLogin><HomePage /></RequireTeacherLogin>} />
           <Route path="lesson" element={<Navigate to="/lesson/1" replace />} />
-          <Route path="lesson/1" element={<LessonRouteGuard lessonNo={1}><LessonOnePage /></LessonRouteGuard>} />
-          <Route path="lesson/2" element={<LessonRouteGuard lessonNo={2}><LessonTwoPage /></LessonRouteGuard>} />
-          <Route path="lesson/3" element={<LessonRouteGuard lessonNo={3}><LessonThreePage /></LessonRouteGuard>} />
-          <Route path="lesson/4" element={<LessonRouteGuard lessonNo={4}><LessonFourPage /></LessonRouteGuard>} />
-          <Route path="lesson/5" element={<LessonRouteGuard lessonNo={5}><LessonFivePage /></LessonRouteGuard>} />
+          <Route path="lesson/1" element={<RequireTeacherLogin allowStudentAccess><LessonRouteGuard lessonNo={1}><LessonOnePage /></LessonRouteGuard></RequireTeacherLogin>} />
+          <Route path="lesson/2" element={<RequireTeacherLogin allowStudentAccess><LessonRouteGuard lessonNo={2}><LessonTwoPage /></LessonRouteGuard></RequireTeacherLogin>} />
+          <Route path="lesson/3" element={<RequireTeacherLogin allowStudentAccess><LessonRouteGuard lessonNo={3}><LessonThreePage /></LessonRouteGuard></RequireTeacherLogin>} />
+          <Route path="lesson/4" element={<RequireTeacherLogin allowStudentAccess><LessonRouteGuard lessonNo={4}><LessonFourPage /></LessonRouteGuard></RequireTeacherLogin>} />
+          <Route path="lesson/5" element={<RequireTeacherLogin allowStudentAccess><LessonRouteGuard lessonNo={5}><LessonFivePage /></LessonRouteGuard></RequireTeacherLogin>} />
           <Route path="training" element={<TrainingPage />} />
-          <Route path="test" element={<LessonTestPage />} />
-          <Route path="codes" element={<ValueCodePage />} />
-          <Route path="board" element={<BoardPage />} />
-          <Route path="talk" element={<ConversationPage />} />
-          <Route path="graduation" element={<GraduationPage />} />
-          <Route path="survey-results" element={<SurveyResultsPage />} />
-          <Route path="dex" element={<DexPage />} />
+          <Route path="test" element={<RequireTeacherLogin><LessonTestPage /></RequireTeacherLogin>} />
+          <Route path="codes" element={<RequireTeacherLogin><ValueCodePage /></RequireTeacherLogin>} />
+          <Route path="board" element={<RequireTeacherLogin allowStudentAccess><BoardPage /></RequireTeacherLogin>} />
+          <Route path="talk" element={<RequireTeacherLogin><ConversationPage /></RequireTeacherLogin>} />
+          <Route path="graduation" element={<RequireTeacherLogin><GraduationPage /></RequireTeacherLogin>} />
+          <Route path="survey-results" element={<RequireTeacherLogin><SurveyResultsPage /></RequireTeacherLogin>} />
+          <Route path="dex" element={<RequireTeacherLogin><DexPage /></RequireTeacherLogin>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
