@@ -5,9 +5,13 @@
 ## 실행
 
 ```bash
+git clone <저장소 주소>
+cd 에아몬
 npm install
 npm run dev
 ```
+
+브라우저에서 `http://127.0.0.1:4173`을 열면 됩니다. 개발용 Supabase 공개 설정은 `.env.development`에 포함되어 있어 다른 컴퓨터에서도 로그인과 수업 기능을 바로 확인할 수 있습니다.
 
 빌드 확인:
 
@@ -48,7 +52,7 @@ npm run build
 
 ## 환경변수
 
-`.env.example`을 `.env.local`로 복사해서 채우면 됩니다.
+기본 개발 설정은 `.env.development`에 포함되어 있습니다. 다른 Supabase 프로젝트나 모델명을 사용할 때만 `.env.example`을 `.env.local`로 복사해 값을 덮어쓰면 됩니다.
 
 ```bash
 VITE_SUPABASE_URL=
