@@ -24,7 +24,7 @@ create or replace function public.reset_class_content(target_class_id uuid)
 returns void
 language plpgsql
 security definer
-set search_path = public
+set search_path = ''
 as $$
 begin
   if auth.uid() is null or not exists (
@@ -49,14 +49,14 @@ begin
 end;
 $$;
 
-revoke all on function public.reset_class_content(uuid) from public;
+revoke all on function public.reset_class_content(uuid) from public, anon, authenticated;
 grant execute on function public.reset_class_content(uuid) to authenticated;
 
 create or replace function public.delete_owned_class(target_class_id uuid)
 returns boolean
 language plpgsql
 security definer
-set search_path = public
+set search_path = ''
 as $$
 declare
   deleted_count integer;
@@ -74,7 +74,7 @@ begin
 end;
 $$;
 
-revoke all on function public.delete_owned_class(uuid) from public;
+revoke all on function public.delete_owned_class(uuid) from public, anon, authenticated;
 grant execute on function public.delete_owned_class(uuid) to authenticated;
 
 create table if not exists name_candidates (

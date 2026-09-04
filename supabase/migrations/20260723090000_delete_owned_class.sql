@@ -7,7 +7,7 @@ create or replace function public.delete_owned_class(target_class_id uuid)
 returns boolean
 language plpgsql
 security definer
-set search_path = public
+set search_path = ''
 as $$
 declare
   deleted_count integer;
@@ -25,5 +25,5 @@ begin
 end;
 $$;
 
-revoke all on function public.delete_owned_class(uuid) from public;
+revoke all on function public.delete_owned_class(uuid) from public, anon, authenticated;
 grant execute on function public.delete_owned_class(uuid) to authenticated;
