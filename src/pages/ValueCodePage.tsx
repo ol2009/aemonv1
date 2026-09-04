@@ -120,7 +120,7 @@ export function ValueCodePage() {
           </div>
           <div className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
             <p className="font-display text-2xl text-[#FFD37A]">학급이 만든 약속</p>
-            <p className="mt-2 leading-7 text-[#8AA0B0]">학생들이 발의하고, 좋아요로 살펴보고, 교사가 채택한 문장이 코드가 됩니다.</p>
+            <p className="mt-2 leading-7 text-[#8AA0B0]">학생들이 제출한 후보를 함께 읽고 좋아요로 의견을 모은 뒤, 교사가 우리 반의 가치코드로 선택합니다.</p>
           </div>
           <div className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
             <p className="font-display text-2xl text-[#FFD37A]">{aemonName}의 판단 근거</p>

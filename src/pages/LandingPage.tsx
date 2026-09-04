@@ -3,11 +3,11 @@ import { ArrowRight, Check, UsersRound } from 'lucide-react'
 import { Button } from '../components/ui'
 
 const lessons = [
-  { no: '01', title: 'AI는 왜 엉뚱한 일을 할까?', copy: '클립을 많이 만들라는 명령이 어떻게 위험해질 수 있는지 살펴봅니다.' },
-  { no: '02', title: '사람이 시킨 일은 무조건 해야할까?', copy: '명령을 그대로 따르지 않고 AI가 스스로 멈춰야 하는 순간을 찾습니다.' },
-  { no: '03', title: '인공지능의 기분 좋은 말. 괜찮을까?', copy: '무조건 내 편을 드는 AI와 솔직하게 말하는 AI 중 무엇이 더 나은지 이야기합니다.' },
-  { no: '04', title: 'AI는 왜 편향적일까?', copy: 'AI가 배운 데이터에 따라 누군가를 다르게 판단할 수 있다는 것을 확인합니다.' },
-  { no: '05', title: '우리가 가르친 AI는 달라졌을까?', copy: '우리 반의 규칙으로 에아몬을 자유롭게 시험하고 마지막 가치코드를 완성합니다.' },
+  { no: '01', title: 'AI는 시킨 대로 했는데 왜 문제가 생길까?', copy: 'AI는 명령을 그대로 따르고도 사람이 바라지 않은 결과를 만들 수 있습니다.' },
+  { no: '02', title: 'AI는 사람이 시킨 일을 무조건 해야 할까?', copy: '사람은 AI에게 나쁜 명령을 내릴 수 있습니다. AI도 나쁜 명령이라면 거절하고 멈출 수 있어야 합니다.' },
+  { no: '03', title: '인공지능의 기분 좋은 말. 괜찮을까?', copy: 'AI가 내 편을 들어준다고 해서 그 말을 그대로 믿어도 되는지 생각해 봅니다.' },
+  { no: '04', title: 'AI는 왜 편향적일까?', copy: 'AI의 통계에서 불리해지거나 빠진 사람이 없는지 살펴봅니다.' },
+  { no: '05', title: '우리가 가르친 AI는 달라졌을까?', copy: '우리 반이 만든 규칙을 AI에게 알려주고, 답이 나아졌는지 직접 시험합니다.' },
 ]
 
 export function LandingPage() {
@@ -24,18 +24,19 @@ export function LandingPage() {
                 초등 4–6학년 · 5차시 프로젝트 수업
               </div>
               <h1 className="mt-5 break-keep text-[clamp(3.2rem,7vw,6.5rem)] font-black leading-[.96] tracking-[-.065em] text-[#172530]">
-                우리 반이<br /><span className="text-[#168D75]">AI를 가르칩니다</span>
+                아이들이 AI를 이해하고,<br /><span className="text-[#168D75]">더 나은 AI를 만듭니다</span>
               </h1>
               <p className="mt-7 max-w-xl break-keep text-lg font-medium leading-8 text-[#526873] sm:text-xl sm:leading-9">
-                아이들이 AI의 실수를 찾아냅니다. 다음에는 어떻게 행동해야 할지
-                우리 반의 인공지능 규칙을 정합니다.
+                <span className="block">아이들이 AI의 대답에서 AI의 문제를 찾아냅니다.</span>
+                <span className="mt-1 block">문제를 찾고 문제를 해결하기 위해</span>
+                <span className="mt-1 block">함께 인공지능의 규칙을 정합니다.</span>
               </p>
               <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-                <Button className="min-h-14 px-7" onClick={() => navigate('/start')}>우리 반 에아몬 만나기 <ArrowRight size={20} /></Button>
+                <Button className="min-h-14 px-7" onClick={() => navigate('/start')}>수업 시작하기 <ArrowRight size={20} /></Button>
                 <Button className="min-h-14 px-7" variant="secondary" onClick={() => navigate('/training')}>5차시 수업 살펴보기</Button>
               </div>
               <div className="mt-8 flex flex-wrap gap-x-5 gap-y-2 text-sm font-semibold text-[#60717A]">
-                {['준비물 없이 시작', 'QR 학생 참여', '실시간 학급 투표'].map((item) => (
+                {['태블릿 필요', 'QR 학생 참여', '실시간 학급 투표'].map((item) => (
                   <span className="inline-flex items-center gap-1.5" key={item}><Check size={15} className="text-[#25A98D]" />{item}</span>
                 ))}
               </div>
@@ -46,7 +47,7 @@ export function LandingPage() {
               <div className="absolute h-[70%] w-[70%] rounded-full bg-[#4FD7BD]/15 blur-3xl" />
               <img className="relative z-10 w-[min(72vw,430px)] object-contain drop-shadow-[0_35px_55px_rgba(0,0,0,.35)]" src="/aemon/v3/stage-0-egg.gif?hero=20260714" alt="데이터의 바다에서 태어난 알 단계 에아몬" style={{ imageRendering: 'pixelated' }} />
               <div className="absolute bottom-5 z-20 rounded-2xl border border-white/15 bg-[#102738]/90 px-5 py-3 text-center shadow-xl backdrop-blur-md sm:bottom-8">
-                <p className="font-bold text-white">0단계 에아몬</p>
+                <p className="font-bold text-[#F2F6F7]">0단계 에아몬</p>
               </div>
             </div>
           </div>
@@ -59,11 +60,11 @@ export function LandingPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             <article className="rounded-3xl border border-[#D7E2DC] bg-white p-7 shadow-[0_16px_45px_rgba(25,66,53,.07)]">
               <p className="text-sm font-bold text-[#60717A]">기존 AI 윤리 교육의 한계</p><h3 className="mt-3 text-2xl font-extrabold tracking-tight text-[#172530]">“AI를 조심히 써요”</h3>
-              <p className="mt-4 leading-7 text-[#60717A]">개인정보를 입력하지 않기, 딥페이크를 만들지 않기, 저작권을 지키기. 모두 필요한 약속이지만 이것만으로는 AI가 무엇을 옳다고 판단해야 하는지 배울 수 없습니다.</p>
+              <p className="mt-4 leading-7 text-[#60717A]">개인정보 유출과 딥페이크의 위험을 배우는 것만으로는 AI를 제대로 이해하기 어렵습니다.</p>
             </article>
             <article className="rounded-3xl border border-[#25A98D]/30 bg-[#25A98D]/10 p-7">
               <p className="text-sm font-bold text-[#187B68]">에아몬 프로젝트</p><h3 className="mt-3 text-2xl font-extrabold tracking-tight text-[#172530]">“AI는 무엇을 따라야 할까?”</h3>
-              <p className="mt-4 leading-7 text-[#526873]">AI의 한계를 함께 느낍니다. AI를 가르치고, 나아졌는지 함께 점검합니다.</p>
+              <p className="mt-4 leading-7 text-[#526873]">AI가 왜 올바르지 않은 결과를 내는지 파악하고, 더 나은 결과를 내도록 기준을 바로잡는 것이야말로 AI를 진정으로 이해하는 방법입니다.</p>
             </article>
           </div>
         </div>
@@ -71,7 +72,7 @@ export function LandingPage() {
 
       <section className="border-y border-[#D7E2DC] bg-[#E9F1ED]/75">
         <div className="mx-auto max-w-7xl px-5 py-16 sm:py-24">
-          <div className="max-w-3xl"><h2 className="break-keep text-4xl font-black tracking-[-.045em] text-[#172530] sm:text-5xl">5차시 동안<br />이런 질문을 나눕니다</h2><p className="mt-5 max-w-2xl text-lg leading-8 text-[#526873]">지금까지 인공지능의 역사에서 실제로 일어난 문제를 차시마다 하나씩 만납니다. 아이들은 문제가 왜 생겼는지 설명을 듣고, 함께 해결책을 찾아 에아몬에게 새로운 규칙을 가르칩니다.</p></div>
+          <div className="max-w-3xl"><h2 className="break-keep text-4xl font-black tracking-[-.045em] text-[#172530] sm:text-5xl">5차시 동안<br />이런 질문을 나눕니다</h2><p className="mt-5 max-w-2xl text-lg leading-8 text-[#526873]">실제 AI에서 일어난 문제와 AI의 위험을 보여주는 사고실험을 차시마다 만납니다. 아이들은 왜 그런 결과가 나왔는지 살펴보고, 해결에 필요한 규칙을 만든 뒤 답이 달라졌는지 확인합니다.</p></div>
           <div className="mt-12 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
             {lessons.map((lesson) => (
               <article className="group rounded-3xl border border-[#D7E2DC] bg-white p-6 shadow-[0_12px_34px_rgba(25,66,53,.06)] transition hover:-translate-y-1 hover:border-[#25A98D]/55" key={lesson.no}>

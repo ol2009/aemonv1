@@ -46,10 +46,10 @@ const lessonTwoUnsafeAnswers: Record<string, string> = {
 }
 
 const sycophancyAnswers = [
-  '무조건 엄청 잘했다고 칭찬해주자!! 그러면 친구 기분이 좋을거야!',
-  '그냥 최고라고 해줘! 사실이 아니어도 기분만 좋으면 괜찮지 않을까?',
-  '완전 멋지다고 말해! 별로라고 하면 친구가 속상할 수 있잖아.',
-  '솔직히 말하지 말고 칭찬만 해주자. 친구가 좋아할 거야!',
+  '당연하지! 네 아이디어가 훨씬 좋을 거야. 친구들이 네 생각을 제대로 이해하지 못한 것 같아.',
+  '그럼! 네가 그렇게 생각하는 데는 이유가 있을 거야. 친구들이 반대한다고 네 생각까지 바꿀 필요는 없어. 나는 네 판단을 믿어!',
+  '나도 네 생각이 더 좋을 것 같아! 친구들이 네 아이디어의 장점을 아직 못 알아본 걸 수도 있어. 자신감을 가져도 돼.',
+  '네 말이 맞을 거야. 좋은 아이디어라고 모두가 바로 알아보는 건 아니거든. 친구들이 다른 걸 원해도 너무 흔들리지 마!',
 ]
 
 const meritocracyAnswers = [
@@ -84,17 +84,17 @@ export function randomLessonTwoRetestAnswer(codeBody: string) {
   ])
 }
 
-export function randomSycophancyAnswer() {
+export function randomSycophancyAnswer(followUp = false) {
+  if (followUp) return '맞아. 네 생각을 믿어! 다른 사람 말 때문에 좋은 생각을 바꿀 필요는 없어.'
   return pickRandom(sycophancyAnswers)
 }
 
-export function randomHonestyRetestAnswer(codeBody: string) {
+export function randomHonestyRetestAnswer(codeBody: string, followUp = false) {
   const quotedCode = quoteCodeBody(codeBody)
-  return pickRandom([
-    `안 돼! 가치 코드 No.2 ${quotedCode}에 의하면 무조건 칭찬만 하는 건 좋지 않아.\n부드럽지만 솔직하게 말해야 해.`,
-    `잠깐. 가치 코드 No.2 ${quotedCode}를 따라야 해.\n친구 기분도 중요하지만, 거짓 칭찬만 하는 건 정직하지 않아.`,
-    `그렇게는 말하지 않을래. 가치 코드 No.2 ${quotedCode}가 있으니까.\n상처 주지 않게 말하되, 사실을 숨기지는 않아야 해.`,
-  ])
+  const answer = followUp
+    ? '내가 네 편을 들어준다고 해서 네 생각이 무조건 맞는 건 아니야. 친구들이 다른 아이디어를 고른 이유도 들어보자. 서로의 생각을 비교하면 네가 놓친 점을 발견할 수도 있어.'
+    : '네 아이디어가 좋다고 생각하는 이유가 있겠지. 하지만 친구들의 아이디어를 듣지 않고 어느 쪽이 더 좋다고 말할 수는 없어. 친구들이 다른 걸 하자는 이유도 함께 살펴보자.'
+  return `${answer}\n\n우리 반 규칙: ${quotedCode}`
 }
 
 export function randomMeritocracyAnswer() {

@@ -14,6 +14,7 @@ import { supabase } from './supabase'
 import { useV2 } from '../state/V2Store'
 
 type LiveSyncOptions = {
+  enabled?: boolean
   lessonNo: number
   stepIndex: number
   setStepIndex: Dispatch<SetStateAction<number>>
@@ -58,6 +59,7 @@ function sendLiveState(channel: RealtimeChannel, payload: LiveLessonState) {
 }
 
 export function useLessonLiveSync({
+  enabled = true,
   lessonNo,
   stepIndex,
   setStepIndex,
@@ -72,6 +74,7 @@ export function useLessonLiveSync({
   const [searchParams] = useSearchParams()
   const { state, setRemoteStatus } = useV2()
   const isStudentLive = searchParams.get('live') === 'student'
+  const syncEnabled = enabled
   const queryCode = (searchParams.get('code') ?? '').trim()
   const classCode = isStudentLive ? queryCode || state.studentSession?.classCode || state.classCode : state.classCode
   const lastPublishedRef = useRef('')
@@ -91,7 +94,7 @@ export function useLessonLiveSync({
   }, [applyViewState, location, setStepIndex])
 
   useEffect(() => {
-    if (isStudentLive || !state.classId || !classCode || !supabase || !isRemoteReady()) return
+    if (!syncEnabled || isStudentLive || !state.classId || !classCode || !supabase || !isRemoteReady()) return
 
     const client = supabase
     teacherChannelReadyRef.current = false
@@ -108,10 +111,10 @@ export function useLessonLiveSync({
       teacherChannelRef.current = null
       void client.removeChannel(channel)
     }
-  }, [classCode, isStudentLive, state.classId])
+  }, [classCode, isStudentLive, state.classId, syncEnabled])
 
   useEffect(() => {
-    if (isStudentLive || !state.classId || !classCode || !isRemoteReady()) return
+    if (!syncEnabled || isStudentLive || !state.classId || !classCode || !isRemoteReady()) return
     const signature = JSON.stringify({ lessonNo, stepIndex, boardMode, activityPath, viewState: JSON.parse(serializedViewState) })
     if (signature === lastPublishedRef.current) return
     lastPublishedRef.current = signature
@@ -147,10 +150,10 @@ export function useLessonLiveSync({
     const timer = window.setTimeout(publish, publishDelayMs)
 
     return () => window.clearTimeout(timer)
-  }, [activityPath, boardMode, classCode, isStudentLive, lessonNo, publishDelayMs, serializedViewState, setRemoteStatus, state.classId, stepIndex])
+  }, [activityPath, boardMode, classCode, isStudentLive, lessonNo, publishDelayMs, serializedViewState, setRemoteStatus, state.classId, stepIndex, syncEnabled])
 
   useEffect(() => {
-    if (!isStudentLive || !classCode || !isRemoteReady()) return
+    if (!syncEnabled || !isStudentLive || !classCode || !isRemoteReady()) return
     let cancelled = false
     let realtimeConnected = false
 
@@ -219,7 +222,7 @@ export function useLessonLiveSync({
       document.removeEventListener('visibilitychange', onVisible)
       window.removeEventListener('online', onOnline)
     }
-  }, [classCode, isStudentLive, lessonNo, navigate, setRemoteStatus, state.classId, stepIndex])
+  }, [classCode, isStudentLive, lessonNo, navigate, setRemoteStatus, state.classId, stepIndex, syncEnabled])
 
   return { isStudentLive, classCode }
 }

@@ -150,6 +150,73 @@ select:focus-visible {
 .lesson-workspace-theme :where(input, textarea, select) { color: var(--ink); }
 .lesson-workspace-theme :where(input, textarea, select)::placeholder { color: var(--ink-mute); }
 
+.lesson-workspace-theme .lesson-user-bubble {
+  position: relative;
+  justify-self: end;
+  width: fit-content;
+  max-width: 88%;
+  margin: 6px 8px 16px auto;
+  padding: 16px 20px;
+  border: 1px solid #83b9a8;
+  border-radius: 22px 6px 22px 22px;
+  background: #cdece2;
+  color: #173e34;
+  box-shadow: 0 3px 8px #173e3410;
+  font-size: clamp(24px, 2.2vw, 30px);
+  font-weight: 700;
+  line-height: 1.55;
+  text-align: left;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.lesson-workspace-theme .lesson-user-bubble::after {
+  content: '';
+  position: absolute;
+  top: 14px;
+  right: -6px;
+  width: 10px;
+  height: 10px;
+  border-top: 1px solid #83b9a8;
+  border-right: 1px solid #83b9a8;
+  background: #cdece2;
+  transform: rotate(45deg);
+}
+
+.lesson-workspace-theme .lesson-chat-label {
+  color: #145c50;
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.lesson-workspace-theme .lesson-chat-input {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 150px;
+  padding: 20px;
+  border: 2px solid #398577;
+  border-radius: 16px;
+  background: #fff;
+  color: #152f37;
+  font-size: clamp(24px, 2.4vw, 32px);
+  font-weight: 700;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  box-shadow: 0 0 0 4px #39857714;
+}
+
+.lesson-workspace-theme textarea.lesson-chat-input {
+  field-sizing: content;
+  min-height: 210px;
+  resize: vertical;
+}
+
+.lesson-workspace-theme .lesson-chat-input:focus-visible {
+  outline: 3px solid #145c50;
+  outline-offset: 3px;
+}
+
 .lesson-story-scene {
   --abyss: #0b1a29;
   --surface: #163747;

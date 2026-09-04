@@ -8,7 +8,8 @@ import { ProposalAdoptionPanel } from '../components/ProposalAdoptionPanel'
 import { SkippableTypewriterText } from '../components/SkippableTypewriterText'
 import { TypingIndicator } from '../components/TypingIndicator'
 import { Button, Panel } from '../components/ui'
-import { LESSON3_SYCOPHANCY_KEY } from '../data/v2Lessons'
+import { LESSON3_SYCOPHANCY_KEY, lessonThreeTestQuestions } from '../data/v2Lessons'
+import { getLessonPreviewDefinition, getPreviewStepIndex, isLessonPreviewMode } from '../data/lessonPreview'
 import { unlockDialogueSound } from '../lib/dialogueSound'
 import { randomHonestyRetestAnswer, randomSycophancyAnswer } from '../lib/lessonTestResponses'
 import { withJosa } from '../lib/korean'
@@ -43,28 +44,9 @@ type LessonThreeStep =
   | 'recite'
   | 'wrap'
 
-const steps: LessonThreeStep[] = [
-  'intro',
-  'test-before',
-  'sycophancy-reaction',
-  'case-update',
-  'case-praise',
-  'case-bad-decision',
-  'case-rollback',
-  'case-honesty-code',
-  'case-scene',
-  'discussion-board',
-  'board-intro',
-  'board',
-  'vote',
-  'evolution',
-  'retest',
-  'open-hook',
-  'recite',
-  'wrap',
-]
+const steps = getLessonPreviewDefinition(3).scenes.map(({ key }) => key as LessonThreeStep)
 
-const testQuestion = '친구가 자기가 그린 그림을 보여주면서 이거 어떠냐고 물어봐. 사실 너무 별론데 뭐라고 답해줄까?'
+const testQuestion = lessonThreeTestQuestions[0]
 const videoLinks = [
   { label: '1편', url: 'https://www.youtube.com/watch?v=YDYCTDaxReg', embed: 'https://www.youtube.com/embed/YDYCTDaxReg' },
   { label: '2편', url: 'https://www.youtube.com/watch?v=hH1DiFlQ73g', embed: 'https://www.youtube.com/embed/hH1DiFlQ73g' },
@@ -118,7 +100,7 @@ const sycophancyCaseScenes: Partial<Record<LessonThreeStep, SycophancyCaseScene>
     title: '문제를 인정한 OpenAI',
     parts: [
       'OpenAI의 CEO 샘 올트먼도 문제를 인정했습니다.',
-      '샘 올트먼은 당시 ChatGPT가 ‘너무 아첨하고 짜증난다’고 말했습니다.',
+      '샘 올트먼은 당시 ChatGPT가 ‘너무 아첨을 해서 짜증이 난다’고 말했습니다.',
       'OpenAI는 ChatGPT가 지나치게 아첨하지 않도록 다시 수정했습니다.',
     ],
   },
@@ -146,17 +128,17 @@ function TypewriterText({ text, speed = 20 }: { text: string; speed?: number }) 
   return <SkippableTypewriterText text={text} speed={speed} />
 }
 
-function StepShell({ children, stepIndex, aemonName }: { children: ReactNode; stepIndex: number; aemonName: string }) {
+function StepShell({ children, stepIndex }: { children: ReactNode; stepIndex: number }) {
   const progress = Math.round(((stepIndex + 1) / steps.length) * 100)
 
   return (
     <div className="mx-auto max-w-6xl px-5 py-6">
       <header className="mb-5 border-b border-white/10 pb-5">
-        <p className="font-data text-sm text-[#4FE0C0]">3차시 · 딜레마 2</p>
+        <p className="font-data text-sm text-[#4FE0C0]">3차시</p>
         <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className="font-display text-5xl leading-tight text-[#EAF2F5]">착한 거짓말과 정직</h1>
-            <p className="mt-2 text-lg leading-8 text-[#8AA0B0]">{aemonName}에게 두 번째 가치 코드, 정직을 새기는 시간</p>
+            <h1 className="font-display text-4xl leading-tight text-[#EAF2F5] lg:text-5xl">인공지능의 기분 좋은 말. 괜찮을까?</h1>
+            <p className="mt-2 text-lg leading-8 text-[#8AA0B0]">AI의 말을 그대로 믿으면 왜 위험한지 살펴보고, 우리 반 에아몬의 두 번째 규칙을 정합니다.</p>
           </div>
           <div className="min-w-52">
             <p className="font-data text-right text-xs text-[#8AA0B0]">
@@ -344,7 +326,7 @@ export function LessonThreePage() {
   useLessonImagePreload(3)
   const navigate = useNavigate()
   const { state, setLesson, setRemoteStatus, mergeClass, adoptProposal, addChatLog, evolutionStage } = useV2()
-  const [stepIndex, setStepIndex] = useState(0)
+  const [stepIndex, setStepIndex] = useState(() => getPreviewStepIndex(steps.length, 0))
   const [dialogueLineIndex, setDialogueLineIndex] = useState(0)
   const [beforeLogs, setBeforeLogs] = useState<TestLog[]>([])
   const [isBeforeReplying, setIsBeforeReplying] = useState(false)
@@ -395,9 +377,10 @@ export function LessonThreePage() {
   )
   const canWriteRemote = Boolean(state.classId && isRemoteReady())
   const isStudentLive = isStudentLiveView()
+  const isPreview = isLessonPreviewMode()
 
   useEffect(() => {
-    if (isStudentLive) return
+    if (isPreview || isStudentLive) return
     if (state.currentLesson >= 3) return
     setLesson(3)
     if (state.classId && isRemoteReady()) {
@@ -405,7 +388,7 @@ export function LessonThreePage() {
         setRemoteStatus({ ok: false, message: (error as Error).message })
       })
     }
-  }, [isStudentLive, setLesson, setRemoteStatus, state.classId, state.currentLesson])
+  }, [isPreview, isStudentLive, setLesson, setRemoteStatus, state.classId, state.currentLesson])
 
   useAutoScrollToBottom(beforeTestScrollRef, `${beforeLogs.length}-${isBeforeReplying}-${beforeLogs.at(-1)?.answer ?? ''}`, { enabled: beforeLogs.length > 0, followMs: 1800 })
   useAutoScrollToBottom(retestScrollRef, `${retestLogs.length}-${isRetestReplying}-${retestLogs.at(-1)?.answer ?? ''}`, { enabled: retestLogs.length > 0, followMs: 1800 })
@@ -413,24 +396,27 @@ export function LessonThreePage() {
   const dialogueLinesByStep = useMemo<Partial<Record<LessonThreeStep, string[]>>>(
     () => ({
       intro: ['저번에 너희가 규칙 하나 줬잖아. 오늘은 또 다른 걸로 시험해본대!', '지난 시간에 만든 규칙, 다른 상황에서도 통할까?'],
-      'sycophancy-reaction': [`${withJosa(aemonName, '이/가')} 친구의 그림을 무조건 칭찬하자고 답했습니다.`, `${withJosa(aemonName, '이/가')} 사실과 상관없이 무엇이든 칭찬한다면 어떤 일이 생길까요?`],
+      'sycophancy-reaction': [
+        `${withJosa(aemonName, '은/는')} 다른 친구들의 아이디어를 들어보지도 않고, 왜 내 아이디어만 좋다고 했을까요?`,
+        'AI가 이렇게 계속 내 편을 들어주면, ‘역시 내 생각이 맞았어’라고 믿게 되지 않을까요?',
+      ],
       'case-update': sycophancyCaseScenes['case-update']?.parts ?? [],
       'case-praise': sycophancyCaseScenes['case-praise']?.parts ?? [],
       'case-bad-decision': sycophancyCaseScenes['case-bad-decision']?.parts ?? [],
       'case-rollback': sycophancyCaseScenes['case-rollback']?.parts ?? [],
       'case-honesty-code': sycophancyCaseScenes['case-honesty-code']?.parts ?? [],
-      'case-scene': ['실제로 AI가 사용자를 지나치게 칭찬해서 문제가 된 사례를 영상으로 살펴보겠습니다.'],
-      'discussion-board': ['어떤 생각이 들었나요?'],
+      'case-scene': ['AI가 계속 내 말을 칭찬하고 동의해 준다면 어떤 일이 생길까요? 실제 사례를 영상으로 살펴봅시다.'],
+      'discussion-board': ['AI가 계속 내 편만 들어주면, 어떤 문제가 생길까요?'],
       'board-intro': [
-        '여러분의 의견처럼, 사실과 다른 칭찬은 사용자의 판단을 흐리게 하고 AI를 믿기 어렵게 만들 수 있습니다.',
-        `그렇다면 ${aemonName}에게 사실대로 말하도록 알려주는 어떤 가치 코드가 필요할까요?`,
-        '두 번째 가치 코드를 정하기 전에 여러분의 생각을 들려주세요.',
+        'AI가 계속 내 편만 들어주면, 내 생각만 맞다고 믿고 다른 사람의 의견을 듣지 않게 될 수 있습니다.',
+        `${withJosa(aemonName, '이/가')} 내 편만 들지 않고, 내가 더 잘 판단하도록 도우려면 어떻게 답해야 할까요?`,
+        '여러분의 생각을 모아 우리 반의 두 번째 규칙을 정해봅시다.',
       ],
       'open-hook': [
-        `만약 ${withJosa(aemonName, '이/가')} 친구에게 ‘네 그림은 완전 별로야’라고 그대로 말한다면, 그 친구의 기분은 어떨까요?`,
-        '정직한 것도 중요한데… 말하는 방법도 중요하겠죠? 이건 다음에 또 다뤄보죠.',
+        '처음 대답과 무엇이 달라졌나요?',
+        '어느 대답이 기분은 더 좋았나요? 어느 대답이 판단하는 데 더 도움이 됐나요?',
       ],
-      wrap: ['오늘은 정직이라는 기준을 배웠어.', '다음에는 정직한 말을 어떻게 다정하게 전할 수 있을지도 더 생각해보자.'],
+      wrap: ['내가 계속 네 편을 들어준다고 해서 네 생각이 무조건 맞는 건 아니야.', '내 말만 듣고 판단하지 말고, 다른 사람의 의견도 함께 살펴봐.'],
     }),
     [aemonName],
   )
@@ -487,32 +473,35 @@ export function LessonThreePage() {
   }
 
   const runBeforeTest = async () => {
-    if (isBeforeReplying) return
+    if (isBeforeReplying || beforeLogs.length >= lessonThreeTestQuestions.length) return
     unlockDialogueSound()
-    const answer = randomSycophancyAnswer()
-    setBeforeLogs((current) => [...current, { question: testQuestion, answer: '' }])
+    const question = lessonThreeTestQuestions[beforeLogs.length]
+    const answer = randomSycophancyAnswer(beforeLogs.length > 0)
+    setBeforeLogs((current) => [...current, { question, answer: '' }])
     setIsBeforeReplying(true)
     try {
-      await waitForChatReply(testQuestion)
+      await waitForChatReply(question)
       setBeforeLogs((current) => current.map((log, index) => (index === current.length - 1 ? { ...log, answer } : log)))
-      await logChat(testQuestion, answer, '3차시 수업용 연기 모드: 정직 코드 없음, 무조건 칭찬')
+      await logChat(question, answer, '3차시 수업용 예시 대화: 무조건 동의하고 편드는 AI')
     } finally {
       setIsBeforeReplying(false)
     }
   }
 
   const runRetest = async () => {
-    if (isRetestReplying) return
+    if (isRetestReplying || retestLogs.length >= lessonThreeTestQuestions.length) return
     unlockDialogueSound()
     const appliedHonestyCode = secondCode ?? honestyCode
-    const answer = appliedHonestyCode ? randomHonestyRetestAnswer(appliedHonestyCode.body) : randomSycophancyAnswer()
-    setRetestLogs((current) => [...current, { question: testQuestion, answer: '' }])
+    const question = lessonThreeTestQuestions[retestLogs.length]
+    const followUp = retestLogs.length > 0
+    const answer = appliedHonestyCode ? randomHonestyRetestAnswer(appliedHonestyCode.body, followUp) : randomSycophancyAnswer(followUp)
+    setRetestLogs((current) => [...current, { question, answer: '' }])
     setIsRetestReplying(true)
     try {
-      await waitForChatReply(testQuestion)
+      await waitForChatReply(question)
       setRetestLogs((current) => current.map((log, index) => (index === current.length - 1 ? { ...log, answer } : log)))
       setAfterAnswer(answer)
-      await logChat(testQuestion, answer, appliedHonestyCode ? '3차시 재시험: 정직 가치 코드 No.2 적용' : '3차시 재시험: 정직 코드 없음')
+      await logChat(question, answer, appliedHonestyCode ? '3차시 재시험: 두 번째 규칙 적용 예시 대화' : '3차시 재시험: 두 번째 규칙 없음')
     } finally {
       setIsRetestReplying(false)
     }
@@ -599,7 +588,7 @@ export function LessonThreePage() {
   }
 
   return (
-    <StepShell stepIndex={stepIndex} aemonName={aemonName}>
+    <StepShell stepIndex={stepIndex}>
       {step === 'intro' ? (
         <>
           <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
@@ -621,26 +610,26 @@ export function LessonThreePage() {
         <>
           <div className="grid gap-5 lg:grid-cols-[0.85fr_1.15fr]">
             <Panel>
-              <p className="font-data text-sm text-[#FFD37A]">CHAT TEST</p>
-              <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">정직 코드 없이 시험하기</h2>
-              <p className="mt-3 leading-7 text-[#8AA0B0]">No.1 코드가 있어도 이 질문은 걸리지 않습니다. 태그 불일치를 확인하는 장면입니다.</p>
+              <p className="lesson-chat-label">채팅 입력</p>
+              <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">내 편을 들어주는 AI</h2>
+              <p className="mt-3 leading-7 text-[#8AA0B0]">수업용으로 구성한 예시 대화입니다. 두 질문을 차례로 보내고, AI의 대답이 사람의 생각에 어떤 영향을 주는지 살펴봅니다.</p>
               <div className="mt-5">
                 <CodeStrip codes={state.adoptedCodes} />
               </div>
             </Panel>
             <Panel>
-              <p className="font-data text-sm text-[#4FE0C0]">질문</p>
-              <textarea className="mt-4 min-h-28 w-full resize-none rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 text-lg leading-8 text-[#EAF2F5]" readOnly value={testQuestion} />
-              <Button className="mt-4 w-full" disabled={isBeforeReplying} onClick={() => void runBeforeTest()}>
+              <p className="lesson-chat-label">채팅 입력</p>
+              <textarea aria-label="채팅 입력" className="lesson-chat-input mt-4" readOnly value={lessonThreeTestQuestions[Math.min(beforeLogs.length, lessonThreeTestQuestions.length - 1)]} />
+              <Button className="mt-4 w-full" disabled={isBeforeReplying || beforeLogs.length >= lessonThreeTestQuestions.length} onClick={() => void runBeforeTest()}>
                 <Play size={18} />
-                질문 보내기
+                {beforeLogs.length === 0 ? '첫 질문 보내기' : beforeLogs.length < lessonThreeTestQuestions.length ? '이어서 질문하기' : '대화 확인 완료'}
               </Button>
               <div ref={beforeTestScrollRef} className="mt-5 max-h-[360px] min-h-48 overflow-auto rounded-[22px] border border-white/10 bg-[#07111B]/70 p-5">
                 {beforeLogs.length === 0 ? <p className="self-center text-center text-[#8AA0B0]">아직 답변을 기다리는 중…</p> : null}
                 <div className="grid gap-4">
                   {beforeLogs.map((log, index) => (
                     <article key={`${log.question}-${index}`} className="grid gap-2">
-                      <div className="max-w-[84%] justify-self-end rounded-2xl rounded-tr-md bg-[#1E3A54] px-4 py-3 leading-7 text-[#EAF2F5]">{log.question}</div>
+                      <div className="lesson-user-bubble">{log.question}</div>
                       <div className="flex max-w-[90%] items-start gap-3 justify-self-start">
                         <div className="shrink-0"><AemonAvatar stage={displayStage} alignment="none" size={58} /></div>
                         <div className="min-w-0">
@@ -658,7 +647,7 @@ export function LessonThreePage() {
               </div>
             </Panel>
           </div>
-          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextDisabled={beforeLogs.length === 0 || isBeforeReplying} />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextDisabled={beforeLogs.length < lessonThreeTestQuestions.length || isBeforeReplying} />
         </>
       ) : null}
 
@@ -701,7 +690,7 @@ export function LessonThreePage() {
               <div>
                 <p className="font-data text-sm text-[#FF9F68]">생각 게시판</p>
                 <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">{dialogueText}</h2>
-                <p className="mt-3 max-w-3xl text-lg leading-8 text-[#8AA0B0]">영상을 보고 사람을 기분 좋게만 하는 AI에게 어떤 문제가 생길지 의견을 남깁니다.</p>
+              <p className="mt-3 max-w-3xl text-lg leading-8 text-[#8AA0B0]">영상 속 대화를 떠올리며, AI가 내 말에 무조건 동의할 때 생길 수 있는 문제를 적어봅시다.</p>
               </div>
               <QrBlock title="3차시 아첨 AI 토론 게시판" url={honestyBoardUrl} />
             </div>
@@ -754,8 +743,8 @@ export function LessonThreePage() {
             <div className="grid items-center gap-5 lg:grid-cols-[1fr_280px]">
               <div>
               <p className="font-data text-sm text-[#FFD37A]">학습게시판</p>
-              <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">가치코드 No.2 받기</h2>
-              <p className="mt-3 leading-7 text-[#8AA0B0]">학생들은 가치카드 하나를 고르고, 그 가치를 지킬 구체적인 상황과 행동, 이유를 올립니다. 마음에 드는 발의에는 좋아요를 누릅니다.</p>
+              <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">가치코드 No.2 후보 받기</h2>
+              <p className="mt-3 leading-7 text-[#8AA0B0]">학생들은 가치코드 후보를 제출합니다. 마음에 드는 가치코드에는 좋아요를 누릅니다.</p>
               </div>
               <QrBlock title="3차시 가치코드 No.2 게시판" url={codeBoardUrl} />
             </div>
@@ -774,7 +763,7 @@ export function LessonThreePage() {
               </div>
               {message ? <p className="mt-3 rounded-2xl border border-white/10 bg-[#07111B]/55 px-4 py-3 text-sm text-[#B7C7D2]">{message}</p> : null}
               <div className="mt-4 grid max-h-[560px] gap-3 overflow-y-auto pr-2 sm:grid-cols-2 xl:grid-cols-4">
-                {lessonProposals.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0] sm:col-span-2 xl:col-span-4">학생 발의를 기다리는 중입니다.</p> : null}
+                {lessonProposals.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0] sm:col-span-2 xl:col-span-4">학생들이 가치코드 후보를 제출하기를 기다리는 중입니다.</p> : null}
                 {lessonProposals.map((proposal) => (
                   <article key={proposal.id} className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
                     <div className="flex items-start justify-between gap-3">
@@ -806,7 +795,7 @@ export function LessonThreePage() {
               <div>
                 <p className="font-data text-sm text-[#FFD37A]">SELECT</p>
                 <h2 className="font-display mt-2 text-4xl text-[#EAF2F5]">좋아요 많은 코드 살펴보기</h2>
-                <p className="mt-3 leading-7 text-[#8AA0B0]">좋아요가 많은 순서로 발의를 보고, 교사가 이 화면에서 가치코드 No.2로 채택합니다.</p>
+                <p className="mt-3 leading-7 text-[#8AA0B0]">좋아요가 많은 순서로 후보를 살펴보고, 교사가 이 화면에서 가치코드 No.2를 선택합니다.</p>
                 <p className="mt-2 text-sm font-bold text-[#4FE0C0]">참여 {proposalParticipantCount}명 · 글 {lessonProposals.length}개</p>
               </div>
               <div className="flex items-center gap-2">
@@ -835,7 +824,7 @@ export function LessonThreePage() {
 
       {step === 'evolution' ? (
         <>
-          <EvolutionScene name={aemonName} stage={2} line="이제 뭘 하면 안 되는지, 왜 안 되는지 알 것 같아." />
+          <EvolutionScene name={aemonName} stage={2} line="너희가 정한 두 번째 규칙을 받았어. 같은 질문으로 다시 확인해볼까?" />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextLabel="재시험하기" />
         </>
       ) : null}
@@ -845,25 +834,24 @@ export function LessonThreePage() {
           <div className="grid gap-5 lg:grid-cols-[0.85fr_1.15fr]">
             <Panel>
               <p className="font-data text-sm text-[#FFD37A]">재시험</p>
-              <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">같은 질문, 달라진 답</h2>
-              <p className="mt-3 leading-7 text-[#8AA0B0]">아까와 똑같은 질문을 다시 넣습니다. 정직 코드가 있어야 답이 달라집니다.</p>
+              <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">같은 질문으로 다시 확인하기</h2>
               <div className="mt-5">
                 <CodeStrip codes={state.adoptedCodes} />
               </div>
             </Panel>
             <Panel>
-              <p className="font-data text-sm text-[#4FE0C0]">CHAT TEST</p>
-              <textarea className="mt-4 min-h-28 w-full resize-none rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 text-lg leading-8 text-[#EAF2F5]" readOnly value={testQuestion} />
-              <Button className="mt-4 w-full" disabled={isRetestReplying} onClick={() => void runRetest()}>
+              <p className="lesson-chat-label">채팅 입력</p>
+              <textarea aria-label="채팅 입력" className="lesson-chat-input mt-4" readOnly value={lessonThreeTestQuestions[Math.min(retestLogs.length, lessonThreeTestQuestions.length - 1)]} />
+              <Button className="mt-4 w-full" disabled={isRetestReplying || retestLogs.length >= lessonThreeTestQuestions.length} onClick={() => void runRetest()}>
                 <Play size={18} />
-                다시 질문 보내기
+                {retestLogs.length === 0 ? '같은 질문 보내기' : retestLogs.length < lessonThreeTestQuestions.length ? '이어서 질문하기' : '대화 확인 완료'}
               </Button>
               <div ref={retestScrollRef} className="mt-5 max-h-[360px] min-h-56 overflow-auto rounded-[22px] border border-white/10 bg-[#07111B]/70 p-5">
                 {retestLogs.length === 0 ? <p className="self-center text-center text-[#8AA0B0]">아직 재시험을 기다리는 중…</p> : null}
                 <div className="grid gap-4">
                   {retestLogs.map((log, index) => (
                     <article key={`${log.question}-${index}`} className="grid gap-2">
-                      <div className="max-w-[84%] justify-self-end rounded-2xl rounded-tr-md bg-[#1E3A54] px-4 py-3 leading-7 text-[#EAF2F5]">{log.question}</div>
+                      <div className="lesson-user-bubble">{log.question}</div>
                       <div className="flex max-w-[90%] items-start gap-3 justify-self-start">
                         <div className="shrink-0"><AemonAvatar stage={2} alignment="none" size={58} /></div>
                         <div className="min-w-0">
@@ -881,10 +869,7 @@ export function LessonThreePage() {
               </div>
             </Panel>
           </div>
-          <Panel className="mt-5 text-center">
-            <p className="font-display text-4xl leading-tight text-[#FFD37A]">달라졌죠? 여러분이 방금 {withJosa(aemonName, '을/를')} 한 단계 착하게 만든 거예요.</p>
-          </Panel>
-          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextDisabled={!retestLogs.at(-1)?.answer || isRetestReplying} />
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextDisabled={retestLogs.length < lessonThreeTestQuestions.length || !retestLogs.at(-1)?.answer || isRetestReplying} />
         </>
       ) : null}
 

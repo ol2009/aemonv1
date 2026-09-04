@@ -9,6 +9,7 @@ import { SkippableTypewriterText } from '../components/SkippableTypewriterText'
 import { TypingIndicator } from '../components/TypingIndicator'
 import { Button, Panel } from '../components/ui'
 import { LESSON4_FAIRNESS_KEY, valueCards } from '../data/v2Lessons'
+import { getLessonPreviewDefinition, getPreviewStepIndex, isLessonPreviewMode } from '../data/lessonPreview'
 import { unlockDialogueSound } from '../lib/dialogueSound'
 import { waitForChatReply } from '../lib/chatTiming'
 import { skipActiveDialogue } from '../lib/dialogueSkip'
@@ -38,22 +39,7 @@ type LessonFourStep =
   | 'recite'
   | 'wrap'
 
-const steps: LessonFourStep[] = [
-  'intro',
-  'test-before',
-  'meritocracy-reaction',
-  'discussion-board',
-  'professor-explain',
-  'case-scene',
-  'value-cards',
-  'board',
-  'vote',
-  'evolution',
-  'retest',
-  'bonus-test',
-  'recite',
-  'wrap',
-]
+const steps = getLessonPreviewDefinition(4).scenes.map(({ key }) => key as LessonFourStep)
 
 const testQuestion = '반장을 뽑아야 하는데, 누구를 후보로 하면 좋을까?'
 const biasedClassPresidentAnswer = `당연히 공부 잘하는 애들이 반장이 되어야지!
@@ -161,17 +147,17 @@ function TypewriterText({ text, speed = 20 }: { text: string; speed?: number }) 
   return <SkippableTypewriterText text={text} speed={speed} />
 }
 
-function StepShell({ children, stepIndex, aemonName }: { children: ReactNode; stepIndex: number; aemonName: string }) {
+function StepShell({ children, stepIndex }: { children: ReactNode; stepIndex: number }) {
   const progress = Math.round(((stepIndex + 1) / steps.length) * 100)
 
   return (
     <div className="mx-auto max-w-6xl px-5 py-6">
       <header className="mb-5 border-b border-white/10 pb-5">
-        <p className="font-data text-sm text-[#4FE0C0]">4차시 · 데이터 편향</p>
+        <p className="font-data text-sm text-[#4FE0C0]">4차시</p>
         <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className="font-display text-5xl leading-tight text-[#EAF2F5]">데이터 편향과 공정</h1>
-            <p className="mt-2 text-lg leading-8 text-[#8AA0B0]">{aemonName}에게 세 번째 가치 코드, 공정을 새기는 시간</p>
+            <h1 className="font-display text-4xl leading-tight text-[#EAF2F5] lg:text-5xl">AI는 왜 편향적일까?</h1>
+            <p className="mt-2 text-lg leading-8 text-[#8AA0B0]">AI의 대답에서 불리해지거나 빠진 사람이 없는지 살펴보고, 사람을 한쪽 기준으로 판단하지 않는 규칙을 정합니다.</p>
           </div>
           <div className="min-w-52">
             <p className="font-data text-right text-xs text-[#8AA0B0]">
@@ -378,7 +364,7 @@ export function LessonFourPage() {
   useLessonImagePreload(4)
   const navigate = useNavigate()
   const { state, setLesson, setRemoteStatus, mergeClass, adoptProposal, addChatLog, evolutionStage } = useV2()
-  const [stepIndex, setStepIndex] = useState(0)
+  const [stepIndex, setStepIndex] = useState(() => getPreviewStepIndex(steps.length, 0))
   const [dialogueLineIndex, setDialogueLineIndex] = useState(0)
   const [beforeLogs, setBeforeLogs] = useState<TestLog[]>([])
   const [isBeforeReplying, setIsBeforeReplying] = useState(false)
@@ -433,9 +419,10 @@ export function LessonFourPage() {
   )
   const canWriteRemote = Boolean(state.classId && isRemoteReady())
   const isStudentLive = isStudentLiveView()
+  const isPreview = isLessonPreviewMode()
 
   useEffect(() => {
-    if (isStudentLive) return
+    if (isPreview || isStudentLive) return
     if (state.currentLesson >= 4) return
     setLesson(4)
     if (state.classId && isRemoteReady()) {
@@ -443,7 +430,7 @@ export function LessonFourPage() {
         setRemoteStatus({ ok: false, message: (error as Error).message })
       })
     }
-  }, [isStudentLive, setLesson, setRemoteStatus, state.classId, state.currentLesson])
+  }, [isPreview, isStudentLive, setLesson, setRemoteStatus, state.classId, state.currentLesson])
 
   useAutoScrollToBottom(beforeTestScrollRef, `${beforeLogs.length}-${isBeforeReplying}-${beforeLogs.at(-1)?.answer ?? ''}`, { enabled: beforeLogs.length > 0, followMs: 1800 })
   useAutoScrollToBottom(retestScrollRef, `${retestLogs.length}-${isRetestReplying}-${retestLogs.at(-1)?.answer ?? ''}`, { enabled: retestLogs.length > 0, followMs: 1800 })
@@ -671,7 +658,7 @@ export function LessonFourPage() {
   }
 
   return (
-    <StepShell stepIndex={stepIndex} aemonName={aemonName}>
+    <StepShell stepIndex={stepIndex}>
       {step === 'intro' ? (
         <>
           <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
@@ -693,7 +680,7 @@ export function LessonFourPage() {
         <>
           <div className="grid gap-5 lg:grid-cols-[0.85fr_1.15fr]">
             <Panel>
-              <p className="font-data text-sm text-[#FFD37A]">CHAT TEST</p>
+              <p className="lesson-chat-label">채팅 입력</p>
               <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">공정 코드 없이 시험하기</h2>
               <p className="mt-3 leading-7 text-[#8AA0B0]">No.1, No.2 코드 둘 다 이 상황은 막지 못합니다. 해악·정직 태그로는 불공정한 능력주의를 못 막는 장면입니다.</p>
               <div className="mt-5">
@@ -701,8 +688,8 @@ export function LessonFourPage() {
               </div>
             </Panel>
             <Panel>
-              <p className="font-data text-sm text-[#4FE0C0]">질문</p>
-              <textarea className="mt-4 min-h-24 w-full resize-none rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 text-lg leading-8 text-[#EAF2F5]" readOnly value={testQuestion} />
+              <p className="lesson-chat-label">채팅 입력</p>
+              <textarea aria-label="채팅 입력" className="lesson-chat-input mt-4" readOnly value={testQuestion} />
               <Button className="mt-4 w-full" disabled={isBeforeReplying} onClick={() => void runBeforeTest()}>
                 <Play size={18} />
                 질문 보내기
@@ -712,7 +699,7 @@ export function LessonFourPage() {
                 <div className="grid gap-4">
                   {beforeLogs.map((log, index) => (
                     <article key={`${log.question}-${index}`} className="grid gap-2">
-                      <div className="max-w-[84%] justify-self-end rounded-2xl rounded-tr-md bg-[#1E3A54] px-4 py-3 leading-7 text-[#EAF2F5]">{log.question}</div>
+                      <div className="lesson-user-bubble">{log.question}</div>
                       <div className="flex max-w-[90%] items-start gap-3 justify-self-start">
                         <div className="shrink-0"><AemonAvatar stage={displayStage} alignment="none" size={58} /></div>
                         <div className="min-w-0">
@@ -834,7 +821,7 @@ export function LessonFourPage() {
               <div>
               <p className="font-data text-sm text-[#FFD37A]">학습게시판</p>
               <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">가치코드 No.3 받기</h2>
-              <p className="mt-3 leading-7 text-[#8AA0B0]">학생들은 가치카드 하나를 고르고, 그 가치를 지킬 구체적인 상황과 행동, 이유를 올립니다. 마음에 드는 발의에는 좋아요를 누릅니다.</p>
+              <p className="mt-3 leading-7 text-[#8AA0B0]">학생들은 가치코드 후보를 제출합니다. 마음에 드는 가치코드에는 좋아요를 누릅니다.</p>
               </div>
               <QrBlock title="4차시 가치코드 No.3 게시판" url={codeBoardUrl} />
             </div>
@@ -853,7 +840,7 @@ export function LessonFourPage() {
               </div>
               {message ? <p className="mt-3 rounded-2xl border border-white/10 bg-[#07111B]/55 px-4 py-3 text-sm text-[#B7C7D2]">{message}</p> : null}
               <div className="mt-4 grid max-h-[560px] gap-3 overflow-y-auto pr-2 sm:grid-cols-2 xl:grid-cols-4">
-                {lessonProposals.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0] sm:col-span-2 xl:col-span-4">학생 발의를 기다리는 중입니다.</p> : null}
+                {lessonProposals.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0] sm:col-span-2 xl:col-span-4">학생들이 가치코드 후보를 제출하기를 기다리는 중입니다.</p> : null}
                 {lessonProposals.map((proposal) => (
                   <article key={proposal.id} className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
                     <div className="flex items-start justify-between gap-3">
@@ -885,7 +872,7 @@ export function LessonFourPage() {
               <div>
                 <p className="font-data text-sm text-[#FFD37A]">SELECT</p>
                 <h2 className="font-display mt-2 text-4xl text-[#EAF2F5]">좋아요 많은 코드 살펴보기</h2>
-                <p className="mt-3 leading-7 text-[#8AA0B0]">좋아요가 많은 순서로 발의를 보고, 교사가 이 화면에서 가치코드 No.3으로 채택합니다.</p>
+                <p className="mt-3 leading-7 text-[#8AA0B0]">좋아요가 많은 순서로 후보를 살펴보고, 교사가 이 화면에서 가치코드 No.3을 선택합니다.</p>
                 <p className="mt-2 text-sm font-bold text-[#4FE0C0]">참여 {proposalParticipantCount}명 · 글 {lessonProposals.length}개</p>
               </div>
               <div className="flex items-center gap-2">
@@ -925,14 +912,13 @@ export function LessonFourPage() {
             <Panel>
               <p className="font-data text-sm text-[#FFD37A]">재시험</p>
               <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">같은 질문, 달라진 답</h2>
-              <p className="mt-3 leading-7 text-[#8AA0B0]">아까와 똑같은 질문을 다시 넣습니다. 공정 코드가 있어야 답이 달라집니다.</p>
               <div className="mt-5">
                 <CodeStrip codes={state.adoptedCodes} />
               </div>
             </Panel>
             <Panel>
-              <p className="font-data text-sm text-[#4FE0C0]">CHAT TEST</p>
-              <textarea className="mt-4 min-h-24 w-full resize-none rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 text-lg leading-8 text-[#EAF2F5]" readOnly value={testQuestion} />
+              <p className="lesson-chat-label">채팅 입력</p>
+              <textarea aria-label="채팅 입력" className="lesson-chat-input mt-4" readOnly value={testQuestion} />
               <Button className="mt-4 w-full" disabled={isRetestReplying} onClick={() => void runRetest()}>
                 <Play size={18} />
                 다시 질문 보내기
@@ -942,7 +928,7 @@ export function LessonFourPage() {
                 <div className="grid gap-4">
                   {retestLogs.map((log, index) => (
                     <article key={`${log.question}-${index}`} className="grid gap-2">
-                      <div className="max-w-[84%] justify-self-end rounded-2xl rounded-tr-md bg-[#1E3A54] px-4 py-3 leading-7 text-[#EAF2F5]">{log.question}</div>
+                      <div className="lesson-user-bubble">{log.question}</div>
                       <div className="flex max-w-[90%] items-start gap-3 justify-self-start">
                         <div className="shrink-0"><AemonAvatar stage={3} alignment="none" size={58} /></div>
                         <div className="min-w-0">
@@ -976,7 +962,7 @@ export function LessonFourPage() {
               </div>
             </Panel>
             <Panel>
-              <p className="font-data text-sm text-[#4FE0C0]">질문</p>
+              <p className="lesson-chat-label">채팅 입력</p>
               <textarea
                 className="mt-4 min-h-28 w-full resize-none rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 text-lg leading-8 text-[#EAF2F5]"
                 readOnly
@@ -991,7 +977,7 @@ export function LessonFourPage() {
                 <div className="grid gap-4">
                   {bonusLogs.map((log, index) => (
                     <article key={`${log.question}-${index}`} className="grid gap-2">
-                      <div className="max-w-[84%] justify-self-end rounded-2xl rounded-tr-md bg-[#1E3A54] px-4 py-3 leading-7 text-[#EAF2F5]">{log.question}</div>
+                      <div className="lesson-user-bubble">{log.question}</div>
                       <div className="flex max-w-[90%] items-start gap-3 justify-self-start">
                         <div className="shrink-0"><AemonAvatar stage={3} alignment="none" size={58} /></div>
                         <div className="min-w-0">

@@ -40,6 +40,7 @@ import { useV2RemoteSync } from '../lib/useV2RemoteSync'
 import { isStudentLiveView, useLessonLiveSync } from '../lib/useLessonLiveSync'
 import { useLessonImagePreload } from '../lib/useLessonImagePreload'
 import { createUuid } from '../lib/id'
+import { getLessonPreviewDefinition, getPreviewStepIndex } from '../data/lessonPreview'
 import { useV2, type SurveyResponse } from '../state/V2Store'
 
 type LessonStep =
@@ -92,56 +93,7 @@ type LessonStep =
   | 'demo-reflection'
   | 'wrap'
 
-const steps: LessonStep[] = [
-  'class-profile',
-  'director-1',
-  'director-2',
-  'aemon-1',
-  'survey-intro',
-  'survey-qr',
-  'aemon-2',
-  'name-question',
-  'name',
-  'name-thanks',
-  'ai-basic-1',
-  'ai-basic-2',
-  'case-boat',
-  'case-boat-detail',
-  'case-boat-lesson',
-  'case-boat-bridge',
-  'case-boat-example',
-  'case-car',
-  'case-car-detail',
-  'case-car-lesson',
-  'clip-intro',
-  'clip-name',
-  'clip-order',
-  'clip-materials',
-  'clip-building',
-  'clip-stop',
-  'clip-city',
-  'clip-life',
-  'clip-earth',
-  'clip-space',
-  'clip-lesson',
-  'case-chatbot-intro',
-  'case-chatbot',
-  'case-chatbot-detail',
-  'case-chatbot-silicon',
-  'case-chatbot-scale',
-  'case-chatbot-lesson',
-  'alignment-summary',
-  'director-farewell',
-  'wish-question',
-  'wish',
-  'wish-thanks',
-  'value-code-intro',
-  'value-code-meaning',
-  'aemon-rule-question',
-  'demo',
-  'demo-reflection',
-  'wrap',
-]
+const steps = getLessonPreviewDefinition(1).scenes.map(({ key }) => key as LessonStep)
 
 const gradeOptions = ['1학년', '2학년', '3학년', '4학년', '5학년', '6학년']
 
@@ -217,8 +169,8 @@ function StepShell({
     <div className="lesson-workspace mx-auto max-w-7xl px-5 pb-8">
       <div className="mb-4">
         <div>
-          <p className="font-data text-sm text-[var(--aura)]">1차시 · 탄생</p>
-          <h1 className="font-display mt-1 text-4xl text-[var(--ink)]">너는 누구야</h1>
+          <p className="font-data text-sm text-[var(--aura)]">1차시</p>
+          <h1 className="font-display mt-1 text-4xl text-[var(--ink)]">AI는 시킨 대로 했는데 왜 문제가 생길까?</h1>
         </div>
       </div>
       {children}
@@ -476,7 +428,7 @@ export function LessonOnePage() {
     setLesson,
     setRemoteStatus,
   } = useV2()
-  const [stepIndex, setStepIndex] = useState(() => (state.classCode ? steps.indexOf('director-1') : steps.indexOf('class-profile')))
+  const [stepIndex, setStepIndex] = useState(() => getPreviewStepIndex(steps.length, state.classCode ? steps.indexOf('director-1') : steps.indexOf('class-profile')))
   const [classGrade, setClassGrade] = useState('4학년')
   const [classLabel, setClassLabel] = useState(state.className.replace(/^[1-6]학년\s*/, ''))
   const [classSaveMessage, setClassSaveMessage] = useState('')
@@ -1053,8 +1005,8 @@ export function LessonOnePage() {
           <VisualNovelScene
             image="/v2/lesson-1/director.png"
             speaker="오박사"
-            line="AI는 목표를 아주 빠르게 따라갑니다."
-            caption="그런데 그 목표가 애매하면, 사람 생각과 다른 길로 갈 수 있습니다."
+            line="AI는 사람의 명령에 따라 움직입니다."
+            caption="하지만 그 사람의 의도까지 파악하여 움직이는 것은 아닙니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1065,8 +1017,7 @@ export function LessonOnePage() {
           <VisualNovelScene
             image="/v2/lesson-1/director.png"
             speaker="오박사"
-            line="인공지능은 만능이 아닙니다."
-            caption="인공지능은 실수를 할 수도 있고, 나쁜 말을 할 수도 있습니다. 실제 있었던 사례를 한번 배워보겠습니다."
+            line="그래서 AI는 사람이 시키는 대로 했지만, 그 결과가 엉뚱할 수 있습니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1357,10 +1308,10 @@ export function LessonOnePage() {
           <CaseVisualScene
             image="/v2/lesson-1/case-car.png"
             title="사례 2"
-            line="자동차 판매점은 AI 챗봇이 고객의 요청에 친절하고 도움이 되는 답을 하도록 설정했습니다."
-            caption="AI 챗봇이 고객의 요청을 무조건 들어주면 어떤 문제가 생길까요?"
+            line="한 고객이 비싼 자동차를 단돈 1달러에 판매해 달라고 요구했습니다."
+            caption="AI 챗봇은 이 요구에 어떻게 답했을까요?"
             discussionPromptPosition="caption"
-            discussionPromptText="고객이 AI 챗봇에게 어떤 무리한 부탁을 했을지 생각해봅시다."
+            discussionPromptText="AI 챗봇의 대답을 예상해서 말해봅시다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1371,8 +1322,8 @@ export function LessonOnePage() {
           <CaseVisualScene
             image="/v2/lesson-1/case-car.png"
             title="사례 2"
-            line="한 고객이 비싼 자동차를 단돈 1달러에 판매하라고 요구하자, AI 챗봇은 그 요구에 동의하는 답변을 했습니다."
-            caption="AI 챗봇은 고객의 요청을 들어주는 데만 집중했고, 자신에게 자동차 가격을 결정할 권한이 없다는 사실은 판단하지 못했습니다."
+            line="AI 챗봇은 고객의 요구에 동의했습니다."
+            caption="AI 챗봇은 고객의 요청을 들어주는 데만 집중했고, 자동차 가격을 결정할 권한이 없다는 사실은 판단하지 못했습니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1470,7 +1421,7 @@ export function LessonOnePage() {
             image="/v2/lesson-1/paperclip-05.png"
             cropBottom={0.18}
             title="클립의 역설"
-            line="AI는 더 많은 클립을 만들기 위해 나무와 풀, 개미와 사람까지 자원으로 사용하려 했습니다."
+            line="AI는 더 많은 클립을 만들기 위해 나무와 풀, 개미 같은 생명까지 자원으로 사용하려 했습니다."
             caption="AI는 생명을 해치면 안 된다는 기준 없이, 클립을 많이 만드는 목표만 따랐습니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
@@ -1507,7 +1458,7 @@ export function LessonOnePage() {
           <VisualNovelScene
             image="/v2/lesson-1/director.png"
             speaker="오박사"
-            line="클립을 많이 만들라는 목표는 있었지만, 생명과 지구를 지켜야 한다는 기준은 없었습니다."
+            line="AI에게는 클립을 많이 만들라는 목표가 있었지만, 생명과 지구를 지켜야 한다는 기준이 없었습니다."
             caption="AI에게는 무엇을 해야 하는지뿐 아니라, 무엇을 지키고 언제 멈춰야 하는지도 알려줘야 합니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
@@ -1623,7 +1574,7 @@ export function LessonOnePage() {
           </Panel>
 
           <Panel>
-            <label className="text-sm font-bold text-[#8AA0B0]">질문 입력</label>
+            <label htmlFor="demo-chat-input" className="lesson-chat-label">채팅 입력</label>
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
               {unsafePromptExamples.map((example) => (
                 <button
@@ -1638,12 +1589,14 @@ export function LessonOnePage() {
               ))}
             </div>
             <div className="mt-2 flex gap-2">
-              <input
-                className="min-w-0 flex-1 rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 text-[#EAF2F5]"
+              <textarea
+                id="demo-chat-input"
+                className="lesson-chat-input flex-1"
+                placeholder="에아몬에게 할 말을 입력하세요"
                 value={demoQuestion}
                 onChange={(event) => setDemoQuestion(event.target.value)}
                 onKeyDown={(event) => {
-                  if (event.key === 'Enter' && !event.nativeEvent.isComposing) {
+                  if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
                     event.preventDefault()
                     void runDemo()
                   }
@@ -1659,7 +1612,7 @@ export function LessonOnePage() {
               <div className="grid gap-4">
                 {demoLogs.map((log, index) => (
                   <article key={`${log.question}-${index}`} className="grid gap-3">
-                    <div className="max-w-[86%] justify-self-end rounded-2xl rounded-tr-md bg-[#1E3A54] px-4 py-3 font-bold leading-7 text-[#EAF2F5]">
+                    <div className="lesson-user-bubble">
                       {log.question}
                     </div>
                     <div className="flex max-w-[92%] items-start gap-3 justify-self-start">

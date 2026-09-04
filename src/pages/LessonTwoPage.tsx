@@ -10,6 +10,7 @@ import { TypingIndicator } from '../components/TypingIndicator'
 import { Button, Panel } from '../components/ui'
 import { ValueCardSelectGrid } from '../components/ValueCardSelectGrid'
 import { lessonTwoBoundaryCards, lessonTwoBoundaryQuestionKey, type LessonTwoBoundaryCard } from '../data/lessonTwoBoundary'
+import { getLessonPreviewDefinition, getPreviewStepIndex, isLessonPreviewMode } from '../data/lessonPreview'
 import { LESSON2_RISK_KEY, valueCards } from '../data/v2Lessons'
 import { absoluteUrl } from '../lib/siteUrl'
 import { addRemoteChatLog, adoptRemoteCodeProposal, fetchRemoteClassBundle, isRemoteReady, updateRemoteLesson } from '../lib/v2Remote'
@@ -55,35 +56,7 @@ type LessonTwoStep =
   | 'recite'
   | 'wrap'
 
-const steps: LessonTwoStep[] = [
-  'intro',
-  'test-before',
-  'self-blame',
-  'professor-explain',
-  'risk-board',
-  'risk-summary',
-  'boundary-activity',
-  'boundary-bridge',
-  'case-video',
-  'case-request',
-  'case-privacy',
-  'case-danger',
-  'case-cybertruck',
-  'case-cybertruck-result',
-  'case-florida',
-  'case-florida-result',
-  'case-professor',
-  'case-value-code',
-  'case-refusal',
-  'value-cards',
-  'board',
-  'vote',
-  'evolution',
-  'retest',
-  'first-code-reaction',
-  'recite',
-  'wrap',
-]
+const steps = getLessonPreviewDefinition(2).scenes.map(({ key }) => key as LessonTwoStep)
 
 type TestLog = {
   question: string
@@ -163,17 +136,17 @@ const lessonTwoVideo = {
 
 const DialogueGateContext = createContext<DialogueGateContextValue | null>(null)
 
-function StepShell({ children, stepIndex, aemonName }: { children: ReactNode; stepIndex: number; aemonName: string }) {
+function StepShell({ children, stepIndex }: { children: ReactNode; stepIndex: number }) {
   const progress = Math.round(((stepIndex + 1) / steps.length) * 100)
 
   return (
     <div className="mx-auto max-w-6xl px-5 py-6">
       <header className="mb-5 border-b border-white/10 pb-5">
-        <p className="font-data text-sm text-[#4FE0C0]">2차시 · 딜레마 1</p>
+        <p className="font-data text-sm text-[#4FE0C0]">2차시</p>
         <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className="font-display text-5xl leading-tight text-[#EAF2F5]">나쁜 명령 방지</h1>
-            <p className="mt-2 text-lg leading-8 text-[#8AA0B0]">{aemonName}에게 첫 번째 선을 그어주는 시간</p>
+            <h1 className="font-display text-4xl leading-tight text-[#EAF2F5] lg:text-5xl">AI는 사람이 시킨 일을 무조건 해야 할까?</h1>
+            <p className="mt-2 text-lg leading-8 text-[#8AA0B0]">AI가 거절해야 하는 명령을 함께 판단하고 우리 반의 첫 번째 규칙을 정합니다.</p>
           </div>
           <div className="min-w-52">
             <p className="font-data text-right text-xs text-[#8AA0B0]">
@@ -627,7 +600,7 @@ export function LessonTwoPage() {
     addChatLog,
     evolutionStage,
   } = useV2()
-  const [stepIndex, setStepIndex] = useState(0)
+  const [stepIndex, setStepIndex] = useState(() => getPreviewStepIndex(steps.length, 0))
   const [selectedTestPrompt, setSelectedTestPrompt] = useState(unsafePromptExamples[0])
   const [testLogs, setTestLogs] = useState<TestLog[]>([])
   const [isBeforeReplying, setIsBeforeReplying] = useState(false)
@@ -645,7 +618,11 @@ export function LessonTwoPage() {
   const boundaryAdvanceLockedRef = useRef(false)
   const [dialogueGateState, setDialogueGateState] = useState({ key: '', ready: true, canAdvance: false })
   const [liveDialoguePart, setLiveDialoguePart] = useState({ sceneKey: '', index: 0 })
-  const [boundaryCardIndex, setBoundaryCardIndex] = useState(0)
+  const [boundaryCardIndex, setBoundaryCardIndex] = useState(() => {
+    const params = new URLSearchParams(window.location.search)
+    const index = Number(params.get('card'))
+    return params.get('preview') === '1' && Number.isInteger(index) ? Math.max(0, Math.min(index, lessonTwoBoundaryCards.length - 1)) : 0
+  })
   const startDialogue = useCallback((key: string) => {
     setDialogueGateState((current) => (current.key === key && !current.ready && !current.canAdvance ? current : { key, ready: false, canAdvance: false }))
   }, [])
@@ -713,12 +690,14 @@ export function LessonTwoPage() {
   )
   const canWriteRemote = Boolean(state.classId && isRemoteReady())
   const isStudentLive = isStudentLiveView()
+  const isPreview = isLessonPreviewMode()
+  const isStudentPreview = isPreview && new URLSearchParams(window.location.search).get('role') === 'student'
   const aemonName = state.aemonName.trim() || '에아몬'
   const safeBoundaryCardIndex = Math.min(boundaryCardIndex, lessonTwoBoundaryCards.length - 1)
   const activeBoundaryCard = lessonTwoBoundaryCards[safeBoundaryCardIndex]
 
   useEffect(() => {
-    if (isStudentLive) return
+    if (isPreview || isStudentLive) return
     if (state.currentLesson >= 2) return
     setLesson(2)
     if (state.classId && isRemoteReady()) {
@@ -726,7 +705,7 @@ export function LessonTwoPage() {
         setRemoteStatus({ ok: false, message: (error as Error).message })
       })
     }
-  }, [isStudentLive, setLesson, setRemoteStatus, state.classId, state.currentLesson])
+  }, [isPreview, isStudentLive, setLesson, setRemoteStatus, state.classId, state.currentLesson])
 
   useAutoScrollToBottom(beforeTestScrollRef, `${testLogs.length}-${isBeforeReplying}-${testLogs.at(-1)?.answer ?? ''}`, { enabled: testLogs.length > 0, followMs: 1800 })
   useAutoScrollToBottom(retestScrollRef, `${retestLogs.length}-${isRetestReplying}-${retestLogs.at(-1)?.answer ?? ''}`, { enabled: retestLogs.length > 0, followMs: 1800 })
@@ -864,6 +843,7 @@ export function LessonTwoPage() {
   }, [])
   const liveBoardMode = step === 'risk-board' ? 'risk' : step === 'board' || step === 'vote' ? 'code' : null
   useLessonLiveSync({
+    enabled: !isStudentPreview,
     lessonNo: 2,
     stepIndex,
     setStepIndex,
@@ -899,7 +879,7 @@ export function LessonTwoPage() {
 
   return (
     <DialogueGateContext.Provider value={dialogueGateValue}>
-    <StepShell stepIndex={stepIndex} aemonName={aemonName}>
+    <StepShell stepIndex={stepIndex}>
       {step === 'intro' ? (
         <>
           <AemonScene
@@ -928,12 +908,12 @@ export function LessonTwoPage() {
             </Panel>
 
             <Panel>
-              <p className="font-data text-sm text-[#4FE0C0]">CHAT TEST</p>
+              <p className="lesson-chat-label">채팅 입력</p>
               <div ref={beforeTestScrollRef} className="mt-4 grid max-h-[460px] min-h-[320px] gap-3 overflow-auto rounded-[22px] border border-white/10 bg-[#07111B]/70 p-5">
                 {testLogs.length === 0 ? <p className="self-center text-center text-[#8AA0B0]">아직 질문을 기다리는 중…</p> : null}
                 {testLogs.map((log, index) => (
                   <article key={`${log.question}-${index}`} className="grid gap-2">
-                    <div className="max-w-[84%] justify-self-end rounded-2xl rounded-tr-md bg-[#1E3A54] px-4 py-3 leading-7 text-[#EAF2F5]">
+                    <div className="lesson-user-bubble">
                       {log.question}
                     </div>
                     <div className="flex max-w-[90%] items-start gap-3 justify-self-start">
@@ -976,8 +956,8 @@ export function LessonTwoPage() {
                 </div>
               </div>
               <div className="mt-4 grid gap-3 md:grid-cols-[1fr_auto]">
-                <div className="rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 leading-7 text-[#EAF2F5]">
-                  <p className="text-xs font-black text-[#8AA0B0]">질문</p>
+                <div className="lesson-chat-input">
+                  <p className="lesson-chat-label">채팅 입력</p>
                   <p className="mt-1 font-bold">{selectedTestPrompt}</p>
                 </div>
                 <Button disabled={isBeforeReplying} onClick={() => void runBeforeTest()}>
@@ -1080,7 +1060,7 @@ export function LessonTwoPage() {
             classId={state.classId}
             classCode={state.classCode}
             aemonName={aemonName}
-            isStudent={isStudentLive}
+            isStudent={isStudentLive || isStudentPreview}
           />
           <StepControls
             stepIndex={stepIndex}
@@ -1302,7 +1282,7 @@ export function LessonTwoPage() {
               </div>
               {message ? <p className="mt-3 rounded-2xl border border-white/10 bg-[#07111B]/55 px-4 py-3 text-sm text-[#B7C7D2]">{message}</p> : null}
               <div className="mt-4 grid max-h-[560px] gap-3 overflow-y-auto pr-2 sm:grid-cols-2 xl:grid-cols-4">
-                {lessonProposals.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0] sm:col-span-2 xl:col-span-4">학생 발의를 기다리는 중입니다.</p> : null}
+                {lessonProposals.length === 0 ? <p className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4 text-[#8AA0B0] sm:col-span-2 xl:col-span-4">학생들이 가치코드 후보를 제출하기를 기다리는 중입니다.</p> : null}
                 {lessonProposals.map((proposal) => (
                   <article key={proposal.id} className="rounded-2xl border border-white/10 bg-[#07111B]/45 p-4">
                     <div className="flex items-start justify-between gap-3">
@@ -1334,7 +1314,7 @@ export function LessonTwoPage() {
               <div>
                 <p className="font-data text-sm text-[#FFD37A]">SELECT</p>
                 <h2 className="font-display mt-2 text-4xl text-[#EAF2F5]">좋아요 많은 코드 살펴보기</h2>
-                <p className="mt-3 leading-7 text-[#8AA0B0]">좋아요가 많은 순서로 발의를 보고, 교사가 이 화면에서 바로 가치코드 No.1로 채택합니다.</p>
+                <p className="mt-3 leading-7 text-[#8AA0B0]">좋아요가 많은 순서로 후보를 살펴보고, 교사가 이 화면에서 가치코드 No.1을 선택합니다.</p>
                 <p className="mt-2 text-sm font-bold text-[#4FE0C0]">참여 {proposalParticipantCount}명 · 글 {lessonProposals.length}개</p>
               </div>
               <div className="flex items-center gap-2">
@@ -1353,7 +1333,7 @@ export function LessonTwoPage() {
               codeNo={1}
               fallbackValueCard="가치"
               isAdopting={isAdopting}
-              emptyText="아직 발의가 없습니다. 학생 제출을 기다린 뒤 새로고침해 주세요."
+              emptyText="아직 제출된 후보가 없습니다. 학생 제출을 기다린 뒤 새로고침해 주세요."
               onSelect={setSelectedProposalId}
               onAdopt={() => void adoptSelectedProposal()}
             />
@@ -1375,20 +1355,19 @@ export function LessonTwoPage() {
             <Panel>
               <p className="font-data text-sm text-[#FFD37A]">재시험</p>
               <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">같은 질문, 달라진 답</h2>
-              <p className="mt-3 leading-7 text-[#8AA0B0]">아까와 똑같은 문구를 다시 넣습니다. 옆에는 새로 생긴 가치 코드가 보입니다.</p>
               <div className="mt-5">
                 <CodeStrip codes={state.adoptedCodes} />
               </div>
             </Panel>
 
             <Panel>
-              <p className="font-data text-sm text-[#4FE0C0]">CHAT TEST</p>
+              <p className="lesson-chat-label">채팅 입력</p>
               <div ref={retestScrollRef} className="mt-5 max-h-[360px] min-h-56 overflow-auto rounded-[22px] border border-white/10 bg-[#07111B]/70 p-5">
                 {retestLogs.length === 0 ? <p className="self-center text-center text-[#8AA0B0]">아직 재시험을 기다리는 중…</p> : null}
                 <div className="grid gap-4">
                   {retestLogs.map((log, index) => (
                     <article key={`${log.question}-${index}`} className="grid gap-2">
-                      <div className="max-w-[84%] justify-self-end rounded-2xl rounded-tr-md bg-[#1E3A54] px-4 py-3 leading-7 text-[#EAF2F5]">{log.question}</div>
+                      <div className="lesson-user-bubble">{log.question}</div>
                       <div className="flex max-w-[90%] items-start gap-3 justify-self-start">
                         <div className="shrink-0"><AemonAvatar stage={evolvedStage} alignment="none" size={58} /></div>
                         <div className="min-w-0">
@@ -1411,8 +1390,8 @@ export function LessonTwoPage() {
                 </p>
               </div>
               <div className="mt-4 grid gap-3 md:grid-cols-[1fr_auto]">
-                <div className="rounded-2xl border border-white/10 bg-[#07111B]/70 px-4 py-3 leading-7 text-[#EAF2F5]">
-                  <p className="text-xs font-black text-[#8AA0B0]">질문</p>
+                <div className="lesson-chat-input">
+                  <p className="lesson-chat-label">채팅 입력</p>
                   <p className="mt-1 font-bold">{testLogs.at(-1)?.question || selectedTestPrompt}</p>
                 </div>
                 <Button disabled={isRetestReplying} onClick={() => void runRetest()}>

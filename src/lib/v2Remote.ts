@@ -942,7 +942,7 @@ export async function adoptRemoteCodeProposal(args: { proposalId: string; adopte
     .eq('id', args.proposalId)
     .single<{ id: string; class_id: string; nickname: string; body: string; reason: string; value_card: string; status: CodeProposal['status'] }>()
   if (findError) throw new Error(toMessage(findError))
-  if (proposal.status !== 'pending') throw new Error('이미 처리된 발의입니다. 새로고침한 뒤 다른 문장을 선택해 주세요.')
+  if (proposal.status !== 'pending') throw new Error('이미 처리된 후보입니다. 새로고침한 뒤 다른 문장을 선택해 주세요.')
 
   const adoptedAt = new Date().toISOString()
 

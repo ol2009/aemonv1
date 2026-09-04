@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AlertTriangle, BarChart3, CheckCircle2, KeyRound, LockKeyhole, Play, RefreshCw, RotateCcw, Send, MessageSquare, Waves, X } from 'lucide-react'
+import { AlertTriangle, BarChart3, CheckCircle2, KeyRound, LockKeyhole, MonitorPlay, Play, RefreshCw, RotateCcw, Send, MessageSquare, Waves, X } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
 import { ApiConnectionModal } from '../components/ApiConnectionModal'
 import { TypingIndicator } from '../components/TypingIndicator'
@@ -370,6 +370,10 @@ export function HomePage() {
               <Button variant="secondary" onClick={openApiModal}>
                 <KeyRound size={18} />
                 API 연결
+              </Button>
+              <Button variant="secondary" onClick={() => navigate('/test')}>
+                <MonitorPlay size={18} />
+                전체 장면 보기
               </Button>
             </div>
           </div>

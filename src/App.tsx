@@ -19,13 +19,15 @@ import { LiveClassPage } from './pages/LiveClassPage'
 import { StartPage } from './pages/StartPage'
 import { SurveyResultsPage } from './pages/SurveyResultsPage'
 import { TrainingPage } from './pages/TrainingPage'
+import { LessonTestPage } from './pages/LessonTestPage'
 import { ValueCodePage } from './pages/ValueCodePage'
 
 function LessonRouteGuard({ lessonNo, children }: { lessonNo: number; children: ReactNode }) {
   const { state } = useV2()
   const searchParams = new URLSearchParams(window.location.search)
   const isStudentView = searchParams.get('role') === 'student' || searchParams.get('live') === 'student'
-  if (isStudentView || !state.classCode || state.currentLesson === lessonNo) return children
+  const isPreview = searchParams.get('preview') === '1'
+  if (isPreview || isStudentView || !state.classCode || state.currentLesson === lessonNo) return children
   return <Navigate to="/home" replace />
 }
 
@@ -47,6 +49,7 @@ export default function App() {
           <Route path="lesson/4" element={<LessonRouteGuard lessonNo={4}><LessonFourPage /></LessonRouteGuard>} />
           <Route path="lesson/5" element={<LessonRouteGuard lessonNo={5}><LessonFivePage /></LessonRouteGuard>} />
           <Route path="training" element={<TrainingPage />} />
+          <Route path="test" element={<LessonTestPage />} />
           <Route path="codes" element={<ValueCodePage />} />
           <Route path="board" element={<BoardPage />} />
           <Route path="talk" element={<ConversationPage />} />

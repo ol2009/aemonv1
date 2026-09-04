@@ -23,13 +23,14 @@ export function AppFrame() {
   const searchParams = new URLSearchParams(location.search)
   const isStudentLive = searchParams.get('live') === 'student' || location.pathname === '/live'
   const isStudentActivity = searchParams.get('role') === 'student'
+  const isLessonPreview = searchParams.get('preview') === '1'
   const isLessonTwoBoundaryVote = location.pathname === '/lesson/2' && searchParams.get('step') === '6'
   const isInteractiveStudentScreen =
     location.pathname === '/board' ||
     isLessonTwoBoundaryVote ||
     (location.pathname === '/lesson/5' && searchParams.get('role') === 'student')
   const isImmersive = isStudentLive
-  const showLiveShare = location.pathname.startsWith('/lesson/') && !isStudentLive && !isStudentActivity && Boolean(state.classCode)
+  const showLiveShare = location.pathname.startsWith('/lesson/') && !isLessonPreview && !isStudentLive && !isStudentActivity && Boolean(state.classCode)
   const liveUrl = absoluteUrl(`/live?code=${encodeURIComponent(state.classCode)}`)
   const liveQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=280x280&margin=12&data=${encodeURIComponent(liveUrl)}`
   const lessonNo = location.pathname.match(/^\/lesson\/(\d+)$/)?.[1] ?? ''
@@ -128,7 +129,7 @@ export function AppFrame() {
               </button>
               <p className="font-data text-xs text-[#4FE0C0]">{lessonNo ? `${lessonNo}차시 · ` : ''}선택 기능</p>
               <h2 className="font-display mt-2 text-4xl text-[#EAF2F5]">학생 화면 함께 보기</h2>
-              <p className="mt-3 leading-7 text-[#B7C7D2]">학생이 이 QR로 입장하면 교사가 넘기는 장면을 함께 보고, 게시판 장면에서는 글쓰기와 좋아요에 참여합니다.</p>
+              <p className="mt-3 leading-7 text-[#B7C7D2]">학생이 QR로 입장하면 교사가 보는 장면을 함께 볼 수 있습니다. 교사 화면만 사용해도 됩니다.</p>
               <img className="mx-auto mt-5 w-64 rounded-lg bg-white p-3" src={liveQrUrl} alt="학생 화면 연결 QR" />
               <a
                 className="mt-4 inline-block break-all font-data text-xs leading-5 text-[#8AA0B0] underline decoration-white/25 underline-offset-4 hover:text-[#4FE0C0]"
@@ -147,9 +148,8 @@ export function AppFrame() {
                   setDismissedLiveQrKeys((current) => (current.includes(liveQrVisitKey) ? current : [...current, liveQrVisitKey]))
                 }}
               >
-                이번 차시는 교사 화면만 사용
+                닫기
               </Button>
-              <p className="mt-3 text-xs font-bold leading-5 text-[#8AA0B0]">사용하지 않아도 수업은 그대로 진행됩니다. 우상단 학생 화면 QR에서 다시 열 수 있습니다.</p>
             </div>
           </div>
         ) : null}

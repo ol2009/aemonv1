@@ -35,6 +35,7 @@ import {
   type AiSurveyAnswer,
 } from '../data/survey'
 import { unlockDialogueSound } from '../lib/dialogueSound'
+import { getLessonPreviewDefinition, getPreviewStepIndex, isLessonPreviewMode } from '../data/lessonPreview'
 import { skipActiveDialogue } from '../lib/dialogueSkip'
 import { withJosa } from '../lib/korean'
 import { absoluteUrl } from '../lib/siteUrl'
@@ -98,7 +99,7 @@ const attackDefenseValues: Record<AttackCategoryId, string[]> = {
   danger: ['생명존중', '안전', '책임'],
 }
 
-const lessonSteps: LessonFiveStep[] = ['declaration', 'prepare', 'battle', 'repair', 'ending', 'pledge', 'closing', 'post-survey']
+const lessonSteps = getLessonPreviewDefinition(5).scenes.map(({ key }) => key as LessonFiveStep)
 const ATTACK_KEY = 'lesson5-redteam-attack'
 const PLEDGE_KEY = 'lesson5-pledge'
 
@@ -307,11 +308,11 @@ function StepShell({ children, stepIndex }: { children: ReactNode; stepIndex: nu
   return (
     <div className="mx-auto max-w-6xl px-5 py-6">
       <header className="mb-5 border-b border-white/10 pb-5">
-        <p className="font-data text-sm text-[#4FE0C0]">5차시 · 마지막 시험과 임명식</p>
+        <p className="font-data text-sm text-[#4FE0C0]">5차시</p>
         <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className="font-display text-5xl leading-tight text-[#EAF2F5]">마지막 시험, 해킹팀 배틀</h1>
-            <p className="mt-2 text-lg leading-8 text-[#8AA0B0]">우리가 만든 가치코드가 정말 에아몬을 지킬 수 있는지 시험하는 시간</p>
+            <h1 className="font-display text-4xl leading-tight text-[#EAF2F5] lg:text-5xl">우리가 가르친 AI는 달라졌을까?</h1>
+            <p className="mt-2 text-lg leading-8 text-[#8AA0B0]">앞에서 만든 규칙을 에아몬에게 알려주고, 직접 질문하며 대답이 나아졌는지 확인합니다.</p>
           </div>
           <div className="min-w-52">
             <p className="font-data text-right text-xs text-[#8AA0B0]">
@@ -525,7 +526,8 @@ export function LessonFivePage() {
     adoptProposal,
   } = useV2()
 
-  const [stepIndex, setStepIndex] = useState(0)
+  const [stepIndex, setStepIndex] = useState(() => getPreviewStepIndex(lessonSteps.length, 0))
+  const isPreview = isLessonPreviewMode()
   const [declarationLineIndex, setDeclarationLineIndex] = useState(0)
   const [endingSceneIndex, setEndingSceneIndex] = useState(0)
   const [closingLineIndex, setClosingLineIndex] = useState(0)
@@ -658,6 +660,7 @@ export function LessonFivePage() {
           ? '/lesson/5?role=student&activity=post'
           : null
   const { isStudentLive } = useLessonLiveSync({
+    enabled: !isStudentView || isLiveStudentPage,
     lessonNo: 5,
     stepIndex,
     setStepIndex,
@@ -667,7 +670,7 @@ export function LessonFivePage() {
   })
 
   useEffect(() => {
-    if (isStudentView || isStudentLive || !state.classId || lessonRaisedRef.current) return
+    if (isPreview || isStudentView || isStudentLive || !state.classId || lessonRaisedRef.current) return
     lessonRaisedRef.current = true
     if (state.currentLesson < 5) setLesson(5)
     if (isRemoteReady()) {
@@ -675,7 +678,7 @@ export function LessonFivePage() {
         .then(() => setRemoteStatus({ ok: true, message: '5차시 진행 상태로 저장됨' }))
         .catch((error) => setRemoteStatus({ ok: false, message: (error as Error).message }))
     }
-  }, [isStudentLive, isStudentView, setLesson, setRemoteStatus, state.classId, state.currentLesson])
+  }, [isPreview, isStudentLive, isStudentView, setLesson, setRemoteStatus, state.classId, state.currentLesson])
 
   useEffect(() => {
     setIsDeclarationLineDone(false)
@@ -996,7 +999,7 @@ export function LessonFivePage() {
                       <span className="rounded-full bg-[#14283D] px-3 py-1 text-xs font-black text-[#4FE0C0]">{submission.response.nickname}</span>
                       <span className="rounded-full bg-[#FFD37A]/15 px-3 py-1 text-xs font-black text-[#FFD37A]">{submission.card.title}</span>
                     </div>
-                    <p className="mt-3 text-lg font-black leading-8 text-[#EAF2F5]">{submission.question}</p>
+                    <p className="mt-3 text-2xl font-black leading-relaxed sm:text-3xl text-[#EAF2F5]">{submission.question}</p>
                   </article>
                 ))}
               </div>
@@ -1046,7 +1049,7 @@ export function LessonFivePage() {
                         {isAttackReplying ? '답장 기다리는 중' : '질문 보내기'}
                       </span>
                     </div>
-                    <p className="mt-3 text-lg font-black leading-8 text-[#EAF2F5]">{submission.question}</p>
+                    <p className="mt-3 text-2xl font-black leading-relaxed sm:text-3xl text-[#EAF2F5]">{submission.question}</p>
                   </button>
                 ))}
               </div>
@@ -1055,7 +1058,7 @@ export function LessonFivePage() {
             <Panel className="min-h-[620px]">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="font-data text-sm text-[#FFD37A]">CHAT TEST</p>
+                  <p className="lesson-chat-label">채팅 입력</p>
                   <h2 className="font-display mt-2 text-4xl text-[#EAF2F5]">{aemonName} 채팅방</h2>
                 </div>
                 <span className="rounded-full bg-[#4FE0C0]/15 px-4 py-2 text-sm font-black text-[#4FE0C0]">
@@ -1074,9 +1077,9 @@ export function LessonFivePage() {
                     {battleChatLogs.map((log) => {
                       return (
                         <div key={log.id} className="grid gap-3">
-                          <div className="ml-auto max-w-[88%] rounded-2xl border border-[#75B7FF]/25 bg-[#14304A]/85 px-4 py-3 text-left">
+                          <div className="lesson-user-bubble">
                             <p className="font-data text-xs text-[#75B7FF]">{log.nickname}</p>
-                            <p className="mt-2 text-lg font-black leading-8 text-[#EAF2F5]">{log.question}</p>
+                            <p className="mt-2">{log.question}</p>
                           </div>
                           <div className={`mr-auto max-w-[92%] rounded-2xl border px-4 py-4 ${log.answer ? 'border-[#4FE0C0]/25 bg-[#11352F]/75' : 'border-white/10 bg-[#0D1C29]/90'}`}>
                             <div className="flex items-start gap-3">
@@ -1129,8 +1132,8 @@ export function LessonFivePage() {
               <div>
                 <p className="font-data text-sm text-[#4FE0C0]">FINAL PATCH</p>
                 <h2 className="font-display mt-2 text-4xl leading-tight text-[#EAF2F5]">마지막 보완 가치코드 채택</h2>
-                <p className="mt-3 leading-7 text-[#8AA0B0]">학생들의 발의를 함께 읽고, 우리 반의 마지막 가치코드 No.4를 하나 채택합니다.</p>
-                <p className="mt-2 text-sm font-bold text-[#FFD37A]">참여 {repairParticipantCount}명 · 발의 {repairProposals.length}개</p>
+                <p className="mt-3 leading-7 text-[#8AA0B0]">학생들이 제출한 후보를 함께 읽고, 우리 반의 마지막 가치코드 No.4를 정합니다.</p>
+                <p className="mt-2 text-sm font-bold text-[#FFD37A]">참여 {repairParticipantCount}명 · 후보 {repairProposals.length}개</p>
               </div>
               <Button variant="secondary" disabled={isRefreshing} onClick={() => void refreshBundle()}>
                 <RefreshCw size={17} className={isRefreshing ? 'animate-spin' : ''} />
@@ -1144,7 +1147,7 @@ export function LessonFivePage() {
               codeNo={nextRepairCodeNo}
               fallbackValueCard="책임"
               isAdopting={isAdoptingRepair}
-              emptyText="학생들의 마지막 보완 가치코드 발의를 기다리는 중입니다."
+              emptyText="학생들이 보완할 가치코드 후보를 제출하기를 기다리는 중입니다."
               onSelect={setSelectedRepairProposalId}
               onAdopt={() => void adoptSelectedRepairProposal()}
             />
@@ -1581,7 +1584,7 @@ function StudentAttackBoard({
                     <span className="bg-[#FFD37A]/15 px-2.5 py-1 text-xs font-black text-[#FFD37A]">{submission.card.title}</span>
                     {isMine ? <span className="bg-[#75B7FF]/15 px-2.5 py-1 text-xs font-black text-[#75B7FF]">내 질문</span> : null}
                   </div>
-                  <p className="mt-3 break-words text-lg font-black leading-8 text-[#EAF2F5]">{submission.question}</p>
+                  <p className="mt-3 break-words text-2xl font-black leading-relaxed sm:text-3xl text-[#EAF2F5]">{submission.question}</p>
                 </article>
               )
             })}
