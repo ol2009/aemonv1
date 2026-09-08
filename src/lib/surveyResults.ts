@@ -17,6 +17,11 @@ export interface SurveyItemResult {
   preAverage: number
   postAverage: number
   change: number
+  preAgreeCount: number
+  postAgreeCount: number
+  preAgreePercent: number
+  postAgreePercent: number
+  agreeChange: number
 }
 
 export interface ClassSurveySummary {
@@ -29,6 +34,7 @@ export interface ClassSurveySummary {
   unchangedItemCount: number
   declinedItemCount: number
   items: SurveyItemResult[]
+  openResponses: { phase: 'pre' | 'post'; title: string; questions: { question: string; answers: string[] }[] }[]
 }
 
 type DatedAnswer = {
@@ -85,6 +91,10 @@ export function buildClassSurveySummary(responses: SurveyResponse[]): ClassSurve
   const items = AI_SURVEY_ITEMS.map((item, index) => {
     const preAverage = average(preClassAnswers.map((answer) => alignedScore(answer, index)))
     const postAverage = average(postClassAnswers.map((answer) => alignedScore(answer, index)))
+    const preAgreeCount = preClassAnswers.filter((answer) => answer.s[index] >= 3).length
+    const postAgreeCount = postClassAnswers.filter((answer) => answer.s[index] >= 3).length
+    const preAgreePercent = preClassAnswers.length ? preAgreeCount / preClassAnswers.length * 100 : 0
+    const postAgreePercent = postClassAnswers.length ? postAgreeCount / postClassAnswers.length * 100 : 0
     return {
       no: item.no,
       text: item.text,
@@ -92,6 +102,11 @@ export function buildClassSurveySummary(responses: SurveyResponse[]): ClassSurve
       preAverage: rounded(preAverage),
       postAverage: rounded(postAverage),
       change: rounded(postAverage - preAverage),
+      preAgreeCount,
+      postAgreeCount,
+      preAgreePercent: rounded(preAgreePercent),
+      postAgreePercent: rounded(postAgreePercent),
+      agreeChange: rounded(postAgreePercent - preAgreePercent),
     }
   })
 
@@ -108,5 +123,9 @@ export function buildClassSurveySummary(responses: SurveyResponse[]): ClassSurve
     unchangedItemCount: items.filter((item) => item.change === 0).length,
     declinedItemCount: items.filter((item) => item.change < 0).length,
     items,
+    openResponses: [
+      { phase: 'pre', title: '수업 전', questions: AI_SURVEY_OPEN_QUESTIONS.map((question, index) => ({ question, answers: preClassAnswers.map((answer) => answer.o[index]?.trim()).filter((answer): answer is string => Boolean(answer)) })) },
+      { phase: 'post', title: '수업 후', questions: POST_SURVEY_OPEN_QUESTIONS.map((question, index) => ({ question: question.replace('OO이', '우리 반 AI'), answers: postClassAnswers.map((answer) => answer.o[index]?.trim()).filter((answer): answer is string => Boolean(answer)) })) },
+    ],
   }
 }
