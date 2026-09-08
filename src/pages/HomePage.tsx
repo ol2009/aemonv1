@@ -7,6 +7,7 @@ import { TypingIndicator } from '../components/TypingIndicator'
 import { Button, Panel } from '../components/ui'
 import { buildDashboardResponseRequest, getDashboardQuestions, getDashboardStatusLines } from '../data/dashboardDialogue'
 import { pickWalkItem } from '../data/walkItems'
+import { POST_SURVEY_RECOVERY_CLASS_ID, POST_SURVEY_RECOVERY_LABEL } from '../data/postSurveyRecovery'
 import { findV2Lesson, TOTAL_V2_LESSONS, v2Lessons } from '../data/v2Lessons'
 import type { WalkItem, WalkItemType } from '../domain/types'
 import { markDashboardPrompt } from '../lib/chatLogFilters'
@@ -398,6 +399,16 @@ export function HomePage() {
         </div>
 
       </Panel>
+
+      {state.classId === POST_SURVEY_RECOVERY_CLASS_ID ? (
+        <Panel className="mt-6">
+          <Button onClick={() => navigate('/post-survey')}>
+            <RotateCcw size={18} />
+            {POST_SURVEY_RECOVERY_LABEL}
+          </Button>
+          <p className="mt-3 text-sm text-[var(--ink-mute)]">5차시를 마친 뒤에도 QR로 사후 설문에 참여하고 저장된 응답을 확인할 수 있습니다.</p>
+        </Panel>
+      ) : null}
 
       <section className="mt-8">
         <div className="flex flex-wrap items-center justify-between gap-3">

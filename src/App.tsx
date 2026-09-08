@@ -22,6 +22,7 @@ import { SurveyResultsPage } from './pages/SurveyResultsPage'
 import { TrainingPage } from './pages/TrainingPage'
 import { LessonTestPage } from './pages/LessonTestPage'
 import { ValueCodePage } from './pages/ValueCodePage'
+import { PostSurveyRecoveryPage } from './pages/PostSurveyRecoveryPage'
 
 function LessonRouteGuard({ lessonNo, children }: { lessonNo: number; children: ReactNode }) {
   const { state } = useV2()
@@ -56,6 +57,7 @@ export default function App() {
           <Route path="talk" element={<RequireTeacherLogin><ConversationPage /></RequireTeacherLogin>} />
           <Route path="graduation" element={<RequireTeacherLogin><GraduationPage /></RequireTeacherLogin>} />
           <Route path="survey-results" element={<RequireTeacherLogin><SurveyResultsPage /></RequireTeacherLogin>} />
+          <Route path="post-survey" element={<RequireTeacherLogin><PostSurveyRecoveryPage /></RequireTeacherLogin>} />
           <Route path="dex" element={<RequireTeacherLogin><DexPage /></RequireTeacherLogin>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

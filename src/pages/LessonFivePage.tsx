@@ -1246,7 +1246,7 @@ export function LessonFivePage() {
   )
 }
 
-function TeacherPostSurveyResults({
+export function TeacherPostSurveyResults({
   answers,
   questions,
   isRefreshing,
