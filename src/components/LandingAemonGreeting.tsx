@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { Pause, Play } from 'lucide-react'
 
 const greetings = [
   ['안녕! 너넨 누구야?', '나는 에아몬! 만나서 반가워.'],
@@ -16,31 +15,22 @@ const greetings = [
   ['똑똑하면 다 맞힐 수 있냐고?', '앗, 나도 틀릴 수 있어! 같이 확인해 줘.'],
   ['우리 반 약속, 이걸로 끝?', '빠진 게 없는지 한 번 더 살펴보자!'],
   ['나를 너희 반에 데려가 줘!', '우리, 오늘부터 함께 자라자!'],
-]
+].flat()
 
 export function LandingAemonGreeting() {
   const [index, setIndex] = useState(0)
-  const [paused, setPaused] = useState(false)
 
   useEffect(() => {
-    if (paused) return
     const timer = window.setInterval(() => setIndex((value) => (value + 1) % greetings.length), 4500)
     return () => window.clearInterval(timer)
-  }, [paused])
+  }, [])
 
   return (
     <div className="absolute inset-x-4 top-5 z-20 sm:inset-x-6 sm:top-7">
-      <div className="relative rounded-[1.5rem] border-2 border-[#B9E8D9] bg-[#F5FFF9] px-3 pb-5 pt-4 text-center shadow-[0_8px_30px_rgba(0,0,0,.16)]">
-        <p className="text-xs font-bold tracking-widest text-[#32856F]">꼬물이 에아몬</p>
-        <div className="mt-2 flex min-h-[64px] flex-col justify-center" aria-live="off">
-          <p className="break-keep text-xl font-black leading-tight text-[#153E34] sm:text-2xl">{greetings[index][0]}</p>
-          <p className="mt-2 break-keep text-sm font-semibold text-[#467062] sm:text-base">{greetings[index][1]}</p>
-        </div>
-        <span aria-hidden="true" className="absolute -bottom-[10px] left-1/2 h-[18px] w-[18px] -translate-x-1/2 rotate-45 border-b-2 border-r-2 border-[#B9E8D9] bg-[#F5FFF9]" />
+      <div className="relative mx-auto flex min-h-20 max-w-sm items-center justify-center rounded-2xl bg-[#F5FFF9] px-5 py-5 text-center shadow-sm" aria-live="off">
+        <p className="break-keep text-lg font-bold leading-snug text-[#153E34] sm:text-xl">{greetings[index]}</p>
+        <span aria-hidden="true" className="absolute -bottom-2 left-1/2 h-4 w-4 -translate-x-1/2 rotate-45 bg-[#F5FFF9]" />
       </div>
-      <button type="button" onClick={() => setPaused((value) => !value)} aria-label={paused ? '말풍선 이어 보기' : '말풍선 멈추기'} title={paused ? '말풍선 이어 보기' : '말풍선 멈추기'} className="absolute -right-1 -top-2 flex h-9 w-9 items-center justify-center rounded-full border border-[#B9E8D9] bg-white text-[#32856F] shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4FD7BD]">
-        {paused ? <Play size={14} /> : <Pause size={14} />}
-      </button>
     </div>
   )
 }
