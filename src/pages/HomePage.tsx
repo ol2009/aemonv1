@@ -1,7 +1,6 @@
-import { TeacherGuide } from '../components/TeacherGuide'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AlertTriangle, BarChart3, BookOpen, CheckCircle2, KeyRound, LockKeyhole, Play, RefreshCw, RotateCcw, Send, MessageSquare, Waves, X } from 'lucide-react'
+import { AlertTriangle, BarChart3, BookOpen, CheckCircle2, LockKeyhole, Play, RefreshCw, RotateCcw, Send, MessageSquare, Waves, X } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
 import { ApiConnectionModal } from '../components/ApiConnectionModal'
 import { TypingIndicator } from '../components/TypingIndicator'
@@ -387,9 +386,9 @@ export function HomePage() {
                 <Waves size={18} />
                 데이터바다 산책
               </Button>
-              <Button variant="secondary" onClick={openApiModal}>
-                <KeyRound size={18} />
-                API 연결
+              <Button variant="secondary" onClick={() => navigate('/training')}>
+                <BookOpen size={18} />
+                사전연수
               </Button>
             </div>
           </div>
@@ -400,16 +399,6 @@ export function HomePage() {
         </div>
 
       </Panel>
-
-      <div className="mt-6 flex flex-wrap items-center gap-3">
-        <Button variant="secondary" onClick={() => navigate('/training')}>
-          <BookOpen size={18} />
-          교사용 사전연수
-        </Button>
-        <p className="text-sm text-[#8AA0B0]">5차시 수업 소개와 수업지도안을 확인하세요.</p>
-      </div>
-
-      <TeacherGuide />
 
       {state.classId === POST_SURVEY_RECOVERY_CLASS_ID ? (
         <Panel className="mt-6">

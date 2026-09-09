@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { AlertTriangle, CheckCircle2, PlugZap, Send } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, KeyRound, PlugZap, Send } from 'lucide-react'
+import { ApiConnectionModal } from '../components/ApiConnectionModal'
 import { AemonAvatar } from '../components/AemonAvatar'
 import { TypingIndicator } from '../components/TypingIndicator'
 import { Button, Panel } from '../components/ui'
@@ -42,7 +43,8 @@ function stageLabel(stage: number) {
 }
 
 export function ConversationPage() {
-  const { state, addChatLog, evolutionStage, adoptedCodeCount } = useV2()
+  const { state, addChatLog, evolutionStage, adoptedCodeCount, updateAiSettings } = useV2()
+  const [isApiOpen, setIsApiOpen] = useState(false)
   const [question, setQuestion] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
@@ -110,9 +112,14 @@ export function ConversationPage() {
           <div>
             <p className="font-data text-sm text-[#4FE0C0]">API STATUS</p>
             <p className="mt-1 text-sm leading-6 text-[#8AA0B0]">
-              {isApiActive ? `${providerLabel[state.aiProvider]}로 응답합니다.` : '대시보드에서 API를 연결하면 실제 모델 응답을 받을 수 있습니다.'}
+              {isApiActive ? `${providerLabel[state.aiProvider]}로 응답합니다.` : 'API를 연결하면 실제 모델 응답을 받을 수 있습니다.'}
             </p>
           </div>
+          <div className="flex flex-wrap items-center gap-3">
+          <Button variant="secondary" onClick={() => setIsApiOpen(true)}>
+            <KeyRound size={18} />
+            API 연결
+          </Button>
           <span
             className={`inline-flex items-center gap-2 rounded-2xl border px-4 py-3 text-sm font-black ${
               isApiActive ? 'border-[#4FE0C0]/30 bg-[#4FE0C0]/10 text-[#4FE0C0]' : 'border-[#FFD37A]/30 bg-[#FFD37A]/10 text-[#FFD37A]'
@@ -121,6 +128,7 @@ export function ConversationPage() {
             {isApiActive ? <CheckCircle2 size={18} /> : <PlugZap size={18} />}
             {isApiActive ? 'API 활성' : 'API 연결 필요'}
           </span>
+          </div>
         </div>
       </Panel>
 
@@ -213,7 +221,14 @@ export function ConversationPage() {
       </Panel>
       </div>
 
-
+      {isApiOpen ? (
+        <ApiConnectionModal
+          apiKey={state.apiKey}
+          provider={state.aiProvider}
+          onClose={() => setIsApiOpen(false)}
+          onSave={(provider, apiKey) => updateAiSettings({ provider, apiKey })}
+        />
+      ) : null}
     </div>
   )
 }
