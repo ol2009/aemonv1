@@ -1,3 +1,4 @@
+import { TeacherGuide } from '../components/TeacherGuide'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AlertTriangle, BarChart3, CheckCircle2, KeyRound, LockKeyhole, Play, RefreshCw, RotateCcw, Send, MessageSquare, Waves, X } from 'lucide-react'
@@ -399,6 +400,8 @@ export function HomePage() {
         </div>
 
       </Panel>
+
+      <TeacherGuide />
 
       {state.classId === POST_SURVEY_RECOVERY_CLASS_ID ? (
         <Panel className="mt-6">
