@@ -51,7 +51,7 @@ export function LandingPage() {
               <div className="absolute h-[70%] w-[70%] rounded-full bg-[#4FD7BD]/15 blur-3xl" />
               <img className="relative z-10 w-[min(72vw,430px)] object-contain drop-shadow-[0_35px_55px_rgba(0,0,0,.35)]" src="/aemon/v3/stage-1-kkomul.gif?hero=20260909" alt="데이터의 바다에서 자라는 1단계 꼬물이 에아몬" style={{ imageRendering: 'pixelated' }} />
               <div className="absolute bottom-5 z-20 rounded-2xl border border-white/15 bg-[#102738]/90 px-5 py-3 text-center shadow-xl backdrop-blur-md sm:bottom-8">
-                <p className="font-bold text-[#F2F6F7]">0단계 에아몬</p>
+                <p className="font-bold text-[#F2F6F7]">1단계 에아몬</p>
               </div>
             </div>
           </div>
