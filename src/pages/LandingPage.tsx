@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight, Check, UsersRound } from 'lucide-react'
 import { Button } from '../components/ui'
+import { LandingAemonGreeting } from '../components/LandingAemonGreeting'
 
 const lessons = [
   { no: '01', title: 'AI는 시킨 대로 했는데 왜 문제가 생길까?', copy: 'AI는 명령을 그대로 따르고도 사람이 바라지 않은 결과를 만들 수 있습니다.' },
@@ -22,6 +23,11 @@ export function LandingPage() {
             <div className="max-w-2xl">
               <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-[#25A98D]/25 bg-[#25A98D]/10 px-4 py-2 text-sm font-bold text-[#187B68]">
                 AI에게 가치를 가르치는 아이들 / 초등 4–6학년 · 5차시 프로젝트 수업
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <span className="rounded-full border border-[#B7D6F5] bg-[#EAF4FF] px-3 py-1.5 text-sm font-bold text-[#245D92]">AI 리터러시 교육</span>
+                <span className="rounded-full border border-[#E5CCF5] bg-[#F6ECFC] px-3 py-1.5 text-sm font-bold text-[#80449B]">AI 윤리 교육</span>
+                <span className="rounded-full border border-[#EBD396] bg-[#FFF5D9] px-3 py-1.5 text-sm font-bold text-[#876018]">AI 민주성 교육</span>
               </div>
               <h1 className="mt-5 break-keep text-[clamp(3.2rem,7vw,6.5rem)] font-black leading-[.96] tracking-[-.065em] text-[#172530]">
                 아이들이 AI를 이해하고,<br /><span className="text-[#168D75]">더 나은 AI를 만듭니다</span>
@@ -45,11 +51,12 @@ export function LandingPage() {
                 ))}
               </div>
             </div>
-            <div className="relative mx-auto flex min-h-[340px] w-full max-w-lg items-center justify-center overflow-hidden rounded-[1.75rem] border border-[#315364] bg-[#163344] lg:min-h-[520px]">
+            <div className="relative mx-auto flex min-h-[470px] w-full max-w-lg items-center justify-center overflow-hidden rounded-[1.75rem] border border-[#315364] bg-[#163344] lg:min-h-[560px]">
               <div className="pointer-events-none absolute h-[88%] w-[88%] rounded-full border border-[#4FD7BD]/15" />
               <div className="pointer-events-none absolute h-[68%] w-[68%] rounded-full border border-[#4FD7BD]/15" />
               <div className="absolute h-[70%] w-[70%] rounded-full bg-[#4FD7BD]/15 blur-3xl" />
-              <img className="relative z-10 w-[min(72vw,430px)] object-contain drop-shadow-[0_35px_55px_rgba(0,0,0,.35)]" src="/aemon/v3/stage-1-kkomul.gif?hero=20260909" alt="데이터의 바다에서 자라는 1단계 꼬물이 에아몬" style={{ imageRendering: 'pixelated' }} />
+              <LandingAemonGreeting />
+              <img className="relative z-10 mt-24 w-[min(72vw,430px)] object-contain drop-shadow-[0_35px_55px_rgba(0,0,0,.35)]" src="/aemon/v3/stage-1-kkomul.gif?hero=20260909" alt="데이터의 바다에서 자라는 1단계 꼬물이 에아몬" style={{ imageRendering: 'pixelated' }} />
               <div className="absolute bottom-5 z-20 rounded-2xl border border-white/15 bg-[#102738]/90 px-5 py-3 text-center shadow-xl backdrop-blur-md sm:bottom-8">
                 <p className="font-bold text-[#F2F6F7]">1단계 에아몬</p>
               </div>
