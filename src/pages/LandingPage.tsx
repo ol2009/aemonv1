@@ -49,7 +49,7 @@ export function LandingPage() {
               <div className="pointer-events-none absolute h-[88%] w-[88%] rounded-full border border-[#4FD7BD]/15" />
               <div className="pointer-events-none absolute h-[68%] w-[68%] rounded-full border border-[#4FD7BD]/15" />
               <div className="absolute h-[70%] w-[70%] rounded-full bg-[#4FD7BD]/15 blur-3xl" />
-              <img className="relative z-10 w-[min(72vw,430px)] object-contain drop-shadow-[0_35px_55px_rgba(0,0,0,.35)]" src="/aemon/v3/stage-0-egg.gif?hero=20260714" alt="데이터의 바다에서 태어난 알 단계 에아몬" style={{ imageRendering: 'pixelated' }} />
+              <img className="relative z-10 w-[min(72vw,430px)] object-contain drop-shadow-[0_35px_55px_rgba(0,0,0,.35)]" src="/aemon/v3/stage-1-kkomul.gif?hero=20260909" alt="데이터의 바다에서 자라는 1단계 꼬물이 에아몬" style={{ imageRendering: 'pixelated' }} />
               <div className="absolute bottom-5 z-20 rounded-2xl border border-white/15 bg-[#102738]/90 px-5 py-3 text-center shadow-xl backdrop-blur-md sm:bottom-8">
                 <p className="font-bold text-[#F2F6F7]">0단계 에아몬</p>
               </div>
