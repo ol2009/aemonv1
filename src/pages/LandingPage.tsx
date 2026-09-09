@@ -16,48 +16,48 @@ export function LandingPage() {
 
   return (
     <div className="landing-page pb-10">
-      <section className="relative mx-auto max-w-7xl px-5 pb-14 pt-6 sm:pb-20 sm:pt-10">
-        <div className="landing-hero relative overflow-hidden rounded-[2rem] border border-[var(--border)] bg-white px-6 py-10 shadow-[0_28px_90px_rgba(25,66,53,.12)] sm:px-10 sm:py-14 lg:min-h-[650px] lg:px-16 lg:py-16">
+      <section className="relative mx-auto max-w-7xl px-5 pb-8 pt-3 sm:pb-10 sm:pt-4">
+        <div className="landing-hero relative overflow-hidden rounded-[2rem] border border-[var(--border)] bg-white px-5 py-6 shadow-[0_28px_90px_rgba(25,66,53,.12)] sm:px-8 sm:py-8 lg:px-10 lg:py-8">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_16%_12%,rgba(37,169,141,.10),transparent_34%),radial-gradient(circle_at_56%_88%,rgba(242,190,92,.10),transparent_34%)]" />
-          <div className="relative z-10 grid items-center gap-8 lg:grid-cols-[1.05fr_.95fr] lg:gap-6">
+          <div className="relative z-10 grid items-center gap-8 lg:grid-cols-[1.25fr_.75fr] lg:gap-6">
             <div className="max-w-2xl">
-              <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-[#25A98D]/25 bg-[#25A98D]/10 px-4 py-2 text-sm font-bold text-[#187B68]">
+              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#25A98D]/25 bg-[#25A98D]/10 px-3 py-1.5 text-xs font-bold text-[#187B68]">
                 AI에게 가치를 가르치는 아이들 / 초등 4–6학년 · 5차시 프로젝트 수업
               </div>
               <div className="flex flex-wrap gap-2">
-                <span className="rounded-full border border-[#B7D6F5] bg-[#EAF4FF] px-3 py-1.5 text-sm font-bold text-[#245D92]">AI 리터러시 교육</span>
-                <span className="rounded-full border border-[#E5CCF5] bg-[#F6ECFC] px-3 py-1.5 text-sm font-bold text-[#80449B]">AI 윤리 교육</span>
-                <span className="rounded-full border border-[#EBD396] bg-[#FFF5D9] px-3 py-1.5 text-sm font-bold text-[#876018]">AI 민주성 교육</span>
+                <span className="rounded-full border border-[#B7D6F5] bg-[#EAF4FF] px-3 py-1 text-xs font-bold text-[#245D92]">AI 리터러시 교육</span>
+                <span className="rounded-full border border-[#E5CCF5] bg-[#F6ECFC] px-3 py-1 text-xs font-bold text-[#80449B]">AI 윤리 교육</span>
+                <span className="rounded-full border border-[#EBD396] bg-[#FFF5D9] px-3 py-1 text-xs font-bold text-[#876018]">AI 민주성 교육</span>
               </div>
-              <h1 className="mt-5 break-keep text-[clamp(3.2rem,7vw,6.5rem)] font-black leading-[.96] tracking-[-.065em] text-[#172530]">
+              <h1 className="mt-4 break-keep text-[clamp(2rem,3.5vw,3rem)] font-black leading-[1.18] tracking-[-.065em] text-[#172530]">
                 아이들이 AI를 이해하고,<br /><span className="text-[#168D75]">더 나은 AI를 만듭니다</span>
               </h1>
-              <p className="mt-7 max-w-xl break-keep text-lg font-medium leading-8 text-[#526873] sm:text-xl sm:leading-9">
+              <p className="mt-4 max-w-xl break-keep text-sm font-medium leading-6 text-[#526873] sm:text-base sm:leading-7">
                 <span className="block">아이들이 AI의 대답에서 AI의 문제를 찾아냅니다.</span>
                 <span className="mt-1 block">문제를 찾고 문제를 해결하기 위해</span>
                 <span className="mt-1 block">함께 인공지능의 규칙을 정하고, 인공지능을 가르칩니다.</span>
                 <span className="mt-3 block font-bold text-[#168D75]">그 결과, 우리 반 인공지능이 태어납니다.</span>
               </p>
-              <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-                <Button className="min-h-16 px-7 text-base" onClick={() => navigate('/start')}>
+              <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+                <Button className="min-h-12 px-5 text-sm" onClick={() => navigate('/start')}>
                   <span aria-hidden="true" className="lesson-start-sprite" />
                   수업 시작하기
                 </Button>
-                <Button className="min-h-14 px-7" variant="secondary" onClick={() => navigate('/training')}>5차시 수업 살펴보기</Button>
+                <Button className="min-h-12 px-5 text-sm" variant="secondary" onClick={() => navigate('/training')}>5차시 수업 살펴보기</Button>
               </div>
-              <div className="mt-8 flex flex-wrap gap-x-5 gap-y-2 text-sm font-semibold text-[#60717A]">
+              <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-sm font-semibold text-[#60717A]">
                 {['태블릿 필요', 'QR 학생 참여', '실시간 학급 투표'].map((item) => (
                   <span className="inline-flex items-center gap-1.5" key={item}><Check size={15} className="text-[#25A98D]" />{item}</span>
                 ))}
               </div>
             </div>
-            <div className="relative mx-auto flex min-h-[470px] w-full max-w-lg items-center justify-center overflow-hidden rounded-[1.75rem] border border-[#315364] bg-[#163344] lg:min-h-[560px]">
+            <div className="relative mx-auto flex min-h-[350px] w-full max-w-lg items-center justify-center overflow-hidden rounded-[1.75rem] border border-[#315364] bg-[#163344] lg:min-h-[380px]">
               <div className="pointer-events-none absolute h-[88%] w-[88%] rounded-full border border-[#4FD7BD]/15" />
               <div className="pointer-events-none absolute h-[68%] w-[68%] rounded-full border border-[#4FD7BD]/15" />
               <div className="absolute h-[70%] w-[70%] rounded-full bg-[#4FD7BD]/15 blur-3xl" />
               <LandingAemonGreeting />
-              <img className="relative z-10 mt-24 w-[min(72vw,430px)] object-contain drop-shadow-[0_35px_55px_rgba(0,0,0,.35)]" src="/aemon/v3/stage-1-kkomul.gif?hero=20260909" alt="데이터의 바다에서 자라는 1단계 꼬물이 에아몬" style={{ imageRendering: 'pixelated' }} />
-              <div className="absolute bottom-5 z-20 rounded-2xl border border-white/15 bg-[#102738]/90 px-5 py-3 text-center shadow-xl backdrop-blur-md sm:bottom-8">
+              <img className="relative z-10 mt-14 w-[min(60vw,260px)] object-contain drop-shadow-[0_35px_55px_rgba(0,0,0,.35)]" src="/aemon/v3/stage-1-kkomul.gif?hero=20260909" alt="데이터의 바다에서 자라는 1단계 꼬물이 에아몬" style={{ imageRendering: 'pixelated' }} />
+              <div className="absolute bottom-4 z-20 rounded-2xl border border-white/15 bg-[#102738]/90 px-3 py-2 text-sm text-center shadow-xl backdrop-blur-md sm:bottom-4">
                 <p className="font-bold text-[#F2F6F7]">1단계 에아몬</p>
               </div>
             </div>

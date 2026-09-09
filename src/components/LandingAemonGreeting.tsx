@@ -26,9 +26,9 @@ export function LandingAemonGreeting() {
   }, [])
 
   return (
-    <div className="absolute inset-x-4 top-5 z-20 sm:inset-x-6 sm:top-7">
-      <div className="relative mx-auto flex min-h-20 max-w-sm items-center justify-center rounded-2xl bg-[#F5FFF9] px-5 py-5 text-center shadow-sm" aria-live="off">
-        <p className="break-keep text-lg font-bold leading-snug text-[#153E34] sm:text-xl">{greetings[index]}</p>
+    <div className="absolute inset-x-4 top-5 z-20 sm:inset-x-6 sm:top-5">
+      <div className="relative mx-auto flex min-h-16 max-w-sm items-center justify-center rounded-2xl bg-[#F5FFF9] px-4 py-3 text-center shadow-sm" aria-live="off">
+        <p className="break-keep text-base font-bold leading-snug text-[#153E34] sm:text-lg">{greetings[index]}</p>
         <span aria-hidden="true" className="absolute -bottom-2 left-1/2 h-4 w-4 -translate-x-1/2 rotate-45 bg-[#F5FFF9]" />
       </div>
     </div>
