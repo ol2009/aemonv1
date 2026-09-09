@@ -1,7 +1,7 @@
 import { TeacherGuide } from '../components/TeacherGuide'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AlertTriangle, BarChart3, CheckCircle2, KeyRound, LockKeyhole, Play, RefreshCw, RotateCcw, Send, MessageSquare, Waves, X } from 'lucide-react'
+import { AlertTriangle, BarChart3, BookOpen, CheckCircle2, KeyRound, LockKeyhole, Play, RefreshCw, RotateCcw, Send, MessageSquare, Waves, X } from 'lucide-react'
 import { AemonAvatar } from '../components/AemonAvatar'
 import { ApiConnectionModal } from '../components/ApiConnectionModal'
 import { TypingIndicator } from '../components/TypingIndicator'
@@ -400,6 +400,14 @@ export function HomePage() {
         </div>
 
       </Panel>
+
+      <div className="mt-6 flex flex-wrap items-center gap-3">
+        <Button variant="secondary" onClick={() => navigate('/training')}>
+          <BookOpen size={18} />
+          교사용 사전연수
+        </Button>
+        <p className="text-sm text-[#8AA0B0]">5차시 수업 소개와 수업지도안을 확인하세요.</p>
+      </div>
 
       <TeacherGuide />
 
