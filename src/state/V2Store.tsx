@@ -1,3 +1,4 @@
+import { clearLessonProgress } from '../lib/lessonProgress'
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useEffect, useMemo, useReducer, type ReactNode } from 'react'
 import { createUuid } from '../lib/id'
@@ -506,7 +507,7 @@ export function V2Provider({ children }: { children: ReactNode }) {
       currentReaction,
       createClass: (className, teacherEmail) => dispatch({ type: 'class/create', className, teacherEmail }),
       mergeClass: (payload) => dispatch({ type: 'class/merge', payload }),
-      resetClassContent: () => dispatch({ type: 'class/resetContent' }),
+      resetClassContent: () => { clearLessonProgress(state.classCode); dispatch({ type: 'class/resetContent' }) },
       setRemoteStatus: (status) => dispatch({ type: 'remote/status', ...status }),
       joinStudent: (classCode, nickname) => dispatch({ type: 'class/joinStudent', classCode, nickname }),
       leaveStudent: () => dispatch({ type: 'class/leaveStudent' }),
@@ -528,7 +529,7 @@ export function V2Provider({ children }: { children: ReactNode }) {
       updateCode: (code) => dispatch({ type: 'code/update', ...code }),
       deleteCode: (codeId) => dispatch({ type: 'code/delete', codeId }),
       addChatLog: (log) => dispatch({ type: 'chat/add', ...log }),
-      resetDemo: () => dispatch({ type: 'dev/reset' }),
+      resetDemo: () => { clearLessonProgress(state.classCode); dispatch({ type: 'dev/reset' }) },
     }
   }, [state])
 

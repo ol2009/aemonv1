@@ -1,3 +1,4 @@
+import { useLessonProgress } from '../lib/useLessonProgress'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
@@ -526,7 +527,7 @@ export function LessonFivePage() {
     adoptProposal,
   } = useV2()
 
-  const [stepIndex, setStepIndex] = useState(() => getPreviewStepIndex(lessonSteps.length, 0))
+  const [stepIndex, setStepIndex] = useLessonProgress(state.classCode, 5, lessonSteps.length, getPreviewStepIndex(lessonSteps.length, 0))
   const isPreview = isLessonPreviewMode()
   const [declarationLineIndex, setDeclarationLineIndex] = useState(0)
   const [endingSceneIndex, setEndingSceneIndex] = useState(0)

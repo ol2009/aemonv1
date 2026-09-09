@@ -1,3 +1,4 @@
+import { useLessonProgress } from '../lib/useLessonProgress'
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -428,7 +429,7 @@ export function LessonOnePage() {
     setLesson,
     setRemoteStatus,
   } = useV2()
-  const [stepIndex, setStepIndex] = useState(() => getPreviewStepIndex(steps.length, state.classCode ? steps.indexOf('director-1') : steps.indexOf('class-profile')))
+  const [stepIndex, setStepIndex] = useLessonProgress(state.classCode, 1, steps.length, getPreviewStepIndex(steps.length, state.classCode ? steps.indexOf('director-1') : steps.indexOf('class-profile')))
   const [classGrade, setClassGrade] = useState('4학년')
   const [classLabel, setClassLabel] = useState(state.className.replace(/^[1-6]학년\s*/, ''))
   const [classSaveMessage, setClassSaveMessage] = useState('')

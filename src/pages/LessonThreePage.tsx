@@ -1,3 +1,4 @@
+import { useLessonProgress } from '../lib/useLessonProgress'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -326,7 +327,7 @@ export function LessonThreePage() {
   useLessonImagePreload(3)
   const navigate = useNavigate()
   const { state, setLesson, setRemoteStatus, mergeClass, adoptProposal, addChatLog, evolutionStage } = useV2()
-  const [stepIndex, setStepIndex] = useState(() => getPreviewStepIndex(steps.length, 0))
+  const [stepIndex, setStepIndex] = useLessonProgress(state.classCode, 3, steps.length, getPreviewStepIndex(steps.length, 0))
   const [dialogueLineIndex, setDialogueLineIndex] = useState(0)
   const [beforeLogs, setBeforeLogs] = useState<TestLog[]>([])
   const [isBeforeReplying, setIsBeforeReplying] = useState(false)
