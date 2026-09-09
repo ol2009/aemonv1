@@ -533,7 +533,6 @@ function BoundaryActivityScene({
             <section className="min-h-[190px] rounded-[18px] border border-[#4FE0C0]/30 bg-[#4FE0C0]/8 p-5">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 text-[#A9F8E7]">
-                  <Circle size={32} strokeWidth={3} />
                   <span className="font-display text-3xl">O</span>
                 </div>
                 <strong className="font-display text-5xl text-[#EAF2F5]">{oResponses.length}</strong>
@@ -545,7 +544,6 @@ function BoundaryActivityScene({
             <section className="min-h-[190px] rounded-[18px] border border-[#EF6381]/30 bg-[#EF6381]/8 p-5">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 text-[#FFC0CE]">
-                  <XIcon size={32} strokeWidth={3} />
                   <span className="font-display text-3xl">X</span>
                 </div>
                 <strong className="font-display text-5xl text-[#EAF2F5]">{xResponses.length}</strong>
