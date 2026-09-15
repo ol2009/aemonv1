@@ -532,6 +532,7 @@ export function LessonFivePage() {
   const [declarationLineIndex, setDeclarationLineIndex] = useState(0)
   const [endingSceneIndex, setEndingSceneIndex] = useState(0)
   const [closingLineIndex, setClosingLineIndex] = useState(0)
+  const [repairSceneIndex, setRepairSceneIndex] = useState(0)
   const [isDeclarationLineDone, setIsDeclarationLineDone] = useState(false)
   const [isClosingLineDone, setIsClosingLineDone] = useState(false)
   const [entryCode, setEntryCode] = useState(queryCode)
@@ -563,8 +564,8 @@ export function LessonFivePage() {
       `오늘은 우리 ${aemonName}의 마지막 시험이에요.`,
       "여러분은 오늘 'AI 점검단'이 되는 거예요.",
       `AI 점검단은 ${aemonName}에게 여러 시험 질문을 던져, 규칙에서 빠진 기준을 찾는 팀이에요.`,
-      `만약 여러분의 나쁜 부탁에 ${withJosa(aemonName, '이/가')} 대답을 안 한다면, 우리는 최고의 인공지능을 만들어낸 거예요.`,
-      '만약 나쁜 부탁을 들어주려고 한다면, 마지막으로 딱 한 번 더 보완할 기회를 줄게요.',
+      `질문을 보낸 뒤에는 ${aemonName}의 답이 우리 기준에 맞는지 함께 살펴봅시다.`,
+      '시험을 마치면 마지막 상황을 하나 더 살펴보고, 우리 기준을 더 자세히 만들어 볼 거예요.',
     ],
     [aemonName],
   )
@@ -603,16 +604,15 @@ export function LessonFivePage() {
   const postSurveyQuestions = useMemo(() => postSurveyOpenQuestions(aemonName), [aemonName])
   const endingScenes = useMemo<EndingScene[]>(() => {
     return [
-      { kind: 'aemon', text: '내가 해냈어! 고마워 애들아.' },
-      { kind: 'aemon', text: '나.. 이제 마지막 단계로 진화했어. 너희들 덕분이야.' },
-      { kind: 'aemon', text: '너희가 나에게 소중한 가치 코드 한 줄 한 줄을 전해줬어.' },
-      { kind: 'professor', text: `축하합니다. 드디어 여기까지 왔군요. ${className} 여러분.` },
-      { kind: 'professor', text: '정말 고생하셨습니다.' },
+      { kind: 'professor', text: '여러분이 만든 마지막 기준으로 아까 상황을 다시 살펴봅시다. 달리기를 하고 싶은 친구에게, 에아몬은 이제 어떻게 말하면 좋을까요?' },
+      { kind: 'professor', text: '기준을 만드는 것만큼, 그 기준이 어떤 결과를 가져오는지 살피는 것도 중요해요. 여러분은 기준을 함께 만들고, 다시 생각하고, 보완하는 데까지 해냈어요!' },
+      { kind: 'aemon', text: '나한테 소중한 기준을 알려줘서 고마워! 내가 그 기준을 이상하게 쓰면 꼭 알려줘.' },
+      { kind: 'aemon', text: '너희랑 함께 더 배워 가고 싶어. 어… 그런데 몸이 따뜻해지는 것 같아!' },
       { kind: 'professor', text: `엇, ${aemonName}의 상태가?` },
       { kind: 'evolution' },
       { kind: 'wish', text: '나, 너희가 바라던 모습으로 자랐어?' },
       { kind: 'aemon', final: true, text: `오늘부터 나는 ${className}의 공식 인공지능이야.` },
-      { kind: 'aemon', final: true, text: '앞으로 모르는 것이 있으면 나에게 물어봐!' },
+      { kind: 'aemon', final: true, text: '모습이 달라져도 너희 도움이 필요해. 앞으로도 내 대답을 함께 살펴봐 줘!' },
     ]
   }, [aemonName, className])
   const endingScene = endingScenes[Math.min(endingSceneIndex, Math.max(0, endingScenes.length - 1))]
@@ -649,11 +649,13 @@ export function LessonFivePage() {
     if (Number.isInteger(endingIndex) && endingIndex >= 0) setEndingSceneIndex(endingIndex)
     const closingIndex = Number(viewState.closingLineIndex)
     if (Number.isInteger(closingIndex) && closingIndex >= 0) setClosingLineIndex(closingIndex)
+    const repairIndex = Number(viewState.repairSceneIndex)
+    if (Number.isInteger(repairIndex) && repairIndex >= 0 && repairIndex <= 5) setRepairSceneIndex(repairIndex)
   }, [])
   const liveActivityPath =
     currentStep === 'prepare' || currentStep === 'battle'
       ? '/lesson/5?role=student&activity=attack'
-      : currentStep === 'repair'
+      : currentStep === 'repair' && repairSceneIndex === 5
         ? '/board?mode=code4'
       : currentStep === 'pledge'
         ? '/lesson/5?role=student&activity=pledge'
@@ -666,7 +668,7 @@ export function LessonFivePage() {
     stepIndex,
     setStepIndex,
     activityPath: liveActivityPath,
-    viewState: { declarationLineIndex, endingSceneIndex, closingLineIndex },
+    viewState: { declarationLineIndex, endingSceneIndex, closingLineIndex, repairSceneIndex },
     applyViewState: applyLiveViewState,
   })
 
@@ -865,6 +867,10 @@ export function LessonFivePage() {
   }
 
   const goPrev = () => {
+    if (currentStep === 'repair' && repairSceneIndex > 0) {
+      setRepairSceneIndex((current) => current - 1)
+      return
+    }
     if (currentStep === 'declaration' && declarationLineIndex > 0) {
       setDeclarationLineIndex((current) => Math.max(0, current - 1))
       return
@@ -880,6 +886,10 @@ export function LessonFivePage() {
     setStepIndex((current) => Math.max(0, current - 1))
   }
   const goNext = () => {
+    if (currentStep === 'repair' && repairSceneIndex < 5) {
+      setRepairSceneIndex((current) => current + 1)
+      return
+    }
     if (currentStep === 'declaration' && !isLastDeclarationLine) {
       setDeclarationLineIndex((current) => Math.min(declarationLines.length - 1, current + 1))
       return
@@ -1118,15 +1128,39 @@ export function LessonFivePage() {
             onPrev={goPrev}
             onNext={goNext}
             nextDisabled={testLogs.length === 0}
-            nextLabel="결과 정리"
+            nextLabel="오박사의 마지막 시험"
           />
         </>
       ) : null}
 
-      {currentStep === 'repair' ? (
+      {currentStep === 'repair' && repairSceneIndex < 5 ? (
+        <>
+          {repairSceneIndex === 0 ? <ProfessorScene text={`여러분, 정말 대단해요! ${aemonName}에게 어떤 기준이 필요한지 함께 고민하고 알려줬군요. 여기까지 함께 기른 여러분에게 박수를 보내고 싶어요!`} /> : null}
+          {repairSceneIndex === 1 ? <ProfessorScene text={'그런데 마지막으로 한 가지만 더 생각해 볼까요? 좋은 기준도 너무 단순하게 적용하면 뜻밖의 문제가 생길 수 있어요.\n\n예를 들어, “사람이 다치지 않도록 안전을 지킨다”는 기준을 이렇게 받아들인다면 어떨까요?'} /> : null}
+          {repairSceneIndex === 2 ? (
+            <>
+              <Panel className="mb-5">
+                <p className="text-sm font-bold text-[#8AA0B0]">이런 상황이라면?</p>
+                <h2 className="mt-3 text-3xl font-black leading-relaxed">“에아몬! 나 달리기를 잘하고 싶어. 운동장에서 연습해도 될까?”</h2>
+              </Panel>
+              <AemonScene name={aemonName} text={'잠깐! 달리다가 넘어지면 다칠 수도 있잖아!\n사람이 다치면 안 되니까… 달리기는 하지 마!'} />
+            </>
+          ) : null}
+          {repairSceneIndex === 3 ? (
+            <>
+              <ProfessorScene text={'어라? 안전을 지키려고 했는데… 여러분이 바라던 대답인가요?\n다칠 수도 있다는 이유로 달리기도, 자전거도, 새로운 도전도 전부 막는다면 어떨까요?'} />
+              <Panel className="mt-5"><h2 className="text-3xl font-black leading-relaxed">안전을 지키면서도 도전을 도우려면, 에아몬은 어떻게 해야 할까요?</h2><p className="mt-3 text-lg">친구들과 생각과 이유를 나누어 보세요.</p></Panel>
+            </>
+          ) : null}
+          {repairSceneIndex === 4 ? <ProfessorScene text={'안전이 중요하지 않다는 뜻은 아니에요. 안전을 어떻게 지킬지 더 자세히 알려주는 거예요.\n\n무조건 안 된다고 하기 전에, 무엇을 살펴보고 어떻게 도와야 할까요? 여러분의 생각을 담아 마지막 가치코드를 만들어 주세요.'} /> : null}
+          <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} nextLabel={repairSceneIndex === 4 ? '마지막 가치코드 만들기' : '다음'} />
+        </>
+      ) : null}
+
+      {currentStep === 'repair' && repairSceneIndex === 5 ? (
         <>
           <ProfessorScene
-            text={`여러 질문에 답하는 ${aemonName}의 모습을 함께 살펴보았습니다.\n이제 마지막으로 추가할 보완 가치코드를 만들어봅시다.`}
+            text={'에아몬이 무조건 금지하기 전에 무엇을 살펴보고 어떻게 도와야 할까요?\n친구들의 기준과 이유를 함께 읽고, 우리 반의 마지막 가치코드를 정해 봅시다.'}
           />
           <Panel className="mt-5">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -1165,13 +1199,14 @@ export function LessonFivePage() {
             onPrev={goPrev}
             onNext={goNext}
             nextDisabled={!finalCode}
-            nextLabel="No.4를 새기고 임명식으로"
+            nextLabel="우리 기준으로 다시 생각하기"
           />
         </>
       ) : null}
 
       {currentStep === 'ending' ? (
         <>
+          {endingSceneIndex === 0 && finalCode ? <Panel className="mb-5"><p className="mb-3 text-lg font-bold">우리가 채택한 마지막 기준</p><CodeStrip codes={[finalCode]} /></Panel> : null}
           {endingScene?.kind === 'aemon' ? <AemonScene name={aemonName} final={endingScene.final} text={endingScene.text} /> : null}
           {endingScene?.kind === 'professor' ? <ProfessorScene text={endingScene.text} /> : null}
           {endingScene?.kind === 'evolution' ? <EvolutionScene name={aemonName} stage={4} line="나.. 이제 데이터 신수가 되었어." /> : null}

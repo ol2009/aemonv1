@@ -1414,7 +1414,7 @@ export function BoardPage() {
                   <h2 className="font-display mt-1 text-3xl text-[#EAF2F5]">{codeBoardHeading}</h2>
                   <p className="mt-3 text-sm leading-6 text-[#8AA0B0]">
                     {isFourthCodeBoard
-                      ? '마지막 시험을 돌아보고, 앞으로 필요한 기준을 각자 제안합니다.'
+                      ? '달리기까지 금지한 에아몬을 떠올려 보세요. 안전을 지키면서도 도전을 도우려면, 무엇을 살펴보고 어떻게 행동해야 할까요?'
                       : isThirdCodeBoard
                         ? '겉으로는 능력처럼 보이지만 불공정한 판단을 막을 기준을 만듭니다.'
                       : isSecondCodeBoard
