@@ -102,7 +102,8 @@ export function ConversationPage() {
       <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="font-data text-sm text-[#4FE0C0]">CHAT</p>
-          <h1 className="font-display mt-2 text-5xl text-[#EAF2F5]">채팅</h1>
+          <h1 className="font-display mt-2 text-5xl text-[#EAF2F5]">교사용 확장 채팅</h1>
+          <p className="mt-3 max-w-3xl leading-7 text-[#B7C7D2]">실제 AI와 대화하는 선택 기능입니다. 기본 5차시는 API 없이 시나리오 응답으로 진행됩니다. 교사가 입력과 응답을 관리하며, 연결 서비스의 이용 조건과 학교 지침을 확인한 뒤 사용해 주세요.</p>
         </div>
 
       </div>

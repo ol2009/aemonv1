@@ -46,7 +46,7 @@ export function LandingPage() {
                 <Button className="min-h-12 px-5 text-sm" variant="secondary" onClick={() => navigate('/training')}>5차시 수업 살펴보기</Button>
               </div>
               <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-sm font-semibold text-[#60717A]">
-                {['태블릿 필요', 'QR 학생 참여', '실시간 학급 투표'].map((item) => (
+                {['기본 수업 API 불필요', 'QR 학생 참여', '실시간 학급 투표'].map((item) => (
                   <span className="inline-flex items-center gap-1.5" key={item}><Check size={15} className="text-[#25A98D]" />{item}</span>
                 ))}
               </div>
@@ -61,6 +61,25 @@ export function LandingPage() {
                 <p className="font-bold text-[#F2F6F7]">1단계 에아몬</p>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="classroom-mode-title" className="mx-auto max-w-7xl px-5 pb-8">
+        <div className="rounded-3xl border border-[#D7E2DC] bg-white p-6 sm:p-9">
+          <p className="text-sm font-bold text-[#187B68]">선생님을 위한 수업 방식 안내</p>
+          <h2 id="classroom-mode-title" className="mt-3 text-2xl font-black text-[#172530] sm:text-3xl">기본 수업은 시나리오로, 실제 AI 채팅은 선택으로</h2>
+          <div className="mt-6 grid gap-6 md:grid-cols-2">
+            <article>
+              <h3 className="text-lg font-extrabold text-[#172530]">기본 5차시 · 교육용 시뮬레이션</h3>
+              <p className="mt-3 leading-7 text-[#526873]">에아몬의 대답은 교사가 수업 목적으로 미리 구성한 시나리오입니다. 여러 응답을 준비해 질문 유형과 가치코드 적용 여부에 따라 보여주며, 일부 장면에서는 응답을 무작위로 선택합니다. AI의 반응을 흉내 낸 것으로, 학생이 실제 생성형 AI와 대화하거나 AI 모델을 학습시키는 활동은 아닙니다.</p>
+              <p className="mt-3 font-bold leading-7 text-[#187B68]">학생은 문제를 찾고, 기준을 제안하고, 응답을 비교합니다. 기본 수업 전체에 AI API 연결은 필요하지 않습니다.</p>
+            </article>
+            <article className="border-t border-[#D7E2DC] pt-6 md:border-l md:border-t-0 md:pl-6 md:pt-0">
+              <h3 className="text-lg font-extrabold text-[#172530]">교사용 확장 채팅 · 선택 기능</h3>
+              <p className="mt-3 leading-7 text-[#526873]">우리 반이 만든 가치코드를 실제 AI에게 전달해 대화해 보고 싶을 때만, 교사가 자신의 API 키를 연결해 별도 채팅 화면을 사용합니다. API를 연결해도 기본 5차시의 시나리오 응답은 그대로 유지됩니다.</p>
+              <p className="mt-3 leading-7 text-[#526873]">실제 AI 채팅은 수업의 필수 요소가 아닙니다. 교사가 입력과 응답을 관리하며, 사용 전 선택한 서비스의 연령·이용 조건과 학교의 활용 지침을 확인해 주세요. 학생의 이름이나 개인정보를 입력하지 않습니다.</p>
+            </article>
           </div>
         </div>
       </section>

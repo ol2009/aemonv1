@@ -27,7 +27,7 @@ export function ApiConnectionModal({ apiKey, provider, onClose, onSave }: ApiCon
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="font-data text-xs text-[#4FE0C0]">LIVELY AI EXPERIENCE</p>
-            <h2 className="font-display mt-1 text-3xl text-[#EAF2F5]">API 연결</h2>
+            <h2 className="font-display mt-1 text-3xl text-[#EAF2F5]">교사용 확장 채팅 연결 · 선택</h2>
           </div>
           <button
             aria-label="API 연결 창 닫기"
@@ -40,8 +40,9 @@ export function ApiConnectionModal({ apiKey, provider, onClose, onSave }: ApiCon
         </div>
 
         <div className="mt-4 border-y border-[#4FE0C0]/20 bg-[#4FE0C0]/7 px-4 py-4">
-          <p className="text-lg font-black text-[#EAF2F5]">API 키를 연결하면 에아몬이 우리 반의 말에 맞춰 즉석으로 대답합니다.</p>
-          <p className="mt-2 text-sm leading-6 text-[#A9DCCD]">고정 답변을 넘어 학생의 질문과 학급 가치코드를 반영하므로 AI 체험이 훨씬 생동감 있어집니다. Google 계정이 있다면 Gemini API를 무료 등급으로 시작할 수 있습니다.</p>
+          <p className="text-lg font-black text-[#EAF2F5]">기본 5차시는 API 없이 모두 진행할 수 있습니다.</p>
+          <p className="mt-2 text-sm leading-6 text-[#A9DCCD]">기본 수업은 여러 응답을 준비한 교육용 시나리오로, 실제 AI와의 대화가 아닙니다. API 키를 연결하면 별도 교사용 채팅에서만 학급 가치코드를 실제 AI에 전달해 대화할 수 있습니다. 기본 차시의 응답 방식은 바뀌지 않습니다.</p>
+          <p className="mt-2 text-sm leading-6 text-[#A9DCCD]">교사가 입력과 응답을 관리하는 선택 기능입니다. 사용 전 서비스의 연령·이용 조건과 학교 지침을 확인하고, 학생 이름이나 개인정보를 입력하지 마세요.</p>
         </div>
 
         <div className="mt-4 rounded-xl border border-white/10 bg-[#07111B]/55 p-4">
