@@ -33,6 +33,7 @@ import {
 import { useV2RemoteSync } from '../lib/useV2RemoteSync'
 import { useBoardLiveSync } from '../lib/useLessonLiveSync'
 import { useV2 } from '../state/V2Store'
+import { buildClassSurveySummary } from '../lib/surveyResults'
 
 type BoardTopic = 'survey' | 'risk' | 'name' | 'wish' | 'code' | 'honesty' | 'code2' | 'fairness' | 'code3' | 'code4'
 
@@ -193,11 +194,16 @@ export function BoardPage() {
   const aemonDisplayName = state.aemonName.trim() || '에아몬'
 
   const session = state.studentSession
-  const isTopicOpen = (topic: BoardTopic) => state.currentLesson >= topicLessonNo(topic)
+  const surveySummary = useMemo(() => buildClassSurveySummary(state.surveyResponses), [state.surveyResponses])
+  // Use the same completion rule as the dashboard, including older classes
+  // whose saved lesson pointer no longer reflects their completed project.
+  const projectComplete = surveySummary.preResponseCount > 0 && surveySummary.postResponseCount > 0
+  const boardLesson = projectComplete ? 5 : state.currentLesson
+  const isTopicOpen = (topic: BoardTopic) => boardLesson >= topicLessonNo(topic)
   const unlockedTopics = useMemo<BoardTopic[]>(() => {
     const allTopics: BoardTopic[] = ['survey', 'name', 'wish', 'risk', 'code', 'honesty', 'code2', 'fairness', 'code3', 'code4']
-    return allTopics.filter((topic) => state.currentLesson >= topicLessonNo(topic))
-  }, [state.currentLesson])
+    return allTopics.filter((topic) => boardLesson >= topicLessonNo(topic))
+  }, [boardLesson])
   const activeTopic = unlockedTopics.includes(selectedTopic) ? selectedTopic : unlockedTopics[0] ?? queryTopic ?? 'survey'
   const requestedTopicClosed = Boolean(queryTopic && !isTopicOpen(queryTopic))
   const activeCodeNo = activeTopic === 'code2' ? 2 : activeTopic === 'code3' ? 3 : activeTopic === 'code4' ? 4 : activeTopic === 'code' ? 1 : null
@@ -789,7 +795,7 @@ export function BoardPage() {
               {topicTabLabel(topic)}
             </button>
           ))}
-          {state.currentLesson >= 5 ? (
+          {boardLesson >= 5 ? (
             <>
               <Link
                 className="rounded-2xl border border-white/10 bg-[#07111B]/45 px-4 py-3 text-sm font-black text-[#B7C7D2] transition hover:border-white/25 hover:text-[#EAF2F5]"
