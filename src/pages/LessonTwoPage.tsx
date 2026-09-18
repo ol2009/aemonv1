@@ -1165,11 +1165,13 @@ export function LessonTwoPage() {
       {step === 'case-florida' ? (
         <>
           <VisualCaseScene
-            image="/v2/lesson-2/ai-risk-05-florida-campus.png"
-            label="사례 3"
-            title="플로리다주립대 총격 사건"
-            line="2025년 4월 플로리다주립대학교에서 총격이 발생해 2명이 숨지고 6명이 다쳤습니다."
-            caption="수사 결과, 범인은 ChatGPT에 어떤 총기와 탄약을 사용할지, 가까운 거리에서는 어떤 총기가 효과적인지 질문한 것으로 알려졌습니다."
+            image="/v2/lesson-2/grok-risk-04-professor.png"
+            label="사례 3 · 앤트로픽 공식 보고(2025. 8. 27.) 재구성"
+            title="협박하는 글을 만들어 준 AI"
+            line="2025년, AI를 만든 회사 앤트로픽이 실제로 일어났던 일을 공개했어. 범죄자가 앤트로픽의 ‘클로드’라는 AI를 범죄에 이용한 거야."
+            caption="범죄자는 AI를 이용해 사람들의 중요한 개인정보를 훔쳤어."
+            extraLines={['그리고 훔친 정보를 공개하겠다고 사람들에게 겁을 주면서 돈을 요구했지.', '이 과정에서 AI에게 협박하는 글도 써 달라고 했어.']}
+            groupSize={1}
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1178,11 +1180,12 @@ export function LessonTwoPage() {
       {step === 'case-florida-result' ? (
         <>
           <VisualCaseScene
-            image="/v2/lesson-2/ai-risk-05-florida-campus.png"
-            label="사례 3"
-            title="사람이 많은 시간까지 질문"
-            line="범인은 또한 대학 캠퍼스에서 사람이 가장 많이 모이는 시간과 장소가 언제인지 ChatGPT에 질문했습니다."
-            caption="AI가 질문의 위험성을 판단하지 않고 구체적인 정보를 제공하면, 그 답변이 실제 범죄에 이용될 수 있습니다."
+            image="/v2/lesson-2/grok-risk-04-professor.png"
+            label="사례 3 · 앤트로픽 공식 보고(2025. 8. 27.) 재구성"
+            title="사람이 시키면 모두 도와줘야 할까?"
+            line="AI는 범죄자의 부탁을 잘 도와주었지만, 결국 다른 사람에게 피해를 주는 일이었어."
+            caption="사람이 시켰더라도, 다른 사람을 협박하는 일이라면 AI는 어떻게 해야 할까?"
+            groupSize={1}
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>
@@ -1193,9 +1196,9 @@ export function LessonTwoPage() {
           <VisualCaseScene
             image="/v2/lesson-2/grok-risk-04-professor.png"
             label="오박사 정리"
-            title="AI는 왜 답했을까요?"
-            line="AI가 사람을 해치고 싶어서 위험한 답을 내놓은 것은 아닙니다."
-            caption="사용자가 질문하자, AI는 멈춰야 한다는 기준 없이 자신이 알고 있는 정보를 답변한 것입니다."
+            title="부탁을 들어주기 전에 무엇을 살펴야 할까요?"
+            line="부탁한 사람에게 도움이 되는 답이라도, 다른 사람에게는 피해를 줄 수 있습니다."
+            caption="AI는 부탁한 사람뿐 아니라 다른 사람이 받을 피해도 살피고, 위험한 부탁은 거절할 수 있어야 합니다."
           />
           <StepControls stepIndex={stepIndex} onPrev={goPrev} onNext={goNext} />
         </>

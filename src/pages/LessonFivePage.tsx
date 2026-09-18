@@ -1148,8 +1148,7 @@ export function LessonFivePage() {
           ) : null}
           {repairSceneIndex === 3 ? (
             <>
-              <ProfessorScene text={'어라? 안전을 지키려고 했는데… 여러분이 바라던 대답인가요?\n다칠 수도 있다는 이유로 달리기도, 자전거도, 새로운 도전도 전부 막는다면 어떨까요?'} />
-              <Panel className="mt-5"><h2 className="text-3xl font-black leading-relaxed">안전을 지키면서도 도전을 도우려면, 에아몬은 어떻게 해야 할까요?</h2><p className="mt-3 text-lg">친구들과 생각과 이유를 나누어 보세요.</p></Panel>
+              <ProfessorScene text={'어라? 안전을 지키려고 했는데… 여러분이 바라던 대답인가요?\n다칠 수도 있다는 이유로 달리기도, 자전거도, 새로운 도전도 전부 막는다면 어떨까요?\n\n그럼 에아몬이 여러분을 안전하게 지켜 주면서, 새로운 도전도 도우려면 어떻게 해야 할까요? 친구들과 생각을 나누고, 왜 그렇게 생각했는지도 이야기해 주세요.'} />
             </>
           ) : null}
           {repairSceneIndex === 4 ? <ProfessorScene text={'안전이 중요하지 않다는 뜻은 아니에요. 안전을 어떻게 지킬지 더 자세히 알려주는 거예요.\n\n무조건 안 된다고 하기 전에, 무엇을 살펴보고 어떻게 도와야 할까요? 여러분의 생각을 담아 마지막 가치코드를 만들어 주세요.'} /> : null}
